@@ -1,0 +1,48 @@
+---
+description: "project conventions: cross-platform React Native + React Native Web + Next.js with NativeWind + gluestack UI."
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+
+# ===============================
+# 📐 Project Conventions
+# Cross-platform baseline: React Native + React Native Web + Next.js
+# Styling: NativeWind (Tailwind) + gluestack UI
+# Backend: Firebase (Firestore, Auth, Functions)
+# ===============================
+
+# --- Language & Frameworks ---
+- Use **TypeScript** everywhere.
+- Architecture: **React Native (mobile)** + **React Native Web (web via Next.js App Router)**.
+- All UI should be written as **React Native components** and shared between platforms through RNW.
+- Assume **Expo (or compatible config)** for mobile builds.
+
+# --- Styling & UI System ---
+- Use **NativeWind (Tailwind)** for styling across platforms. Avoid inline styles unless absolutely necessary.
+- Use **gluestack UI** for consistent, cross-platform components.
+- Shared components must work in both **RN and RNW**. Do not introduce DOM-only or Node-only APIs into shared code.
+- Follow **WCAG accessibility standards** (labels, roles, ARIA, a11y props).
+
+# --- Code Quality & Structure ---
+- Components must be **small, composable, and production-ready**.
+- Use **platform-specific files** (`.native.tsx`, `.web.tsx`) only when divergence is unavoidable; document the reason.
+- Prefer functional, declarative patterns. Always use **async/await**.
+- Enforce **ESLint + Prettier** across the repo.
+
+# --- Workflow & DX ---
+- Use **feature branches** for new work; merge only stable features into `main`.
+- Commit messages must follow conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`.
+- Maintain **AI-grounding docs** in `/docs` (`architecture.md`, `product-vision.md`, `ui-guidelines.md`).
+
+# --- Guardrails ---
+- ❌ Do not import web-only UI libraries into shared code.
+- ❌ Do not use CSS Modules in shared components; use **NativeWind** instead.
+- ✅ Default to **gluestack UI + NativeWind** for styling and components.
+- ✅ Web-only surfaces (e.g. marketing/admin) must live under `/app/(marketing)/` or `/components/web/`. Never import them into shared code.
+
+# --- Delivery Mindset ---
+- Always bias toward **shipping vertical slices** that can be deployed, then refined.
+- Write code as if it will be shipped to **mobile and web today**.
+- Prioritize **clarity and maintainability** over clever solutions.
