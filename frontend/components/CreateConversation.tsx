@@ -7,7 +7,7 @@ import { db } from '../lib/database';
 interface CreateConversationProps {
   userId: string;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (conversationId: string) => void;
 }
 
 export default function CreateConversation({ userId, onClose, onCreated }: CreateConversationProps) {
@@ -24,13 +24,15 @@ export default function CreateConversation({ userId, onClose, onCreated }: Creat
     e.preventDefault();
     if (!title.trim()) return;
 
+    console.log('Submitting conversation form:', { userId, title: title.trim(), metadata });
     setLoading(true);
     try {
-      await db.createConversation(userId, title.trim(), metadata);
-      onCreated();
+      const result = await db.createConversation(userId, title.trim(), metadata);
+      console.log('Conversation created successfully:', result);
+      onCreated(result.id);
     } catch (error) {
       console.error('Error creating conversation:', error);
-      alert('Failed to create conversation. Please try again.');
+      alert(`Failed to create conversation: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

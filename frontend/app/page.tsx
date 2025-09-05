@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { MessageSquare, Star, TrendingUp, Clock } from 'lucide-react';
 import ConversationList from '../components/ConversationList';
 import FeedbackStats from '../components/FeedbackStats';
@@ -24,6 +25,7 @@ interface FeedbackStats {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,9 +58,11 @@ export default function Home() {
     }
   };
 
-  const handleConversationCreated = () => {
+  const handleConversationCreated = (conversationId: string) => {
     setShowCreateModal(false);
     fetchConversations();
+    // Navigate to the chat page
+    router.push(`/conversations/${conversationId}`);
   };
 
   return (
