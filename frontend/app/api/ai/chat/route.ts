@@ -12,30 +12,59 @@ export async function POST(request: NextRequest) {
   try {
     const { messages, userId, conversationId } = await request.json()
 
-    // Create session ID from conversation ID or generate new one
-    const sessionId = conversationId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Use conversationId as the runId (this is the conversation run ID from the frontend)
+    const runId = conversationId || crypto.randomUUID()
+    console.log(`Chat API: Using runId: ${runId}`)
+    console.log(`Chat API: conversationId from frontend: ${conversationId}`)
     
-    // Check if this is a new conversation (only 1 message) or continuing existing one
-    const isNewConversation = messages.length === 1 && messages[0].role === 'user'
+    // Initialize conversation logger with runId as sessionId and runId
+    conversationLogger = new ConversationLogger(runId, userId, runId)
     
-    // Initialize conversation logger
-    conversationLogger = new ConversationLogger(sessionId, userId)
+    // Check if this run already exists
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabaseClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SECRET_KEY!
+    )
     
-    // Only start a new run for new conversations
-    let runId: string
-    if (isNewConversation) {
-      runId = await conversationLogger.startRun({
+    const { data: existingRun } = await supabaseClient
+      .from('conversation_runs')
+      .select('id')
+      .eq('id', runId)
+      .single()
+    
+    if (!existingRun) {
+      // New conversation: start a new run
+      console.log(`Chat API: Starting new run for conversationId: ${runId}`)
+      await conversationLogger.startRun({
         messages,
         userId: userId || 'anonymous',
-        conversationId: sessionId,
+        conversationId: runId,
       })
+      console.log(`Chat API: Successfully started run: ${runId}`)
     } else {
-      // For continuing conversations, find the existing run
-      runId = await conversationLogger.findOrCreateRun(sessionId, {
-        messages,
-        userId: userId || 'anonymous',
-        conversationId: sessionId,
-      })
+      // Existing conversation: check if LangSmith run exists, if not create it
+      console.log(`Chat API: Supabase run exists, checking LangSmith...`)
+      try {
+        // Try to find the run in LangSmith
+        const { Client } = await import('langsmith')
+        const langsmithClient = new Client({
+          apiUrl: process.env.LANGSMITH_ENDPOINT || 'https://api.smith.langchain.com',
+          apiKey: process.env.LANGSMITH_API_KEY,
+        })
+        const langsmithRun = await langsmithClient.readRun(runId)
+        console.log(`Chat API: LangSmith run found: ${langsmithRun.id}`)
+        conversationLogger.setRunId(runId)
+      } catch (error) {
+        // LangSmith run doesn't exist, create it
+        console.log(`Chat API: LangSmith run not found, creating new one: ${runId}`)
+        await conversationLogger.startRun({
+          messages,
+          userId: userId || 'anonymous',
+          conversationId: runId,
+        })
+        console.log(`Chat API: Successfully created LangSmith run: ${runId}`)
+      }
     }
 
     // Log user message (last message in the array)
@@ -81,21 +110,15 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Complete the conversation run
-    await conversationLogger.completeRun({
-      content: responseContent,
-      model: completion.model,
-      usage: tokenUsage,
-      responseTime,
-      cost,
-    })
+    // Note: We don't complete the run here - it should only be completed when the conversation actually ends
+    // The run will remain 'active' until explicitly completed by the user or frontend
 
     return NextResponse.json({
       content: responseContent,
       model: completion.model,
       usage: tokenUsage,
       runId: runId,
-      sessionId: sessionId,
+      sessionId: runId, // Use runId as sessionId for consistency
     })
   } catch (error: any) {
     console.error('OpenAI API error:', error)

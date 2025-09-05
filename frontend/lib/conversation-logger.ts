@@ -61,8 +61,8 @@ export class ConversationLogger {
   private totalCost = 0;
   private responseTimes: number[] = [];
 
-  constructor(sessionId: string, userId?: string) {
-    this.runId = randomUUID();
+  constructor(sessionId: string, userId?: string, runId?: string) {
+    this.runId = runId || randomUUID();
     this.sessionId = sessionId;
     // Convert string user IDs to UUIDs or use null for anonymous users
     this.userId = userId && userId !== 'anonymous' ? this.generateUserId(userId) : null;
@@ -79,34 +79,11 @@ export class ConversationLogger {
   }
 
   /**
-   * Find existing run or create new one
+   * Set the run ID (for reusing existing runs)
    */
-  async findOrCreateRun(sessionId: string, inputs: Record<string, any>): Promise<string> {
-    try {
-      // Try to find existing active run for this session
-      const { data: existingRun, error } = await supabaseClient
-        .from('conversation_runs')
-        .select('id')
-        .eq('session_id', sessionId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (existingRun && !error) {
-        // Use existing run
-        this.runId = existingRun.id
-        console.log(`Reusing existing run: ${this.runId}`)
-        return this.runId
-      }
-
-      // No existing run found, create new one
-      return await this.startRun(inputs)
-    } catch (error) {
-      console.error('Failed to find or create run:', error)
-      // Fallback to creating new run
-      return await this.startRun(inputs)
-    }
+  setRunId(runId: string): void {
+    this.runId = runId
+    console.log(`Set run ID: ${runId}`)
   }
 
   /**
@@ -115,6 +92,7 @@ export class ConversationLogger {
   async startRun(inputs: Record<string, any>): Promise<string> {
     try {
       // Log to LangSmith
+      console.log(`Creating LangSmith run: ${this.runId}`);
       await langsmithClient.createRun({
         id: this.runId,
         name: 'chef-chopsky-conversation',
@@ -126,6 +104,7 @@ export class ConversationLogger {
           user_id: this.userId,
         },
       });
+      console.log(`Successfully created LangSmith run: ${this.runId}`);
 
       // Log to Supabase
       const { error } = await supabaseClient
@@ -154,6 +133,13 @@ export class ConversationLogger {
       return this.runId;
     } catch (error) {
       console.error('Failed to start conversation run:', error);
+      console.error('LangSmith error details:', {
+        runId: this.runId,
+        sessionId: this.sessionId,
+        userId: this.userId,
+        projectName: process.env.LANGSMITH_PROJECT,
+        error: error.message
+      });
       throw error;
     }
   }

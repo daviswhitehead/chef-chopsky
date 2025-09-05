@@ -45,8 +45,20 @@ export default function ConversationPage() {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const handleConversationComplete = () => {
-    setShowFeedback(true);
+  const handleConversationComplete = async () => {
+    try {
+      // Update conversation status to completed in database
+      await db.updateConversationStatus(conversationId, 'completed');
+      
+      // Update local state
+      setConversation(prev => prev ? { ...prev, status: 'completed' } : null);
+      
+      // Show feedback form
+      setShowFeedback(true);
+    } catch (error) {
+      console.error('Error completing conversation:', error);
+      alert('Failed to complete conversation. Please try again.');
+    }
   };
 
   if (loading) {

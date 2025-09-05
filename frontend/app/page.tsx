@@ -6,6 +6,7 @@ import { MessageSquare, Star, TrendingUp, Clock } from 'lucide-react';
 import ConversationList from '../components/ConversationList';
 import FeedbackStats from '../components/FeedbackStats';
 import CreateConversation from '../components/CreateConversation';
+import LangSmithMonitor from '../components/LangSmithMonitor';
 import { db } from '../lib/database';
 
 interface Conversation {
@@ -30,6 +31,7 @@ export default function Home() {
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showLangSmithMonitor, setShowLangSmithMonitor] = useState(false);
 
   const userId = 'davis'; // Hardcoded for now, would be from auth in production
 
@@ -120,13 +122,28 @@ export default function Home() {
       {/* Actions */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Recent Conversations</h2>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn-primary"
-        >
-          New Conversation
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setShowLangSmithMonitor(!showLangSmithMonitor)}
+            className="btn-secondary"
+          >
+            {showLangSmithMonitor ? 'Hide' : 'Show'} LangSmith Monitor
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-primary"
+          >
+            New Conversation
+          </button>
+        </div>
       </div>
+
+      {/* LangSmith Monitor */}
+      {showLangSmithMonitor && (
+        <div className="mb-8">
+          <LangSmithMonitor />
+        </div>
+      )}
 
       {/* Conversation List */}
       {loading ? (

@@ -122,6 +122,21 @@ export class DatabaseService {
       .eq('id', id)
 
     if (error) throw error
+    
+    // If completing the conversation, also complete the LangSmith run
+    if (status === 'completed') {
+      try {
+        const { ConversationLogger } = await import('./conversation-logger')
+        const logger = new ConversationLogger(id, 'davis') // Use hardcoded user for now
+        await logger.completeRun({
+          status: 'completed',
+          total_messages: 0, // Will be updated by the logger
+        })
+      } catch (error) {
+        console.error('Failed to complete LangSmith run:', error)
+        // Don't throw - we want the Supabase update to succeed even if LangSmith fails
+      }
+    }
   }
 
   // Messages (now using conversation_messages)
