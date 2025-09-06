@@ -50,7 +50,7 @@ export default function ConversationList({ conversations, onRefresh }: Conversat
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="conversation-list">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium text-gray-900">
           {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}

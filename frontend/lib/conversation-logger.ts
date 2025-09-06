@@ -93,41 +93,54 @@ export class ConversationLogger {
     try {
       // Log to LangSmith
       console.log(`Creating LangSmith run: ${this.runId}`);
+      // Remove userId from inputs to avoid duplication, use user_id consistently
+      const { userId, ...cleanInputs } = inputs;
+      
       await langsmithClient.createRun({
         id: this.runId,
         name: 'chef-chopsky-conversation',
         run_type: 'llm',
         project_name: process.env.LANGSMITH_PROJECT,
         inputs: {
-          ...inputs,
+          ...cleanInputs,
           session_id: this.sessionId,
-          user_id: this.userId,
+          user_id: userId || this.userId,
         },
       });
       console.log(`Successfully created LangSmith run: ${this.runId}`);
 
-      // Log to Supabase
-      const { error } = await supabaseClient
+      // Log to Supabase (only if not already exists)
+      const { data: existingRun } = await supabaseClient
         .from('conversation_runs')
-        .insert({
-          id: this.runId,
-          user_id: this.userId, // This will be null for non-UUID users
-          session_id: this.sessionId,
-          status: 'active',
-          started_at: new Date().toISOString(),
-          total_messages: 0,
-          total_tokens_used: 0,
-          total_cost: 0.0,
-          average_response_time: 0.0,
-          metadata: inputs,
-        });
+        .select('id')
+        .eq('id', this.runId)
+        .single();
 
-      if (error) {
-        console.error('Failed to log run start to Supabase:', error);
-        console.log('LangSmith logging succeeded, but Supabase failed');
-        // Don't throw here - we want LangSmith to still work even if Supabase fails
+      if (!existingRun) {
+        const { error } = await supabaseClient
+          .from('conversation_runs')
+          .insert({
+            id: this.runId,
+            user_id: this.userId, // This will be null for non-UUID users
+            session_id: this.sessionId,
+            status: 'active',
+            started_at: new Date().toISOString(),
+            total_messages: 0,
+            total_tokens_used: 0,
+            total_cost: 0.0,
+            average_response_time: 0.0,
+            metadata: inputs,
+          });
+
+        if (error) {
+          console.error('Failed to log run start to Supabase:', error);
+          console.log('LangSmith logging succeeded, but Supabase failed');
+          // Don't throw here - we want LangSmith to still work even if Supabase fails
+        } else {
+          console.log(`Successfully logged run start to Supabase: ${this.runId}`);
+        }
       } else {
-        console.log(`Successfully logged run start to Supabase: ${this.runId}`);
+        console.log(`Supabase run already exists: ${this.runId}`);
       }
 
       return this.runId;

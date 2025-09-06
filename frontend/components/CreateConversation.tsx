@@ -97,6 +97,7 @@ export default function CreateConversation({ userId, onClose, onCreated }: Creat
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Weekly CSA Meal Planning"
               className="input-field"
+              data-testid="conversation-title-input"
               required
             />
           </div>
@@ -201,6 +202,7 @@ export default function CreateConversation({ userId, onClose, onCreated }: Creat
               type="submit"
               disabled={loading || !title.trim()}
               className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="start-conversation-button"
             >
               {loading ? 'Creating...' : 'Start Conversation'}
             </button>

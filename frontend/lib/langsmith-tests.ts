@@ -4,6 +4,7 @@ import { ConversationLogger } from './conversation-logger';
 // Test configuration
 const LANGSMITH_PROJECT = process.env.LANGSMITH_PROJECT || 'chef chopsky';
 const TEST_USER_ID = 'test-user-123';
+const TEST_PREFIX = 'langsmith-test-';
 
 export class LangSmithTestSuite {
   private langsmithClient: Client;
@@ -89,7 +90,7 @@ export class LangSmithTestSuite {
     try {
       console.log('📝 Testing conversation logging...');
       
-      const testSessionId = `test-session-${Date.now()}`;
+      const testSessionId = `${TEST_PREFIX}session-${Date.now()}`;
       const conversationLogger = new ConversationLogger(testSessionId, TEST_USER_ID);
       
       // Start a test run
@@ -147,7 +148,7 @@ export class LangSmithTestSuite {
     try {
       console.log('🏁 Testing run completion...');
       
-      const testSessionId = `test-completion-${Date.now()}`;
+      const testSessionId = `${TEST_PREFIX}completion-${Date.now()}`;
       const conversationLogger = new ConversationLogger(testSessionId, TEST_USER_ID);
       
       // Start and complete a run
@@ -262,7 +263,7 @@ export class LangSmithTestSuite {
     try {
       console.log('🚨 Testing error handling...');
       
-      const testSessionId = `test-error-${Date.now()}`;
+      const testSessionId = `${TEST_PREFIX}error-${Date.now()}`;
       const conversationLogger = new ConversationLogger(testSessionId, TEST_USER_ID);
       
       // Start a run

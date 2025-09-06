@@ -140,11 +140,13 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
             className="flex-1 input-field resize-none"
             rows={1}
             disabled={isLoading}
+            data-testid="message-input"
           />
           <button
             onClick={sendMessage}
             disabled={!inputValue.trim() || isLoading}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="send-button"
           >
             <Send className="h-4 w-4" />
           </button>

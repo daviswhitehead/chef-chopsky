@@ -132,6 +132,7 @@ export default function Home() {
           <button
             onClick={() => setShowCreateModal(true)}
             className="btn-primary"
+            data-testid="new-conversation-button"
           >
             New Conversation
           </button>
