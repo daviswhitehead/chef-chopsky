@@ -309,28 +309,48 @@ export class LangSmithTestSuite {
   /**
    * Get recent runs for monitoring
    */
-  async getRecentRuns(limit: number = 10): Promise<any[]> {
+  async getRecentRuns(limit: number = 3): Promise<any[]> {
     try {
+      console.log(`🔍 LangSmith API: Fetching ${limit} recent runs from project: ${LANGSMITH_PROJECT}`);
+      console.log(`🔍 LangSmith API: API Key status: ${process.env.LANGSMITH_API_KEY ? 'SET' : 'NOT SET'}`);
+      console.log(`🔍 LangSmith API: Endpoint: ${process.env.LANGSMITH_ENDPOINT || 'https://api.smith.langchain.com'}`);
+      
+      // Get runs from the last hour to ensure we get recent ones
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      console.log(`🔍 LangSmith API: Filtering runs after: ${oneHourAgo.toISOString()}`);
+      
       const runs = await this.langsmithClient.listRuns({
         projectName: LANGSMITH_PROJECT,
-        limit
+        limit: limit * 2, // Get more runs to account for filtering
+        startTimeAfter: oneHourAgo
       });
       
       const runList = [];
       for await (const run of runs) {
         runList.push({
           id: run.id,
-          name: run.name,
           status: run.status,
           startTime: run.start_time,
           endTime: run.end_time,
           inputs: run.inputs,
-          outputs: run.outputs,
-          error: run.error
+          outputs: run.outputs
         });
       }
       
-      return runList;
+      // Sort by start time descending and return requested limit
+      const sortedRuns = runList.sort((a, b) => {
+        const timeA = new Date(a.startTime).getTime();
+        const timeB = new Date(b.startTime).getTime();
+        return timeB - timeA; // Descending order (most recent first)
+      }).slice(0, limit);
+      
+      console.log(`📊 LangSmith API: Retrieved ${runList.length} total runs, returning ${sortedRuns.length} most recent`);
+      if (sortedRuns.length > 0) {
+        const latestRun = sortedRuns[0];
+        console.log(`📊 Latest run: ${latestRun.id}, Status: ${latestRun.status}, Start: ${latestRun.startTime}`);
+      }
+      
+      return sortedRuns;
     } catch (error) {
       console.error('Failed to get recent runs:', error);
       return [];

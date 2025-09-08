@@ -46,3 +46,42 @@ alwaysApply: true
 - Always bias toward **shipping vertical slices** that can be deployed, then refined.
 - Write code as if it will be shipped to **mobile and web today**.
 - Prioritize **clarity and maintainability** over clever solutions.
+
+# --- Core Development Workflow ---
+## 1. Research/Discovery
+- Understand requirements thoroughly before coding
+- Research existing patterns and solutions in the codebase
+- Identify dependencies and potential blockers early
+
+## 2. Planning (Plan and Task Detailing)
+- Break down features into smallest possible, testable units
+- Define clear acceptance criteria for each task
+- Plan the minimal changes needed to meet requirements
+- Document the approach before implementation
+
+## 3. Delivery
+- Write tests FIRST (Test-Driven Development)
+- Implement the smallest possible change that satisfies requirements
+- Prioritize simplicity and maintainability over clever solutions
+- Make incremental, reviewable changes
+
+## 4. Validation
+- Verify tests pass and requirements are met
+- Ensure changes don't break existing functionality
+- Review for simplicity and maintainability
+
+# --- Test-Driven Development (TDD) ---
+- **Always write tests FIRST** before implementing features
+- Start with failing tests that define the desired behavior
+- Write the minimum code to make tests pass
+- Refactor while keeping tests green
+- Maintain high test coverage for all new features
+- Use both unit tests and integration tests as appropriate
+
+# --- Simplicity & Maintainability Principles ---
+- **Ship the smallest possible update** that satisfies requirements
+- Prefer simple, straightforward solutions over complex ones
+- Make changes that are easy to review and understand
+- Avoid over-engineering; it's fine to suggest improvements, but implement only what's needed
+- When in doubt, choose the simpler approach
+- Document complex decisions and trade-offs

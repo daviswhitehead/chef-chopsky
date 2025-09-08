@@ -7,7 +7,9 @@
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "start": "cd frontend && npm start",
-    "install:all": "npm install && cd frontend && npm install"
+    "install:all": "npm install && cd frontend && npm install",
+    "test": "cd frontend && npm test",
+    "test:headed": "cd frontend && npm run test:headed"
   },
   "devDependencies": {}
 }

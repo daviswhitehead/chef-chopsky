@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { ConversationLogger } from '../../../../lib/conversation-logger'
+import crypto from 'crypto'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -12,59 +13,26 @@ export async function POST(request: NextRequest) {
   try {
     const { messages, userId, conversationId } = await request.json()
 
-    // Use conversationId as the runId (this is the conversation run ID from the frontend)
-    const runId = conversationId || crypto.randomUUID()
+    // Create a unique run ID for each message exchange
+    const runId = crypto.randomUUID()
     console.log(`Chat API: Using runId: ${runId}`)
     console.log(`Chat API: conversationId from frontend: ${conversationId}`)
     
     // Initialize conversation logger with runId as sessionId and runId
     conversationLogger = new ConversationLogger(runId, userId, runId)
     
-    // Check if this run already exists
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabaseClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
-    )
-    
-    const { data: existingRun } = await supabaseClient
-      .from('conversation_runs')
-      .select('id')
-      .eq('id', runId)
-      .single()
-    
-    if (!existingRun) {
-      // New conversation: start a new run
-      console.log(`Chat API: Starting new run for conversationId: ${runId}`)
+    // Always create a new LangSmith run for each message exchange
+    console.log(`Chat API: Creating new LangSmith run: ${runId}`)
+    try {
       await conversationLogger.startRun({
         messages,
         userId: userId || 'anonymous',
         conversationId: runId,
       })
-      console.log(`Chat API: Successfully started run: ${runId}`)
-    } else {
-      // Existing conversation: check if LangSmith run exists, if not create it
-      console.log(`Chat API: Supabase run exists, checking LangSmith...`)
-      try {
-        // Try to find the run in LangSmith
-        const { Client } = await import('langsmith')
-        const langsmithClient = new Client({
-          apiUrl: process.env.LANGSMITH_ENDPOINT || 'https://api.smith.langchain.com',
-          apiKey: process.env.LANGSMITH_API_KEY,
-        })
-        const langsmithRun = await langsmithClient.readRun(runId)
-        console.log(`Chat API: LangSmith run found: ${langsmithRun.id}`)
-        conversationLogger.setRunId(runId)
-      } catch (error) {
-        // LangSmith run doesn't exist, create it
-        console.log(`Chat API: LangSmith run not found, creating new one: ${runId}`)
-        await conversationLogger.startRun({
-          messages,
-          userId: userId || 'anonymous',
-          conversationId: runId,
-        })
-        console.log(`Chat API: Successfully created LangSmith run: ${runId}`)
-      }
+      console.log(`Chat API: Successfully created LangSmith run: ${runId}`)
+    } catch (error) {
+      console.error(`Chat API: Failed to create LangSmith run ${runId}:`, error)
+      throw error // Re-throw to see the error in the test
     }
 
     // Log user message (last message in the array)
@@ -110,8 +78,21 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Note: We don't complete the run here - it should only be completed when the conversation actually ends
-    // The run will remain 'active' until explicitly completed by the user or frontend
+    // Complete the run to mark it as successful in LangSmith
+    try {
+      await conversationLogger.completeRun({
+        content: responseContent,
+        model: completion.model,
+        usage: tokenUsage,
+        responseTime,
+        cost,
+      })
+      console.log(`Chat API: Successfully completed LangSmith run: ${runId}`)
+    } catch (error) {
+      console.error(`Chat API: Failed to complete LangSmith run ${runId}:`, error)
+      console.error('Error details:', error.message, error.stack)
+      // Don't throw - we still want to return the response even if LangSmith completion fails
+    }
 
     return NextResponse.json({
       content: responseContent,
