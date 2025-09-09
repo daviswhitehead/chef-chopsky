@@ -46,3 +46,7 @@ alwaysApply: true
 - Always bias toward **shipping vertical slices** that can be deployed, then refined.
 - Write code as if it will be shipped to **mobile and web today**.
 - Prioritize **clarity and maintainability** over clever solutions.
+
+# --- Miscellaneous ---
+- Never display the contents of an .env files in a chat correspondence (except for .env.example).
+- Make sure I understand what you're doing before you go off and write code.
