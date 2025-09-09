@@ -1,4 +1,5 @@
 const { Client } = await import("@langchain/langgraph-sdk");
+const { v4: uuidv4 } = await import("uuid");
 
 // Check command line arguments for streaming mode
 const args = process.argv.slice(2);
@@ -17,6 +18,18 @@ const config = {
         responseModel: "gpt-4o-mini",
         querySystemPromptTemplate: "Generate a search query for cooking questions.",
         queryModel: "gpt-4o-mini"
+    },
+    // LangSmith configuration for monitoring and debugging
+    project_name: "chef-chopsky",
+    run_name: "chef-chopsky-test",
+    run_id: uuidv4(),
+    tags: ["test", "csa", "meal-planning", "chef-chopsky"],
+    metadata: {
+        testType: "integration",
+        ingredients: ["kale", "tomatoes", "quinoa"],
+        userType: "csa-subscriber",
+        timestamp: new Date().toISOString(),
+        streamMode: stream ? "messages-tuple" : "values"
     }
 };
 
@@ -25,6 +38,14 @@ const input = {
         { "role": "user", "content": "I have kale, tomatoes, and quinoa from my CSA. What should I cook for dinner?"}
     ]
 };
+
+// Log LangSmith run information
+console.log("🔍 LangSmith Integration:");
+console.log(`   Run Name: ${config.run_name}`);
+console.log(`   Run ID: ${config.run_id}`);
+console.log(`   Tags: ${config.tags.join(", ")}`);
+console.log(`   Stream Mode: ${config.metadata.streamMode}`);
+console.log("");
 
 const streamResponse = client.runs.stream(
     null, // Threadless run
