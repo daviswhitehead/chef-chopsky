@@ -1,18 +1,25 @@
 export default {
-  preset: "ts-jest/presets/default-esm",
-  moduleNameMapper: {
-    "^(\\.{1,2}/.*)\\.js$": "$1",
-  },
+  preset: 'ts-jest/presets/default-esm',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/src'],
+  testMatch: ['**/__tests__/**/*.test.ts'],
   transform: {
-    "^.+\\.tsx?$": [
-      "ts-jest",
-      {
-        useESM: true,
-      },
-    ],
+    '^.+\\.ts$': ['ts-jest', {
+      useESM: true
+    }],
   },
-  extensionsToTreatAsEsm: [".ts"],
-  setupFiles: ["dotenv/config"],
-  passWithNoTests: true,
-  testTimeout: 20_000,
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
+  extensionsToTreatAsEsm: ['.ts'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/__tests__/**',
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  testTimeout: 60000, // 60 seconds for all tests
+  verbose: true,
 };
