@@ -96,6 +96,9 @@ const builder = new StateGraph(
   .addEdge("generateQuery", "retrieve")
   .addEdge("retrieve", "respond");
 
+// LangSmith configuration is handled automatically by dotenv.config() in our config system
+// The environment variables are already set in process.env when this module loads
+
 // Finally, we compile it!
 // This compiles it into a graph you can invoke and deploy.
 export const graph = builder.compile({

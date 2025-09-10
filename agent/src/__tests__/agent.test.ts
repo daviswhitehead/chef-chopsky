@@ -13,11 +13,6 @@ describe('Chef Chopsky LangGraph Agent', () => {
   let client: Client;
 
   beforeAll(async () => {
-    // Check for required environment variables
-    if (!process.env.OPENAI_API_KEY) {
-      console.warn('⚠️ OPENAI_API_KEY not set. Tests may fail if the agent requires OpenAI API calls.');
-    }
-    
     // Initialize the LangGraph client
     client = new Client({ apiUrl: TEST_CONFIG.apiUrl });
     
