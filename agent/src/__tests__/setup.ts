@@ -1,5 +1,6 @@
 // Test setup file
 import { beforeAll, afterAll } from '@jest/globals';
+import { config } from '../config/index.js';
 
 // Global test setup
 beforeAll(async () => {
@@ -7,13 +8,12 @@ beforeAll(async () => {
   console.log('📋 Make sure LangGraph dev server is running on port 2024');
   console.log('🔍 Make sure LangSmith environment variables are set');
   
-  // Check environment variables
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn('⚠️ OPENAI_API_KEY not set. Tests may fail if the agent requires OpenAI API calls.');
-  }
-  if (!process.env.LANGSMITH_API_KEY) {
-    console.log('ℹ️ LANGSMITH_API_KEY not set. LangSmith tracing will be disabled.');
-  }
+  // Check configuration using our centralized config
+  console.log('📋 Configuration Status:');
+  console.log(`   - OpenAI API Key: ${config.openaiApiKey ? '✅ Set' : '❌ Missing'}`);
+  console.log(`   - LangSmith API Key: ${config.langsmithApiKey ? '✅ Set' : 'ℹ️ Not set (tracing disabled)'}`);
+  console.log(`   - LangSmith Tracing: ${config.langsmithTracing ? '✅ Enabled' : 'ℹ️ Disabled'}`);
+  console.log(`   - LangSmith Project: ${config.langsmithProject}`);
 });
 
 afterAll(async () => {

@@ -51,3 +51,4 @@ alwaysApply: true
 - Never display the contents of an .env files in a chat correspondence (except for .env.example).
 - Make sure I understand what you're doing before you go off and write code.
 - Always use npm or npx instead of yarn.
+- When installing packages, use the latest, greatest, but well-supported versions. Make sure they're compatible with existing packages.

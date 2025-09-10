@@ -35,6 +35,28 @@ jobs:
       working-directory: ./agent
       run: yarn build
       
+    - name: Setup Environment Configuration
+      working-directory: ./agent
+      run: |
+        # Create minimal .env file for LangGraph CLI compatibility
+        echo "# CI Environment Configuration" > .env
+        echo "NODE_ENV=test" >> .env
+        echo "LOG_LEVEL=info" >> .env
+        echo "LANGSMITH_TRACING=false" >> .env
+        echo "LANGSMITH_PROJECT=chef-chopsky-ci" >> .env
+        echo "LANGGRAPH_PORT=2024" >> .env
+        echo "LANGGRAPH_HOST=localhost" >> .env
+        
+        echo "✅ Environment configuration created"
+        echo "📋 Configuration:"
+        echo "   - NODE_ENV: test"
+        echo "   - LOG_LEVEL: info"
+        echo "   - LANGSMITH_TRACING: false"
+        echo "   - LANGSMITH_PROJECT: chef-chopsky-ci"
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+        
     - name: Start LangGraph dev server
       working-directory: ./agent
       run: |
