@@ -2,12 +2,12 @@ name: Test Chef Chopsky Agent
 
 on:
   push:
-    branches: [ '*' ]
+    branches: [ 'main', 'master' ]
     paths:
       - 'agent/**'
       - '.github/workflows/test-agent.yml'
   pull_request:
-    branches: [ '*' ]
+    branches: [ 'main', 'master' ]
     paths:
       - 'agent/**'
       - '.github/workflows/test-agent.yml'
