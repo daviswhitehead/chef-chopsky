@@ -38,15 +38,49 @@ jobs:
     - name: Start LangGraph dev server
       working-directory: ./agent
       run: |
-        npx @langchain/langgraph-cli dev &
-        sleep 10
+        echo "Starting LangGraph dev server..."
+        npx @langchain/langgraph-cli dev > server.log 2>&1 &
+        SERVER_PID=$!
+        echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+        
+        # Wait longer for server to start
+        echo "Waiting for server to start..."
+        sleep 15
+        
+        # Check if server is running
+        if ps -p $SERVER_PID > /dev/null; then
+          echo "Server process is running (PID: $SERVER_PID)"
+        else
+          echo "Server process failed to start"
+          cat server.log
+          exit 1
+        fi
       env:
         LANGSMITH_TRACING: "false"  # Disable LangSmith in CI
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         
     - name: Wait for server to be ready
       run: |
-        timeout 30 bash -c 'until curl -f http://localhost:2024/health 2>/dev/null; do sleep 1; done' || echo "Server health check failed, but continuing..."
+        echo "Checking server health..."
+        # Try multiple endpoints since health endpoint might not exist
+        for i in {1..30}; do
+          if curl -f http://localhost:2024/assistants 2>/dev/null || curl -f http://localhost:2024/ 2>/dev/null; then
+            echo "Server is ready!"
+            break
+          fi
+          echo "Attempt $i: Server not ready yet..."
+          sleep 2
+        done
+        
+        # Final check
+        if curl -f http://localhost:2024/assistants 2>/dev/null || curl -f http://localhost:2024/ 2>/dev/null; then
+          echo "✅ Server is responding"
+        else
+          echo "❌ Server health check failed"
+          echo "Server log:"
+          cat agent/server.log
+          exit 1
+        fi
         
     - name: Run agent tests
       working-directory: ./agent
@@ -54,6 +88,14 @@ jobs:
       env:
         LANGSMITH_TRACING: "false"  # Disable LangSmith in CI
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        
+    - name: Stop LangGraph server
+      if: always()
+      run: |
+        if [ ! -z "$SERVER_PID" ]; then
+          echo "Stopping LangGraph server (PID: $SERVER_PID)"
+          kill $SERVER_PID || true
+        fi
         
     - name: Upload test results
       uses: actions/upload-artifact@v4
