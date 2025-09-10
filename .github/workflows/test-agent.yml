@@ -1,0 +1,150 @@
+name: Test Chef Chopsky Agent
+
+on:
+  push:
+    branches: [ '*' ]
+    paths:
+      - 'agent/**'
+      - '.github/workflows/test-agent.yml'
+  pull_request:
+    branches: [ '*' ]
+    paths:
+      - 'agent/**'
+      - '.github/workflows/test-agent.yml'
+
+jobs:
+  test-agent:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+        cache-dependency-path: 'agent/yarn.lock'
+        
+    - name: Install dependencies
+      working-directory: ./agent
+      run: yarn install --frozen-lockfile
+      
+    - name: Build TypeScript
+      working-directory: ./agent
+      run: yarn build
+      
+    - name: Setup Environment Configuration
+      working-directory: ./agent
+      run: |
+        # Create minimal .env file for LangGraph CLI compatibility
+        echo "# CI Environment Configuration" > .env
+        echo "NODE_ENV=test" >> .env
+        echo "LOG_LEVEL=info" >> .env
+        echo "LANGSMITH_TRACING=false" >> .env
+        echo "LANGSMITH_PROJECT=chef-chopsky-ci" >> .env
+        echo "LANGGRAPH_PORT=2024" >> .env
+        echo "LANGGRAPH_HOST=localhost" >> .env
+        
+        echo "✅ Environment configuration created"
+        echo "📋 Configuration:"
+        echo "   - NODE_ENV: test"
+        echo "   - LOG_LEVEL: info"
+        echo "   - LANGSMITH_TRACING: false"
+        echo "   - LANGSMITH_PROJECT: chef-chopsky-ci"
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+        
+    - name: Start LangGraph dev server
+      working-directory: ./agent
+      run: |
+        echo "Starting LangGraph dev server..."
+        npx @langchain/langgraph-cli dev > server.log 2>&1 &
+        SERVER_PID=$!
+        echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+        
+        # Wait longer for server to start
+        echo "Waiting for server to start..."
+        sleep 15
+        
+        # Check if server is running
+        if ps -p $SERVER_PID > /dev/null; then
+          echo "Server process is running (PID: $SERVER_PID)"
+        else
+          echo "Server process failed to start"
+          cat server.log
+          exit 1
+        fi
+      env:
+        LANGSMITH_TRACING: "false"  # Disable LangSmith in CI
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        
+    - name: Wait for server to be ready
+      run: |
+        echo "Checking server health..."
+        # Check if server process is still running and try to connect
+        for i in {1..30}; do
+          if ps -p $SERVER_PID > /dev/null; then
+            # Try to connect to the server port using timeout
+            if timeout 5 bash -c "</dev/tcp/localhost/2024" 2>/dev/null; then
+              echo "✅ Server is ready and accepting connections!"
+              break
+            fi
+          else
+            echo "❌ Server process died"
+            cat agent/server.log
+            exit 1
+          fi
+          echo "Attempt $i: Server not ready yet..."
+          sleep 2
+        done
+        
+        # Final check - just verify the port is open
+        if timeout 5 bash -c "</dev/tcp/localhost/2024" 2>/dev/null; then
+          echo "✅ Server port is open and ready"
+        else
+          echo "❌ Server health check failed - port not accessible"
+          echo "Server log:"
+          cat agent/server.log
+          exit 1
+        fi
+        
+    - name: Run agent tests
+      working-directory: ./agent
+      run: yarn test:ci
+      env:
+        LANGSMITH_TRACING: "false"  # Disable LangSmith in CI
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        
+    - name: Stop LangGraph server
+      if: always()
+      run: |
+        if [ ! -z "$SERVER_PID" ]; then
+          echo "Stopping LangGraph server (PID: $SERVER_PID)"
+          kill $SERVER_PID || true
+        fi
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: agent/coverage/
+        
+    - name: Comment PR with test results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Check if test results exist
+          const coveragePath = 'agent/coverage/lcov-report/index.html';
+          if (fs.existsSync(coveragePath)) {
+            console.log('✅ Agent tests passed with coverage report');
+          } else {
+            console.log('⚠️ Agent tests completed but no coverage report found');
+          }
