@@ -1,0 +1,28 @@
+---
+description: "Pull request (PR) preparation guidelines for code quality and maintainability"
+alwaysApply: false
+---
+# 🚀 Pull Request Preparation Mode
+
+When preparing a branch for pull request, focus on these three core areas:
+
+## 🧪 Testing
+- Write tests for all new features and functionality
+- Cover happy paths, edge cases, and error scenarios
+- Ensure tests run successfully and provide meaningful coverage
+- Include cross-platform compatibility tests (RN + RNW)
+
+## 🧹 Cleanup
+- Remove unused files, imports, and dependencies
+- Clean up console.logs, debug code, and temporary comments
+- Audit package.json files for unnecessary packages
+- Ensure consistent code formatting (Prettier + ESLint)
+
+## 📖 Code Quality
+- Simplify complex logic without changing functionality
+- Add meaningful comments for non-obvious business logic
+- Ensure consistent naming conventions and clear variable/function names
+- Verify proper error handling and TypeScript types
+
+## 🎯 Goal
+Prioritize code quality and maintainability over speed. Create production-ready, scalable code that's easy to understand and extend.
