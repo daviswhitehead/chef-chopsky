@@ -12,7 +12,11 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "dev": "npx @langchain/langgraph-cli dev",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=\\.test\\.ts$ --testPathIgnorePatterns=\\.int\\.test\\.ts$",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --ci --coverage --watchAll=false",
+    "test:agent": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/__tests__/agent.test.ts",
     "test:int": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=\\.int\\.test\\.ts$",
     "lint": "eslint src",
     "format": "prettier --write ."

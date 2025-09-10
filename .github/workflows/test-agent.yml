@@ -1,0 +1,79 @@
+name: Test Chef Chopsky Agent
+
+on:
+  push:
+    branches: [ '*' ]
+    paths:
+      - 'agent/**'
+      - '.github/workflows/test-agent.yml'
+  pull_request:
+    branches: [ '*' ]
+    paths:
+      - 'agent/**'
+      - '.github/workflows/test-agent.yml'
+
+jobs:
+  test-agent:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+        cache-dependency-path: 'agent/yarn.lock'
+        
+    - name: Install dependencies
+      working-directory: ./agent
+      run: yarn install --frozen-lockfile
+      
+    - name: Build TypeScript
+      working-directory: ./agent
+      run: yarn build
+      
+    - name: Start LangGraph dev server
+      working-directory: ./agent
+      run: |
+        npx @langchain/langgraph-cli dev &
+        sleep 10
+      env:
+        LANGSMITH_TRACING: "false"  # Disable LangSmith in CI
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        
+    - name: Wait for server to be ready
+      run: |
+        timeout 30 bash -c 'until curl -f http://localhost:2024/health 2>/dev/null; do sleep 1; done' || echo "Server health check failed, but continuing..."
+        
+    - name: Run agent tests
+      working-directory: ./agent
+      run: yarn test:ci
+      env:
+        LANGSMITH_TRACING: "false"  # Disable LangSmith in CI
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: agent/coverage/
+        
+    - name: Comment PR with test results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Check if test results exist
+          const coveragePath = 'agent/coverage/lcov-report/index.html';
+          if (fs.existsSync(coveragePath)) {
+            console.log('✅ Agent tests passed with coverage report');
+          } else {
+            console.log('⚠️ Agent tests completed but no coverage report found');
+          }
