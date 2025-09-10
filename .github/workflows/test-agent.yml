@@ -84,21 +84,28 @@ jobs:
     - name: Wait for server to be ready
       run: |
         echo "Checking server health..."
-        # Try multiple endpoints since health endpoint might not exist
+        # Check if server process is still running and try to connect
         for i in {1..30}; do
-          if curl -f http://localhost:2024/assistants 2>/dev/null || curl -f http://localhost:2024/ 2>/dev/null; then
-            echo "Server is ready!"
-            break
+          if ps -p $SERVER_PID > /dev/null; then
+            # Try to connect to the server port using timeout
+            if timeout 5 bash -c "</dev/tcp/localhost/2024" 2>/dev/null; then
+              echo "✅ Server is ready and accepting connections!"
+              break
+            fi
+          else
+            echo "❌ Server process died"
+            cat agent/server.log
+            exit 1
           fi
           echo "Attempt $i: Server not ready yet..."
           sleep 2
         done
         
-        # Final check
-        if curl -f http://localhost:2024/assistants 2>/dev/null || curl -f http://localhost:2024/ 2>/dev/null; then
-          echo "✅ Server is responding"
+        # Final check - just verify the port is open
+        if timeout 5 bash -c "</dev/tcp/localhost/2024" 2>/dev/null; then
+          echo "✅ Server port is open and ready"
         else
-          echo "❌ Server health check failed"
+          echo "❌ Server health check failed - port not accessible"
           echo "Server log:"
           cat agent/server.log
           exit 1
