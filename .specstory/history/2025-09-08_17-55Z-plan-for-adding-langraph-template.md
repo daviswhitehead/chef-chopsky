@@ -13170,7 +13170,145 @@ The issue was that **LangGraph CLI doesn't provide standard HTTP endpoints** lik
 - ✅ **Port connectivity** is what matters for our tests
 - ✅ **No dependency on specific HTTP endpoints** that might not exist
 - ✅ **Uses built-in bash features** (no external tools needed)
-- ✅ **More reliable** than trying to guess the right endp
+- ✅ **More reliable** than trying to guess the right endpoint
+
+### **The Root Problem:**
+
+LangGraph CLI is designed for **development and testing**, not production HTTP APIs. It doesn't follow REST conventions, so trying to health-check it like a normal web service was the wrong approach.
+
+## 🚀 **Expected Result:**
+
+The next GitHub Actions run should:
+1. ✅ Start the LangGraph server successfully
+2. ✅ Detect that port 2024 is open and accepting connections
+3. ✅ Proceed to run the tests
+4. ✅ Complete successfully
+
+This fix addresses the core issue: **we were checking the wrong thing**. Instead of checking HTTP endpoints, we now check if the server is actually listening on the port, which is what our tests need.
+
+---
+
+_**User (2025-09-10 01:59Z)**_
+
+awesome! looks like the tests are passing, but running twice when i push up to the branch (a PR request is open) how would you recommend we update these lines to run these tests an appropriate amount?
+
+---
+
+_**Assistant**_
+
+Great observation! The tests are running twice because the workflow is triggered on both `push` and `pull_request` events, and when you push to a branch that has an open PR, both triggers fire.
+
+Looking at the current configuration:
+
+```yaml
+on:
+  push:
+    branches: [ '*' ]
+    paths:
+      - 'agent/**'
+      - '.github/workflows/test-agent.yml'
+  pull_request:
+    branches: [ '*' ]
+    paths:
+      - 'agent/**'
+      - '.github/workflows/test-agent.yml'
+```
+
+## 🎯 **Recommended Solution: PR-Only Approach**
+
+For most projects, I'd recommend running tests **only on pull requests** and **pushes to main**. This is the most common and efficient pattern:
+
+
+---
+
+<details><summary>Edit file: /Users/daviswhitehead/Documents/github/chef-chopsky/.github/workflows/test-agent.yml</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 2, lines removed: 2
+
+```diff
+@@ -3,10 +3,10 @@
+  on:
+    push:
+-     branches: [ '*' ]
++     branches: [ 'main', 'master' ]
+      paths:
+        - 'agent/**'
+        - '.github/workflows/test-agent.yml'
+    pull_request:
+-     branches: [ '*' ]
++     branches: [ 'main', 'master' ]
+      paths:
+        - 'agent/**'
+```
+
+</details>
+
+---
+
+## �� **What This Change Does:**
+
+### **Before (Running Twice):**
+- ✅ Push to feature branch → **Runs tests**
+- ✅ Open PR from feature branch → **Runs tests again** 
+- ❌ **Total: 2 test runs for same code**
+
+### **After (Efficient):**
+- ❌ Push to feature branch → **No tests** (saves resources)
+- ✅ Open PR from feature branch → **Runs tests**
+- ✅ Push to main/master → **Runs tests** (important for production)
+- ✅ **Total: 1 test run per PR + tests on main**
+
+## 🚀 **Benefits:**
+
+1. **⚡ Faster Development**: No tests on every push to feature branches
+2. **💰 Cost Efficient**: Fewer GitHub Actions minutes used
+3. **🎯 Focused Testing**: Tests run when code is ready for review
+4. **🛡️ Production Safety**: Still tests on main/master pushes
+
+## 🤔 **Alternative Options:**
+
+If you prefer different behavior, here are other common patterns:
+
+### **Option 1: PR-Only (Most Conservative)**
+```yaml
+on:
+  pull_request:
+    branches: [ 'main', 'master' ]
+    paths:
+      - 'agent/**'
+      - '.github/workflows/test-agent.yml'
+```
+
+### **Option 2: Feature Branch + PR (Current Fix)**
+```yaml
+on:
+  push:
+    branches: [ 'main', 'master' ]
+  pull_request:
+    branches: [ 'main', 'master' ]
+```
+
+### **Option 3: All Branches but Skip Duplicates**
+```yaml
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ '*' ]
+```
+
+## 🎯 **My Recommendation:**
+
+The change I made (**Option 2**) is the sweet spot because:
+- ✅ **Tests run on PRs** (when you want feedback)
+- ✅ **Tests run on main** (when code is merged)
+- ❌ **No duplicate runs** (efficient resource usage)
+- ✅ **Industry standard** (most teams use this pattern)
+
+This will eliminate the duplicate test runs while ensuring you still get comprehensive testing coverage! 🎉
 
 ---
 
