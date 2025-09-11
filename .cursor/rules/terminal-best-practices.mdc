@@ -1,0 +1,71 @@
+# Terminal Best Practices
+
+## 🚨 Critical: Never Block Terminal with Long-Running Processes
+
+### ❌ NEVER DO THIS
+- Run servers, watchers, or long-running processes in the foreground without a timeout
+- Use commands that wait indefinitely (like `node server.js` without backgrounding)
+- Block the terminal with interactive processes
+
+### ✅ ALWAYS DO THIS
+- Use `&` to background long-running processes: `command &`
+- Use `is_background: true` for tool calls that start servers
+- Add timeouts or use `timeout` command when testing: `timeout 5s command || echo "Done"`
+- Use `Ctrl+C` simulation or process management for cleanup
+- Test endpoints with separate curl commands after backgrounding
+
+### 🔧 Process Management Patterns
+
+**Starting Servers:**
+```bash
+# ✅ Good - background the process
+npm run server &
+
+# ✅ Good - with timeout for testing
+timeout 10s npm run server || echo "Server test completed"
+
+# ✅ Good - check if running
+ps aux | grep "process-name" | grep -v grep
+```
+
+**Testing Endpoints:**
+```bash
+# ✅ Good - test after backgrounding
+command &
+sleep 2
+curl -s http://localhost:3000/health
+```
+
+**Cleanup:**
+```bash
+# ✅ Good - kill background processes
+kill %1 2>/dev/null || echo "Process already stopped"
+pkill -f "process-name" 2>/dev/null || echo "No processes to kill"
+```
+
+### 🎯 When to Use Each Approach
+
+- **Background (`&`)**: When you need the process to keep running
+- **Timeout**: When testing if something starts correctly
+- **Foreground**: Only for quick, non-blocking commands
+- **is_background: true**: For tool calls that start long-running processes
+
+### 🚨 Red Flags
+- Terminal hanging without response
+- Commands that don't return to prompt
+- Interactive processes without escape mechanism
+- Long-running processes in foreground
+
+### 💡 Quick Recovery
+If terminal gets blocked:
+1. Use `Ctrl+C` to interrupt
+2. Check for background processes: `ps aux | grep node`
+3. Kill hanging processes: `pkill -f "process-name"`
+4. Use `jobs` to see background jobs
+5. Use `kill %1` to kill job 1, etc.
+
+## 🎯 Success Criteria
+- Terminal always returns to prompt
+- Long-running processes are properly managed
+- Tests complete without hanging
+- Cleanup happens automatically
