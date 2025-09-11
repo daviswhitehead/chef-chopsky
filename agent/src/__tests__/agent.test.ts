@@ -41,7 +41,7 @@ describe('Chef Chopsky LangGraph Agent', () => {
         runName: 'test-csa-cooking-questions'
       };
 
-      let temp_id = uuidv4();
+      const temp_id = uuidv4();
       console.log('id', temp_id);
 
       const runConfig = {

@@ -1,3 +1,4 @@
+// retrieval_graph: chat runtime that turns messages → queries → retrieves docs → responds
 import { RunnableConfig } from "@langchain/core/runnables";
 import { StateGraph } from "@langchain/langgraph";
 import {
