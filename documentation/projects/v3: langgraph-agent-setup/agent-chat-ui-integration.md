@@ -84,4 +84,15 @@ git commit -m "docs: add Agent Chat UI integration checklist"
 - The UI can be configured entirely via `.env` to skip the setup form. See repo README for production proxy/auth options.
 - For production, prefer the API passthrough approach described in the UI README and inject `LANGSMITH_API_KEY` server-side.
 
+### Hosted UI caveats (important)
+- The hosted Agent Chat UI does not forward `configurable` fields; your graph defaults are used. We default to:
+  - `retrieverProvider="memory"`
+  - `responseModel=queryModel="openai/gpt-4o-mini"`
+- If you want Elasticsearch/Mongo/Pinecone, run them and explicitly set `retrieverProvider` in a custom UI or via an API proxy.
+
+### Testing & CI tips
+- Drain streams in tests (do not `break` early) to avoid open TCP handles.
+- CI requires `OPENAI_API_KEY` and starts LangGraph on port 2024; see `.github/workflows/test-agent.yml`.
+- To silence Node’s ESM warnings locally, our `npm test` adds `--no-warnings`.
+
 
