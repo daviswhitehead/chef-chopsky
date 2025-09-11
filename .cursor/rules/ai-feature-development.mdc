@@ -28,7 +28,7 @@ alwaysApply: false
 
 ### 3) DELIVERY (Build the Vertical Slice → Iterate)
 - **Skeleton first, then fill in**: ship a runnable end-to-end path early.
-  - Prefer in-memory/mocked providers first; swap to prod providers behind config flags.
+  - Prefer in-memory/mocked providers first; gate external providers (DBs/vector stores/LLMs) behind a `provider`/`driver` config with safe defaults for local dev.
 - **Configuration & Secrets**:
   - Keep `.env.example` current.
   - Centralize config (e.g., `agent/src/config/index.ts`), validate required keys.
@@ -36,12 +36,14 @@ alwaysApply: false
 - **Observability by default** (if LLMs):
   - LangSmith: set `project_name`, dynamic `run_name`, `tags`, `metadata` per run/test.
   - Minimal structured logs for key decisions/errors.
+  - If streaming APIs are used, ensure callers drain streams or explicitly cancel (AbortSignal/`.return()`); do not break iterators early in tests.
 - **Frontend integration (if applicable)**:
   - Reuse patterns/components; RN/RNW + NativeWind + gluestack UI; a11y.
   - Hide incomplete features behind flags/guards.
 - **Retrieval/Data (if applicable)**:
-  - Start with memory; gate Pinecone/Elasticsearch/Supabase via `provider` config.
-  - Provide indexer path if retrieval is required.
+  - Start with in-memory implementations by default for local dev and tests.
+  - Expose a single `provider`/`driver` switch with env-based configuration for production stores.
+  - Provide an ingestion (indexer) path if retrieval is required.
 - **Deployment**:
   - Favor low-friction deploys first; document required env.
   - Provide a simple health probe and rollback plan.
@@ -50,9 +52,11 @@ alwaysApply: false
 - **Tests (must-have)**:
   - Jest tests per story: happy path, error handling, timing sanity bound.
   - Fast by default; prefer in-memory/mocks.
+  - For streaming clients, drain async iterators (or call `.return()`/abort signals) to avoid open-handle leaks in CI.
 - **CI rules**:
   - Run tests on PRs to `main` and on pushes to `main`.
-  - Start local servers in background; use port-open checks if no health endpoint.
+  - Start local services in background with health or port checks.
+  - Require only the minimal secrets needed for the default provider (e.g., a single LLM key); external providers optional.
   - Output only terminal logs.
 - **LangSmith/Telemetry**:
   - Confirm traces show dynamic run names, tags, and metadata.
