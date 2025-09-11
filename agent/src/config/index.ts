@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -27,6 +27,10 @@ export const config = {
   // LangGraph specific settings
   langgraphPort: parseInt(process.env.LANGGRAPH_PORT || '2024'),
   langgraphHost: process.env.LANGGRAPH_HOST || 'localhost',
+  
+  // Express server settings
+  serverPort: parseInt(process.env.PORT || '3001'),
+  serverHost: process.env.HOST || 'localhost',
 };
 
 // Validate required configuration

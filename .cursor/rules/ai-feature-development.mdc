@@ -65,6 +65,12 @@ alwaysApply: false
   - Merge when CI green and acceptance criteria met.
   - Announce change and update docs.
 
+### 5) CONTINUOUS IMPROVEMENT
+- **Cursor Rules**:
+  - Reflect on feature development and update cursor rules in ways that generalize to and streamline future feature development
+- **Documentation**:
+  - Reflect on feature development and update general or feature-specific docs with the most accurate and up-to-date information
+
 ### Templates & Checklists
 - **Templates** (recommended): scaffold for feature/agent with code + test + docs.
 - **PR checklist**:
