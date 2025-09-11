@@ -11,12 +11,14 @@ When preparing a branch for pull request, focus on these three core areas:
 - Cover happy paths, edge cases, and error scenarios
 - Ensure tests run successfully and provide meaningful coverage
 - Include cross-platform compatibility tests (RN + RNW)
+ - Prefer in-memory/mocked providers by default; production providers gated behind config
 
 ## 🧹 Cleanup
 - Remove unused files, imports, and dependencies
 - Clean up console.logs, debug code, and temporary comments
 - Audit package.json files for unnecessary packages
 - Ensure consistent code formatting (Prettier + ESLint)
+ - For streaming clients, ensure tests drain streams or cancel them; no open-handle warnings in CI
 
 ## 📖 Code Quality
 - Simplify complex logic without changing functionality
