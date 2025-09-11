@@ -1682,11 +1682,36 @@ cd /Users/daviswhitehead/Documents/github/chef-chopsky && git add -A && git comm
 
 ---
 
+```bash
+cd /Users/daviswhitehead/Documents/github/chef-chopsky && git push | cat
+```
 
+```
+Enumerating objects: 25, done.
+Counting objects: 100% (25/25), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (12/12), done.
+Writing objects: 100% (13/13), 5.07 KiB | 649.00 KiB/s, done.
+Total 13 (delta 8), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (8/8), completed with 8 local objects.
+remote: 
+remote: Create a pull request for 'feat/agentchat-ui-integration' on GitHub by visiting:
+remote:      https://github.com/daviswhitehead/chef-chopsky/pull/new/feat/agentchat-ui-integration
+remote: 
+To https://github.com/daviswhitehead/chef-chopsky.git
+ * [new branch]      feat/agentchat-ui-integration -> feat/agentchat-ui-integration
+```
 
 ---
 
+- Committed and pushed generalized rule updates and the doc tweak. Please review on the branch `feat/agentchat-ui-integration`.
 
+Key changes:
+- `.cursor/rules/ai-feature-development.mdc`: in-memory defaults for local dev; provider/driver gating; stream draining or explicit cancellation; CI keeps minimal required secrets and uses health/port checks.
+- `.cursor/rules/pull-request-preparation.mdc`: PRs should use in-memory providers by default and ensure streams are drained/cancelled; no open-handle warnings.
+- `agent-chat-ui-integration.md`: hosted UI caveats, stream-draining testing note, explicit CI tips.
+
+All tasks complete and pushed.
 
 ---
 
