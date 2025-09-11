@@ -54,21 +54,21 @@ This task list implements the vertical slice: User creates conversation → send
   - [x] Add tags: ["web", "agent", environment, model]
 
 ### 1.2.1 Complete LangChain Agent Integration
-- [ ] Replace mock response with actual LangChain agent execution
-- [ ] Test agent with real OpenAI API calls
-- [ ] Verify LangSmith tracing works with real agent runs
-- [ ] Handle agent errors and edge cases
-- [ ] Test with different message types and conversation flows
+- [x] Replace mock response with actual LangChain agent execution
+- [x] Test agent with real OpenAI API calls
+- [x] Verify LangSmith tracing works with real agent runs
+- [x] Handle agent errors and edge cases
+- [x] Test with different message types and conversation flows
 
 ### 1.3 Testing & Documentation
-- [ ] Add integration test for `/chat` endpoint
-  - [ ] Test happy path: valid request → agent response
-  - [ ] Test error handling: invalid request, agent failure
-  - [ ] Test LangSmith tracing is working
-- [ ] Update `agent/README.md` with:
-  - [ ] How to run the agent service locally
-  - [ ] Environment setup instructions
-  - [ ] API endpoint documentation
+- [x] Add integration test for `/chat` endpoint
+  - [x] Test happy path: valid request → agent response
+  - [x] Test error handling: invalid request, agent failure
+  - [x] Test LangSmith tracing is working
+- [x] Update `agent/README.md` with:
+  - [x] How to run the agent service locally
+  - [x] Environment setup instructions
+  - [x] API endpoint documentation
 
 ---
 

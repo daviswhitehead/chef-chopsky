@@ -17,7 +17,9 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL || 'http://localhost:3000'
+    : '*', // Allow all origins in development for testing
   credentials: true
 }));
 
@@ -49,10 +51,10 @@ app.post('/chat', async (req, res) => {
     // Validate request
     const { conversation_id, messages, client_metadata } = req.body;
     
-    if (!conversation_id || !messages || !Array.isArray(messages)) {
+    if (!conversation_id || !messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({
         error: 'Invalid request',
-        message: 'conversation_id and messages array are required'
+        message: 'conversation_id and non-empty messages array are required'
       });
     }
 
