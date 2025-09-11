@@ -1,0 +1,77 @@
+---
+description: "Generalized AI-first feature development process for shipping new features consistently (agnostic to domain)."
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+## 🧭 AI Feature Development: End-to-End Workflow (Plan → Tasks → Delivery → Validation)
+
+- **Purpose**: A zoomed-out, repeatable workflow that organizes AI-assisted development from idea to shipped feature, while preserving concrete best practices.
+- **Applies to**: Any feature (UI, agent/graph, retrieval, API, infra), across web/mobile/backends.
+
+### 1) PLAN (Research → Feature Plan)
+- **Discovery**: Use AI chat to explore problem/market, constraints, risks. Save key notes in `documentation/projects/<vN: feature-name>/`.
+- **Feature plan (must-have)**:
+  - Problem statement and user value
+  - Primary user story + 3–5 acceptance criteria
+  - Constraints (performance, platform, data, a11y, privacy)
+  - Telemetry plan (LangSmith, analytics, logs)
+  - Out-of-scope/not-now
+- **Review**: sanity-check with AI; clarify unknowns; confirm the vertical slice to ship first.
+
+### 2) TASKS (Project Breakdown → Story-Organized Todo List)
+- **Branch**: `feat/<short-name>`; use conventional commits.
+- **Work plan (must-have)**: Story-oriented task list with subtasks mapping to acceptance criteria.
+  - Mark dependencies, mocks vs real integrations, and risks.
+- **Scaffolding**: Prefer templates and stubs to get to runnable fast.
+
+### 3) DELIVERY (Build the Vertical Slice → Iterate)
+- **Skeleton first, then fill in**: ship a runnable end-to-end path early.
+  - Prefer in-memory/mocked providers first; swap to prod providers behind config flags.
+- **Configuration & Secrets**:
+  - Keep `.env.example` current.
+  - Centralize config (e.g., `agent/src/config/index.ts`), validate required keys.
+  - Never leak secrets; use repository secrets in CI.
+- **Observability by default** (if LLMs):
+  - LangSmith: set `project_name`, dynamic `run_name`, `tags`, `metadata` per run/test.
+  - Minimal structured logs for key decisions/errors.
+- **Frontend integration (if applicable)**:
+  - Reuse patterns/components; RN/RNW + NativeWind + gluestack UI; a11y.
+  - Hide incomplete features behind flags/guards.
+- **Retrieval/Data (if applicable)**:
+  - Start with memory; gate Pinecone/Elasticsearch/Supabase via `provider` config.
+  - Provide indexer path if retrieval is required.
+- **Deployment**:
+  - Favor low-friction deploys first; document required env.
+  - Provide a simple health probe and rollback plan.
+
+### 4) VALIDATION (Test → CI → Ship → Measure)
+- **Tests (must-have)**:
+  - Jest tests per story: happy path, error handling, timing sanity bound.
+  - Fast by default; prefer in-memory/mocks.
+- **CI rules**:
+  - Run tests on PRs to `main` and on pushes to `main`.
+  - Start local servers in background; use port-open checks if no health endpoint.
+  - Output only terminal logs.
+- **LangSmith/Telemetry**:
+  - Confirm traces show dynamic run names, tags, and metadata.
+  - Capture minimal KPIs defined in the plan.
+- **Release**:
+  - Merge when CI green and acceptance criteria met.
+  - Announce change and update docs.
+
+### Templates & Checklists
+- **Templates** (recommended): scaffold for feature/agent with code + test + docs.
+- **PR checklist**:
+  - Feature plan and `.env.example` updated
+  - Tests added and passing locally
+  - CI green
+  - LangSmith traces correct (if LLMs)
+  - Frontend guarded if partial
+
+### Definition of Done
+- End-to-end demoable; acceptance criteria met.
+- Tests pass locally and in CI.
+- Env documented; secrets configured.
+- Telemetry visible; rollback noted.

@@ -13312,3 +13312,553 @@ This will eliminate the duplicate test runs while ensuring you still get compreh
 
 ---
 
+_**User (2025-09-11 13:13Z)**_
+
+Throughout this conversation, we implemented a new feature: a basic AI agent powered by langchain, langgraph, and langsmith.
+
+I'd like to systemize the work we did in this conversation and in the feature branch (New-LangGraph-Project) into an AI feature development process that makes it easy to reproduce creating new features in the future.
+
+Can you put together a draft of what that would look like?
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>**Considering feature kit steps**
+
+I think we should have a "Feature kit" with template code references, but I won’t write any files at this moment. I’ll outline the steps for creating a new agent feature: branch out, scaffold the langgraph project under agent/{feature}, update the langgraph.json graphs, add tests, and update workflow and documentation. Also, since status_update_spec requires updates when using tools, and we aren’t using tools, I’ll skip that. I’ll include a summary at the end with brief bullet points. Let’s get this answered!</details></think>
+
+---
+
+### AI Feature Development Process (Draft)
+
+A lightweight, repeatable playbook to add new AI features (agents/graphs) using LangChain + LangGraph + LangSmith, integrated with our Next.js frontend and CI/CD.
+
+### 1) Plan and Scope
+- Define the user story and acceptance criteria.
+- Decide data needs: retrieval (memory vs Pinecone/Elasticsearch), chat history, personalization via Supabase.
+- Pick streaming mode: “values” for state chunks vs “messages-tuple” for token-level UX.
+- Decide observability depth: LangSmith only, or also add custom tags/metadata for evaluation.
+
+### 2) Branching + Naming
+- Create a feature branch: `feat/agent-{short-name}`.
+- Use conventional commits throughout.
+
+### 3) Scaffold the Agent
+- Location: `agent/src/{feature_name}/`
+  - `graph.ts`: StateGraph pipeline and compile.
+  - `configuration.ts`: `Annotation`s for configurable runtime options (models, retrieverProvider, prompts).
+  - `retrieval.ts`: Pluggable retriever factory (memory by default; prod options behind flags).
+  - Tests: `agent/src/__tests__/{feature_name}.test.ts`.
+- Register in `agent/langgraph.json` under `graphs`:
+  - Example key: `{feature_name}_graph: "./src/{feature_name}/graph.ts:graph"`.
+
+### 4) Environment and Config
+- Use `.env` with `.env.example` kept up to date.
+- Centralize reads in `agent/src/config/index.ts` (dotenv). Validate required vars (e.g., `OPENAI_API_KEY`).
+- LangSmith:
+  - Recommended minimal env: `LANGSMITH_API_KEY`, `LANGSMITH_TRACING=true`, `LANGSMITH_PROJECT=chef-chopsky`.
+- Prefer local memory retriever in dev; gate prod vector stores by `retrieverProvider`.
+
+### 5) Local Dev Workflow
+- Start dev server: `npx @langchain/langgraph dev` (port 2024 by default).
+- Quick manual test:
+  - Use `agent/test-agent.js` with `client.runs.stream("...")` and a realistic prompt.
+  - Toggle `--stream` for `"messages-tuple"` vs default `"values"`.
+
+### 6) Observability (LangSmith)
+- Ensure each test or manual run sets:
+  - `project_name`, `run_name` (dynamic per test), `tags`, `metadata`.
+- For tests that run in-process, set `runName` via RunnableConfig when calling `graph.invoke/stream`.
+
+### 7) Automated Tests (Jest)
+- Test file per feature graph:
+  - Success path (end-to-end via dev server).
+  - Error handling (bad config, missing inputs).
+  - Performance sanity (simple timing bound).
+- Reuse shared setup in `agent/src/__tests__/setup.ts` to log config status and initialize client.
+- Keep tests fast; prefer memory retriever and minimal prompts.
+
+### 8) CI/CD (GitHub Actions)
+- Workflow: `.github/workflows/test-agent.yml`
+  - Trigger on PRs into `main` and pushes to `main` to avoid duplicate runs.
+  - Steps:
+    - Setup Node 20.
+    - `npm ci` in `agent`.
+    - Create minimal `.env` from secrets.
+    - Start `npx @langchain/langgraph dev` in background.
+    - Wait for port 2024 to open (port connectivity check).
+    - Run Jest tests in terminal (no HTML report).
+    - Always stop the server.
+- Secrets:
+  - `OPENAI_API_KEY` (Repository secret).
+  - Optional: `LANGSMITH_API_KEY` (Repository secret).
+
+### 9) Frontend Integration
+- Define a thin client in `frontend` to call the LangGraph dev/prod server:
+  - For MVP, server runs separately; front-end calls via SDK or HTTP proxy route.
+- Connect to existing chat UI:
+  - Start with a single route/handler that forwards messages to the agent.
+  - Stream responses to UI with progressive updates if `"messages-tuple"` is enabled.
+- Respect shared UI conventions (NativeWind + gluestack UI).
+
+### 10) Retrieval Strategy
+- Default dev: `"memory"` retriever for speed/simplicity.
+- Production options:
+  - Pinecone: easiest managed vector DB, good scaling.
+  - Elasticsearch: powerful, self-managed, great hybrid search; requires infra.
+- Switch by `retrieverProvider` config; keep embeddings and indexers in `agent/src/{feature_name}/index_graph.ts` when needed.
+
+### 11) Deployment
+- Phase 1: Keep LangGraph as a separate service (same repo) with a stable URL and CI-tested health.
+- Phase 2: Containerize and deploy (e.g., Render/Fly/Cloud Run). Provide `OPENAI_API_KEY` and LangSmith secrets at service level.
+- Health: Port-open probe and a minimal “graph exists” check.
+
+### 12) Documentation and Templates
+- Docs under `documentation/projects/vN: {project-name}/`:
+  - Include: architecture sketch, env vars, runbooks, and test commands.
+- Templates (add once):
+  - `agent/templates/graph-skeleton/` with `graph.ts`, `configuration.ts`, `retrieval.ts`, and a sample test.
+  - `npm run scaffold:graph -- {feature_name}` script that copies the template and registers it in `langgraph.json`.
+- PR Checklist (add to description template):
+  - Env vars updated in `.env.example`.
+  - New graph registered in `langgraph.json`.
+  - Jest tests added and passing locally.
+  - CI green on PR.
+  - LangSmith run name/tagging verified.
+  - Frontend integration (if applicable) behind a feature flag.
+
+### 13) Quality Gates
+- ESLint + Prettier must pass.
+- All Jest tests must pass.
+- If retrieval added: ensure fallback to memory in dev to avoid flaky CI.
+- Confirm LangSmith traces show dynamic run names and correct project.
+
+### 14) Handover Artifacts
+- Short design note:
+  - Intent, inputs/outputs, prompts, retrieval strategy, config matrix.
+- Demo script:
+  - `node agent/test-agent.js --stream` example and expected behavior.
+- Rollback note:
+  - How to disable the new graph (feature flag or route guard).
+
+### Minimal Command Cheatsheet
+- Install: `cd agent && npm ci`
+- Dev server: `npx @langchain/langgraph dev`
+- Tests: `npm test`
+- Manual test: `node test-agent.js` or `node test-agent.js --stream`
+- Lint/format: `npm run lint && npm run format` (ensure scripts exist)
+
+### What to Add Next (Foundational Enhancements)
+- `npm run scaffold:graph` (copies template and registers graph).
+- Frontend proxy route to LangGraph for local dev parity.
+- A small evaluation harness (LangSmith dataset) for key flows.
+
+- Consolidates our approach to planning, scaffolding, config, testing, CI, observability, and deployment so new AI features can be built and shipped quickly with consistent quality.
+- If you want, I can scaffold the template and add the `scaffold:graph` script next.
+
+---
+
+_**User (2025-09-11 13:13Z)**_
+
+Can you generalize this draft into a system or process that would work for adding any new feature? I'd like to turn this into a cursor rules file or something that can provide structure to using AI to vibe code new features
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>**Planning AI feature development**
+
+I need to create a process for developing new features with AI, possibly by proposing a Cursor rules file. We could establish a rules markdown file under .cursor/rules, named feature-development.mdc, since a related file already exists. I should draft the rules content and organize the file with sections like Philosophy and Workflow Steps, along with prompts for AI collaboration. It's important to follow guidelines and conventions. The first step will be to create a clear structure. Let's proceed!
+**Updating feature development rules**
+
+I should include a brief status update before making any tool calls. After editing, it seems no lints will be necessary, which is great! I plan to create the file /.cursor/rules/ai-feature-development.mdc with curated content and placeholders. I might also consider updating the documentation for projects, though I want to keep that minimal. It’s time to implement these changes and move forward with the plan! Let's make this happen!</details></think>
+
+---
+
+I'll add a new Cursor rules file that generalizes the process for adding any new feature, optimized for using AI in Cursor. Then I'll create it under `.cursor/rules/ai-feature-development.mdc`.
+
+---
+
+## Todo List
+
+- [-] Draft generalized AI feature development rules content
+- [ ] Create `.cursor/rules/ai-feature-development.mdc` with the drafted rules
+- [ ] (Optional) Reference the new rules in `documentation/roadmap.md` or a README
+
+---
+
+I'll create the rules file and write the generalized, AI-first feature development process inside it.
+
+---
+
+Read file: undefined
+
+---
+
+<details><summary>Edit file: /Users/daviswhitehead/Documents/github/chef-chopsky/.cursor/rules/ai-feature-development.mdc</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 88, lines removed: 1
+
+```diff
+@@ -1,1 +1,88 @@
+- 
++ ---
++ description: "Generalized AI-first feature development process for shipping new features consistently (agnostic to domain)."
++ globs:
++   - "**/*"
++ alwaysApply: false
++ ---
++ 
++ ## 🎛️ AI-First Feature Development Rules (Draft v0.1)
++ 
++ - **Purpose**: Provide a repeatable, AI-friendly process to ideate, scope, build, test, and ship new features with high signal-to-noise.
++ - **Applies to**: Any new feature (UI, agent/graph, retrieval, API, infra), across web/mobile/backends.
++ 
++ ### 1) Define the Slice
++ - **User story**: One-sentence outcome from the user's perspective.
++ - **Acceptance criteria**: 3–5 bullets, observable and testable.
++ - **Constraints**: Performance, data sources, offline/streaming, platforms (web/mobile), a11y.
++ - **Telemetry**: What will we measure in LangSmith, analytics, or logs?
++ 
++ ### 2) Create a Feature Branch
++ - Name `feat/<short-name>`.
++ - Use conventional commits.
++ 
++ ### 3) Skeleton First, then Fill In
++ - Create a minimal vertical slice that runs end-to-end.
++ - Prefer stubs/memory implementations first; upgrade to external services later.
++ - Keep the code shippable at every commit.
++ 
++ ### 4) Configuration and Secrets
++ - Read env from `.env` with `.env.example` kept current.
++ - Centralize configuration access (e.g., `agent/src/config/index.ts`), validate required keys.
++ - Never leak secrets; use repository secrets in CI.
++ 
++ ### 5) Observability by Default
++ - If using LLMs, enable LangSmith with:
++   - `project_name`, dynamic `run_name`, `tags`, `metadata` per test/run.
++ - Add minimal structured logs for key decisions and errors.
++ 
++ ### 6) Tests
++ - Add Jest tests alongside feature code (`__tests__`).
++ - Cover: happy path, error handling, and a simple timing sanity bound.
++ - Keep tests fast; prefer in-memory/mocks over external services.
++ 
++ ### 7) CI Rules
++ - Run tests on PRs to `main` and on pushes to `main`.
++ - Spin up any local dev servers in background; use port-open checks (no HTTP health unless provided).
++ - Output only terminal logs; avoid HTML reports.
++ 
++ ### 8) Frontend Integration (if applicable)
++ - Use existing patterns/components; adhere to RN/RNW and NativeWind + gluestack UI.
++ - Add feature flags or route guards for incomplete features.
++ - Keep UI accessible (labels, roles, ARIA, a11y props).
++ 
++ ### 9) Retrieval and Data (if applicable)
++ - Start with in-memory implementations for speed.
++ - Gate production stores (Pinecone/Elasticsearch/Supabase) behind clear `provider` config.
++ - Provide an indexer path when retrieval is required.
++ 
++ ### 10) Deployment
++ - Target low-friction deploys first; document required env.
++ - Provide a simple health probe and rollback plan.
++ 
++ ### 11) Docs and Checklists
++ - Update `documentation/projects/` with a short design note:
++   - Intent, inputs/outputs, prompts, retrieval, config matrix.
++ - Update `.env.example` when new variables are used.
++ - PR checklist (add to description):
++   - New env vars documented.
++   - Tests added and passing locally.
++   - CI green.
++   - LangSmith traces named/tagged correctly (if LLMs used).
++   - Frontend behind flag if partial.
++ 
++ ### 12) Templates (Recommended)
++ - Provide a scaffold template (code + test + docs) to speed repeatability.
++ - Optional script: `npm run scaffold:feature -- <name>` to copy template and register.
++ 
++ ### 13) Guardrails (from project conventions)
++ - Use TypeScript.
++ - Shared components must work in RN + RNW.
++ - Use NativeWind + gluestack UI for UI.
++ - Avoid web-only APIs in shared code.
++ 
++ ### 14) Definition of Done
++ - Feature is demoable end-to-end.
++ - Tests pass locally and in CI.
++ - Env documented; secrets configured.
++ - Telemetry visible in LangSmith/logs.
++ - Rollback plan noted.
+```
+
+</details>
+
+---
+
+
+
+---
+
+## Todo List
+
+- [x] Draft generalized AI feature development rules content
+- [x] Create `.cursor/rules/ai-feature-development.mdc` with the drafted rules
+- [ ] (Optional) Reference the new rules in `documentation/roadmap.md` or a README
+
+---
+
+- I created `.cursor/rules/ai-feature-development.mdc` with a generalized, AI-first feature development process that applies to any new feature, not just agents.
+
+Would you like me to:
+- add a short link in `documentation/roadmap.md`, or
+- create a `npm run scaffold:feature -- <name>` script and template next?
+
+- New rules file added at `.cursor/rules/ai-feature-development.mdc`, covering: scoping, branching, skeleton-first, config/secrets, observability, tests, CI, UI integration, retrieval/data, deployment, docs/checklists, templates, guardrails, and definition of done.
+
+---
+
+_**User (2025-09-11 13:13Z)**_
+
+Your draft in @ai-feature-development.mdc is good. However, Its altitude is a little bit too zoomed in. I'd like to zoom out a little bit and describe an end-to-end workflow for AI feature development. Let's start by listing out some of the deliverables that are must-haves in the process:
+1. Some sort of feature plan that is born from research and discovery (often back-and-forth chat between me and the AI)
+2. A more detailed project implementation task list that should be organized by user story with subtasks that you pass your story
+3. Delivery. I think you've done a good job writing out specific delivery ideas (such as the "skeleton first, then fill in" section in the current draft)
+4. Validation. A lot of what you've already included around testing, continuous integration, deploy, all of that stuff fits into this validation section
+
+Can you try another version of this document that's a little bit more zoomed out but still includes some of the really good thinking you've already done?
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>**Updating project rules**
+
+I need to restructure the rules file with sections like Plan, Tasks, Delivery, and Validation, while keeping everything concise. So, I’ll use tools to update the file and create or adjust the to-do list statuses. I want to make it higher-level, possibly nesting the good details. I should use apply_patch to replace the content or add a new section. I must make status updates per spec before any tool calls. This task focuses on editing the rules file.
+**Updating ai-feature-development rules**
+
+I'm going to add a to-do titled "Revise ai-feature-development rules to zoomed-out workflow" and set it to in progress. After I finish the edit, I’ll mark it as completed. Next, I'll apply a patch to update the document. Even though I've seen the content before, it's a good idea to read the file again to ensure I know exactly what needs to be modified. This will help me make the necessary changes effectively!</details></think>
+
+---
+
+I'm going to revise the `.cursor/rules/ai-feature-development.mdc` file to present a more zoomed-out, end-to-end workflow centered on the four deliverables you outlined (Plan, Tasks, Delivery, Validation), while preserving the useful specifics already in the draft.
+
+---
+
+## Todo List
+
+- [x] Draft generalized AI feature development rules content
+- [x] Create `.cursor/rules/ai-feature-development.mdc` with the drafted rules
+- [ ] (Optional) Reference the new rules in `documentation/roadmap.md` or a README
+- [-] Revise ai-feature-development rules to a zoomed-out end-to-end workflow
+
+---
+
+Read file: undefined
+
+---
+
+<details><summary>Edit file: /Users/daviswhitehead/Documents/github/chef-chopsky/.cursor/rules/ai-feature-development.mdc</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 67, lines removed: 73
+
+```diff
+@@ -6,83 +6,77 @@
+  ---
+  
+- ## 🎛️ AI-First Feature Development Rules (Draft v0.1)
++ ## 🧭 AI Feature Development: End-to-End Workflow (Plan → Tasks → Delivery → Validation)
+  
+- - **Purpose**: Provide a repeatable, AI-friendly process to ideate, scope, build, test, and ship new features with high signal-to-noise.
+- - **Applies to**: Any new feature (UI, agent/graph, retrieval, API, infra), across web/mobile/backends.
++ - **Purpose**: A zoomed-out, repeatable workflow that organizes AI-assisted development from idea to shipped feature, while preserving concrete best practices.
++ - **Applies to**: Any feature (UI, agent/graph, retrieval, API, infra), across web/mobile/backends.
+  
+- ### 1) Define the Slice
+- - **User story**: One-sentence outcome from the user's perspective.
+- - **Acceptance criteria**: 3–5 bullets, observable and testable.
+- - **Constraints**: Performance, data sources, offline/streaming, platforms (web/mobile), a11y.
+- - **Telemetry**: What will we measure in LangSmith, analytics, or logs?
+- 
+- ### 2) Create a Feature Branch
+- - Name `feat/<short-name>`.
+- - Use conventional commits.
+- 
+- ### 3) Skeleton First, then Fill In
+- - Create a minimal vertical slice that runs end-to-end.
+- - Prefer stubs/memory implementations first; upgrade to external services later.
+- - Keep the code shippable at every commit.
+- 
+- ### 4) Configuration and Secrets
+- - Keep `.env.example` current.
+- - Centralize configuration access (e.g., `agent/src/config/index.ts`), validate required keys.
+- - Never leak secrets; use repository secrets in CI.
+- 
+- ### 5) Observability by Default
+- - If using LLMs, enable LangSmith with:
+-   - `project_name`, dynamic `run_name`, `tags`, `metadata` per test/run.
+- - Add minimal structured logs for key decisions and errors.
+- 
+- ### 6) Tests
+- - Add Jest tests alongside feature code (`__tests__`).
+- - Cover: happy path, error handling, and a simple timing sanity bound.
+- - Keep tests fast; prefer in-memory/mocks over external services.
+- 
+- ### 7) CI Rules
+- - Run tests on PRs to `main` and on pushes to `main`.
+- - Spin up any local dev servers in background; use port-open checks (no HTTP health unless provided).
+- - Output only terminal logs; avoid HTML reports.
+- 
+- ### 8) Frontend Integration (if applicable)
+- - Use existing patterns/components; adhere to RN/RNW and NativeWind + gluestack UI.
+- - Add feature flags or route guards for incomplete features.
+- - Keep UI accessible (labels, roles, ARIA, a11y props).
+- 
+- ### 9) Retrieval and Data (if applicable)
+- - Start with in-memory implementations for speed.
+- - Gate production stores (Pinecone/Elasticsearch/Supabase) behind clear `provider` config.
+- - Provide an indexer path when retrieval is required.
+- 
+- ### 10) Deployment
+- - Target low-friction deploys first; document required env.
+- - Provide a simple health probe and rollback plan.
++ ### 1) PLAN (Research → Feature Plan)
++ - **Discovery**: Use AI chat to explore problem/market, constraints, risks. Save key notes in `documentation/projects/<vN: feature-name>/`.
++ - **Feature plan (must-have)**:
++   - Problem statement and user value
++   - Primary user story + 3–5 acceptance criteria
++   - Constraints (performance, platform, data, a11y, privacy)
++   - Telemetry plan (LangSmith, analytics, logs)
++   - Out-of-scope/not-now
++ - **Review**: sanity-check with AI; clarify unknowns; confirm the vertical slice to ship first.
++ 
++ ### 2) TASKS (Project Breakdown → Story-Organized Todo List)
++ - **Branch**: `feat/<short-name>`; use conventional commits.
++ - **Work plan (must-have)**: Story-oriented task list with subtasks mapping to acceptance criteria.
++   - Mark dependencies, mocks vs real integrations, and risks.
++ - **Scaffolding**: Prefer templates and stubs to get to runnable fast.
++ 
++ ### 3) DELIVERY (Build the Vertical Slice → Iterate)
++ - **Skeleton first, then fill in**: ship a runnable end-to-end path early.
++   - Prefer in-memory/mocked providers first; swap to prod providers behind config flags.
++ - **Configuration & Secrets**:
++   - Keep `.env.example` current.
++   - Centralize config (e.g., `agent/src/config/index.ts`), validate required keys.
++   - Never leak secrets; use repository secrets in CI.
++ - **Observability by default** (if LLMs):
++   - LangSmith: set `project_name`, dynamic `run_name`, `tags`, `metadata` per run/test.
++   - Minimal structured logs for key decisions/errors.
++ - **Frontend integration (if applicable)**:
++   - Reuse patterns/components; RN/RNW + NativeWind + gluestack UI; a11y.
++   - Hide incomplete features behind flags/guards.
++ - **Retrieval/Data (if applicable)**:
++   - Start with memory; gate Pinecone/Elasticsearch/Supabase via `provider` config.
++   - Provide indexer path if retrieval is required.
++ - **Deployment**:
++   - Favor low-friction deploys first; document required env.
++   - Provide a simple health probe and rollback plan.
+  
+- ### 11) Docs and Checklists
+- - Update `documentation/projects/` with a short design note:
+-   - Intent, inputs/outputs, prompts, retrieval, config matrix.
+- - Update `.env.example` when new variables are used.
+- - PR checklist (add to description):
+-   - New env vars documented.
+-   - Tests added and passing locally.
+-   - CI green.
+-   - LangSmith traces named/tagged correctly (if LLMs used).
+-   - Frontend behind flag if partial.
++ ### 4) VALIDATION (Test → CI → Ship → Measure)
++ - **Tests (must-have)**:
++   - Jest tests per story: happy path, error handling, timing sanity bound.
++   - Fast by default; prefer in-memory/mocks.
++ - **CI rules**:
++   - Run tests on PRs to `main` and on pushes to `main`.
++   - Start local servers in background; use port-open checks if no health endpoint.
++   - Output only terminal logs.
++ - **LangSmith/Telemetry**:
++   - Confirm traces show dynamic run names, tags, and metadata.
++   - Capture minimal KPIs defined in the plan.
++ - **Release**:
++   - Merge when CI green and acceptance criteria met.
++   - Announce change and update docs.
+  
+- ### 12) Templates (Recommended)
+- - Provide a scaffold template (code + test + docs) to speed repeatability.
+- - Optional script: `npm run scaffold:feature -- <name>` to copy template and register.
+- 
+- ### 13) Guardrails (from project conventions)
+- - Use TypeScript.
+- - Shared components must work in RN + RNW.
+- - Use NativeWind + gluestack UI for UI.
++ ### Templates & Checklists
++ - **Templates** (recommended): scaffold for feature/agent with code + test + docs.
++ - **PR checklist**:
++   - Feature plan and `.env.example` updated
++   - Tests added and passing locally
++   - CI green
++   - LangSmith traces correct (if LLMs)
++   - Frontend guarded if partial
++ 
++ ### Guardrails (from project conventions)
++ - TypeScript everywhere; shared components must work in RN + RNW.
++ - Use NativeWind + gluestack UI.
+  - Avoid web-only APIs in shared code.
+  
+- ### 14) Definition of Done
+- - Feature is demoable end-to-end.
++ ### Definition of Done
++ - End-to-end demoable; acceptance criteria met.
+  - Tests pass locally and in CI.
+  - Env documented; secrets configured.
+- - Telemetry visible in LangSmith/logs.
+- - Rollback plan noted.
++ - Telemetry visible; rollback noted.
+```
+
+</details>
+
+---
+
+## Todo List
+
+- [x] Draft generalized AI feature development rules content
+- [x] Create `.cursor/rules/ai-feature-development.mdc` with the drafted rules
+- [ ] (Optional) Reference the new rules in `documentation/roadmap.md` or a README
+- [x] Revise ai-feature-development rules to a zoomed-out end-to-end workflow
+
+---
+
+- I rewrote `.cursor/rules/ai-feature-development.mdc` to a higher-level, end-to-end workflow organized around your four must-have deliverables: Plan, Tasks, Delivery, and Validation, while keeping the practical guidance you liked.
+
+Want me to add a short link in `documentation/roadmap.md` or create a small scaffold script next?
+
+---
+
+_**User (2025-09-11 13:13Z)**_
+
+Looks good enough for now, thanks!
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>**Proposing next steps**
+
+I think we just need to acknowledge the situation and maybe suggest the next steps. Keeping things concise will help, and I should keep the status update minimal. A summary according to the spec seems necessary too. Since there’s no need for tool calls right now, I can focus on crafting clear and straightforward communication that covers everything needed in a simple way. That sounds like a good plan!</details></think>
+
+---
+
+Great! I’ll pause here.
+
+- If/when you want, I can add a short link in `documentation/roadmap.md` or scaffold a `npm run scaffold:feature -- <name>` script to operationalize the workflow.
+
+---
+
