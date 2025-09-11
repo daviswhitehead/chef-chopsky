@@ -41,14 +41,11 @@ describe('Chef Chopsky LangGraph Agent', () => {
         runName: 'test-csa-cooking-questions'
       };
 
-      let temp_id = uuidv4();
-      console.log('id', temp_id);
-
       const runConfig = {
         // project_name: 'chef-chopsky-test',
         // run_name: 'test-csa-cooking-questions (run_name)',
         name: 'test-csa-cooking-questions (name)',
-        run_id: temp_id,
+        run_id: uuidv4(),
         tags: ['test', 'csa', 'automated', 'basic-functionality'],
         metadata: {
           testType: 'automated',
@@ -281,6 +278,7 @@ describe('Chef Chopsky LangGraph Agent', () => {
         }
       );
 
+      let responseTime: number | null = null;
       for await (const chunk of streamResponse) {
         if (chunk.event === 'values' && chunk.data) {
           const data = chunk.data as any;
@@ -288,15 +286,16 @@ describe('Chef Chopsky LangGraph Agent', () => {
           const lastMessage = messages[messages.length - 1];
           
           if (lastMessage && lastMessage.type === 'ai' && lastMessage.content) {
-            const endTime = Date.now();
-            const responseTime = endTime - startTime;
-            
-            // Should respond within 15 seconds
-            expect(responseTime).toBeLessThan(15000);
-            break;
+            if (responseTime === null) {
+              const endTime = Date.now();
+              responseTime = endTime - startTime;
+            }
           }
         }
       }
+      // Assert after the stream naturally completes to avoid open handles
+      expect(responseTime).not.toBeNull();
+      expect(responseTime as number).toBeLessThan(15000);
     }, TEST_CONFIG.timeout);
   });
 });
