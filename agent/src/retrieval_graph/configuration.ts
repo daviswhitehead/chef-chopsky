@@ -57,7 +57,7 @@ export function ensureIndexConfiguration(
     userId: configurable.userId || "default", // Give a default user for shared docs
     embeddingModel:
       configurable.embeddingModel || "openai/text-embedding-3-small",
-    retrieverProvider: configurable.retrieverProvider || "elastic",
+    retrieverProvider: configurable.retrieverProvider || "memory",
     searchKwargs: configurable.searchKwargs || {},
   };
 }
@@ -108,9 +108,9 @@ export function ensureConfiguration(
       configurable.responseSystemPromptTemplate ||
       RESPONSE_SYSTEM_PROMPT_TEMPLATE,
     responseModel:
-      configurable.responseModel || "anthropic/claude-3-5-sonnet-20240620",
+      configurable.responseModel || "openai/gpt-4o-mini",
     querySystemPromptTemplate:
       configurable.querySystemPromptTemplate || QUERY_SYSTEM_PROMPT_TEMPLATE,
-    queryModel: configurable.queryModel || "anthropic/claude-3-haiku-20240307",
+    queryModel: configurable.queryModel || "openai/gpt-4o-mini",
   };
 }
