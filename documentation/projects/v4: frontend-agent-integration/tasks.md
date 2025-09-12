@@ -111,25 +111,71 @@ This task list implements the vertical slice: User creates conversation → send
 **As a user, I can send messages in the chat interface and see AI responses appear.**
 
 ### 3.1 ChatInterface Updates
-- [ ] Update `ChatInterface.tsx` to call `/api/ai/chat`
-  - [ ] Replace mock/placeholder logic with real API call
-  - [ ] Add loading state while agent processes
-  - [ ] Handle success/error responses
-- [ ] Loading indicator
-  - [ ] Show typing indicator or spinner while waiting for response
-  - [ ] Disable send button during processing
-  - [ ] Clear input after successful send
+- [x] Update `ChatInterface.tsx` to call `/api/ai/chat`
+  - [x] Replace mock/placeholder logic with real API call
+  - [x] Add loading state while agent processes
+  - [x] Handle success/error responses
+- [x] Loading indicator
+  - [x] Show typing indicator or spinner while waiting for response
+  - [x] Disable send button during processing
+  - [x] Clear input after successful send
 
 ### 3.2 Message Display
-- [ ] Ensure proper message ordering by created_at
-- [ ] Display both user and assistant messages
-- [ ] Add timestamps (if not already present)
-- [ ] Handle long messages with proper text wrapping
+- [x] Ensure proper message ordering by created_at
+- [x] Display both user and assistant messages
+- [x] Add timestamps (if not already present)
+- [x] Handle long messages with proper text wrapping
 
 ### 3.3 Error States
-- [ ] Show error toast for failed requests
-- [ ] Retry mechanism for transient failures
-- [ ] Graceful degradation if agent service is down
+- [x] Show error toast for failed requests
+- [x] Retry mechanism for transient failures
+- [x] Graceful degradation if agent service is down
+
+### 3.4 End-to-End Testing
+- [ ] Setup Playwright for E2E testing
+  - [ ] Install Playwright dependencies (`@playwright/test`)
+  - [ ] Configure Playwright for Next.js + Supabase integration
+  - [ ] Create `playwright.config.ts` with webServer configuration
+  - [ ] Add E2E test scripts to `package.json`
+- [ ] Create isolated test data management
+  - [ ] Create test database setup/teardown utilities
+  - [ ] Generate unique test conversation IDs and user data
+  - [ ] Add test data cleanup after each test run
+- [ ] Create core E2E test scenarios
+  - [ ] Happy path: create conversation → send message → receive response
+  - [ ] Error recovery: agent service down → retry → success
+  - [ ] Retry mechanism: network timeout → automatic retry → manual retry
+  - [ ] Message persistence: verify messages appear in Supabase
+- [ ] Test environment management
+  - [ ] Add service health checks before tests
+  - [ ] Configure test-specific environment variables
+  - [ ] Create test service startup/shutdown helpers
+
+### 3.5 Integration Testing
+- [ ] Setup integration test framework
+  - [ ] Create integration test suite with real HTTP calls
+  - [ ] Add service startup/shutdown helpers
+  - [ ] Configure test environment isolation
+- [ ] Create integration test scenarios
+  - [ ] Frontend ↔ Agent Service communication
+  - [ ] Supabase persistence integration
+  - [ ] LangSmith tracing validation
+  - [ ] Environment configuration testing
+
+### 3.6 Test Validation & CI Integration
+- [ ] Validate test coverage
+  - [ ] Run E2E tests against local services
+  - [ ] Verify tests pass in CI environment
+  - [ ] Document test execution requirements
+- [ ] Setup automated testing on PRs
+  - [ ] Create GitHub Actions workflow for E2E tests
+  - [ ] Configure CI to start both services automatically
+  - [ ] Add test database setup in CI pipeline
+  - [ ] Ensure tests run headlessly in CI
+- [ ] Update development workflow
+  - [ ] Add test commands to README
+  - [ ] Document how to run tests locally
+  - [ ] Add test requirements to development setup
 
 ---
 
@@ -175,9 +221,9 @@ This task list implements the vertical slice: User creates conversation → send
 
 ## 📊 Progress Tracking
 
-**Current Status:** 🚧 Planning Complete  
-**Next Milestone:** Agent Service Setup  
-**Estimated Completion:** 2-3 development sessions  
+**Current Status:** 🚧 E2E Testing in Progress  
+**Next Milestone:** Complete End-to-End Testing  
+**Estimated Completion:** 3-4 development sessions  
 
 ### Blockers & Dependencies
 - [ ] None currently identified
@@ -196,8 +242,11 @@ This task list implements the vertical slice: User creates conversation → send
 - [ ] Both messages persist in Supabase
 - [ ] Response appears in chat interface
 - [ ] LangSmith traces show proper metadata
-- [ ] All tests pass
-- [ ] Documentation updated for local development
+- [ ] All unit tests pass (API route, agent service)
+- [ ] E2E tests pass (happy path, error recovery, retry mechanism)
+- [ ] Integration tests pass (service communication, persistence)
+- [ ] Tests run automatically on PRs via GitHub Actions
+- [ ] Documentation updated for local development and testing
 - [ ] Manual smoke test successful
 
 ---
