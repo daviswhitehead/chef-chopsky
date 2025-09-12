@@ -108,9 +108,9 @@ export function ensureConfiguration(
       configurable.responseSystemPromptTemplate ||
       RESPONSE_SYSTEM_PROMPT_TEMPLATE,
     responseModel:
-      configurable.responseModel || "openai/gpt-4o-mini",
+      configurable.responseModel || "openai/gpt-5-nano",
     querySystemPromptTemplate:
       configurable.querySystemPromptTemplate || QUERY_SYSTEM_PROMPT_TEMPLATE,
-    queryModel: configurable.queryModel || "openai/gpt-4o-mini",
+    queryModel: configurable.queryModel || "openai/gpt-5-nano",
   };
 }

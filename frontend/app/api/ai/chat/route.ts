@@ -1,63 +1,165 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { db } from '@/lib/database'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL
 
 export async function POST(request: NextRequest) {
   try {
+    if (!AGENT_SERVICE_URL) {
+      return NextResponse.json(
+        {
+          error: 'Missing configuration',
+          message: 'AGENT_SERVICE_URL is not set. Please configure it in your environment.'
+        },
+        { status: 500 }
+      )
+    }
+
     const { messages, userId, conversationId } = await request.json()
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-5-nano', // Cheapest text-based model ($0.025/$0.20 per 1M tokens)
-      messages,
-      max_completion_tokens: 2000,
+    if (!conversationId || !Array.isArray(messages) || messages.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid request', message: 'conversationId and non-empty messages are required' },
+        { status: 400 }
+      )
+    }
+
+    // Get the last message (should be the user's message)
+    const lastMessage = messages[messages.length - 1]
+    if (lastMessage.role !== 'user') {
+      return NextResponse.json(
+        { error: 'Invalid request', message: 'Last message must be from user' },
+        { status: 400 }
+      )
+    }
+
+    // Ensure conversation exists, create if it doesn't
+    try {
+      await db.getConversation(conversationId)
+    } catch (error) {
+      // Conversation doesn't exist, create it with the specific ID
+      const { supabase } = await import('@/lib/supabase')
+      const { error: insertError } = await supabase
+        .from('conversations')
+        .insert({
+          id: conversationId,
+          user_id: userId ?? 'anonymous',
+          title: `Conversation ${conversationId.slice(0, 8)}`,
+          metadata: {
+            source: 'frontend',
+            created_via: 'api_chat'
+          }
+        })
+      
+      if (insertError) {
+        console.error('Failed to create conversation:', insertError)
+        // Continue anyway, might be a race condition
+      }
+    }
+
+    // Persist user message to Supabase
+    const userMessage = await db.addMessage(
+      conversationId,
+      'user',
+      lastMessage.content,
+      {
+        user_id: userId ?? null,
+        source: 'frontend',
+        timestamp: new Date().toISOString()
+      }
+    )
+
+    // Transform incoming messages (filter out system messages)
+    const filtered = (messages as Array<{ role: string; content: string }>)
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role, content: m.content }))
+
+    const agentResponse = await fetch(`${AGENT_SERVICE_URL}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conversation_id: conversationId,
+        messages: filtered,
+        client_metadata: {
+          user_id: userId ?? null,
+          source: 'frontend',
+          user_agent: request.headers.get('user-agent') || 'unknown'
+        }
+      })
     })
 
+    if (!agentResponse.ok) {
+      const err = await safeJson(agentResponse)
+      
+      // Persist error message to Supabase
+      await db.addMessage(
+        conversationId,
+        'assistant',
+        'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later.',
+        {
+          error: true,
+          error_details: err?.message || `Agent service error: ${agentResponse.status}`,
+          timestamp: new Date().toISOString()
+        }
+      )
+      
+      return NextResponse.json(
+        { error: 'Agent service error', message: err?.message || `Status ${agentResponse.status}` },
+        { status: agentResponse.status }
+      )
+    }
+
+    const data = await agentResponse.json()
+    const assistantContent = data?.assistant_message?.content ?? ''
+    
+    // Persist assistant response to Supabase
+    const assistantMessage = await db.addMessage(
+      conversationId,
+      'assistant',
+      assistantContent,
+      {
+        model: data?.assistant_message?.model ?? 'openai/gpt-5-nano',
+        usage: data?.assistant_message?.usage ?? { total_tokens: 0 },
+        timing_ms: data?.timing_ms ?? 0,
+        message_id: data?.assistant_message?.id,
+        timestamp: new Date().toISOString()
+      }
+    )
+
     return NextResponse.json({
-      content: completion.choices[0]?.message?.content || '',
-      model: completion.model,
-      usage: completion.usage,
+      content: assistantContent,
+      model: data?.assistant_message?.model ?? 'openai/gpt-4o-mini',
+      usage: data?.assistant_message?.usage ?? { total_tokens: 0 }
     })
   } catch (error: any) {
-    console.error('OpenAI API error:', error)
+    console.error('Agent proxy error:', error)
     
-    // Handle specific error types
-    if (error.code === 'insufficient_quota') {
-      return NextResponse.json(
-        { 
-          error: 'API quota exceeded',
-          message: 'You have exceeded your OpenAI API quota. Please check your billing status at https://platform.openai.com/account/billing'
-        },
-        { status: 429 }
-      )
+    // Try to persist error message if we have conversationId
+    try {
+      const { conversationId } = await request.json()
+      if (conversationId) {
+        await db.addMessage(
+          conversationId,
+          'assistant',
+          'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later.',
+          {
+            error: true,
+            error_details: error?.message || 'Unknown error',
+            timestamp: new Date().toISOString()
+          }
+        )
+      }
+    } catch (persistError) {
+      console.error('Failed to persist error message:', persistError)
     }
-    
-    if (error.code === 'invalid_api_key') {
-      return NextResponse.json(
-        { 
-          error: 'Invalid API key',
-          message: 'Please check your OpenAI API key in your environment variables'
-        },
-        { status: 401 }
-      )
-    }
-    
-    // Log the specific error for debugging
-    console.error('Specific error details:', {
-      code: error.code,
-      type: error.type,
-      message: error.message,
-      status: error.status
-    })
     
     return NextResponse.json(
-      { 
-        error: 'Failed to generate response',
-        message: `API Error: ${error.message || 'Unknown error'}`
-      },
+      { error: 'Failed to generate response', message: error?.message || 'Unknown error' },
       { status: 500 }
     )
   }
+}
+
+async function safeJson(res: Response) {
+  try { return await res.json() } catch { return null }
 }

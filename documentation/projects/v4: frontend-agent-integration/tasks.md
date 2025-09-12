@@ -77,32 +77,32 @@ This task list implements the vertical slice: User creates conversation → send
 **As a frontend developer, I need a Next.js API route that calls the agent service and persists messages.**
 
 ### 2.1 Next.js API Route
-- [ ] Create `/app/api/ai/chat/route.ts`
-  - [ ] Validate incoming request (conversation_id, message content)
-  - [ ] Persist user message to Supabase
-  - [ ] Call agent service via HTTP
-  - [ ] Persist assistant response to Supabase
-  - [ ] Return response to frontend
-- [ ] Error handling
-  - [ ] Agent service unavailable → return 503 with user-friendly message
-  - [ ] Invalid request → return 400 with validation errors
-  - [ ] Database errors → return 500 with generic error message
+- [x] Create `/app/api/ai/chat/route.ts`
+  - [x] Validate incoming request (conversation_id, message content)
+  - [x] Persist user message to Supabase
+  - [x] Call agent service via HTTP
+  - [x] Persist assistant response to Supabase
+  - [x] Return response to frontend
+- [x] Error handling
+  - [x] Agent service unavailable → return 503 with user-friendly message
+  - [x] Invalid request → return 400 with validation errors
+  - [x] Database errors → return 500 with generic error message
 
 ### 2.2 Supabase Integration
-- [ ] Review existing schema in `frontend/supabase/migrations/`
-  - [ ] Verify conversations and messages tables are suitable
-  - [ ] Plan for future columns if needed (provider, model, usage, latency)
-- [ ] Update Supabase client calls
-  - [ ] Ensure proper error handling for database operations
-  - [ ] Add transaction handling for user + assistant message persistence
+- [x] Review existing schema in `frontend/supabase/migrations/`
+  - [x] Verify conversations and messages tables are suitable
+  - [x] Plan for future columns if needed (provider, model, usage, latency)
+- [x] Update Supabase client calls
+  - [x] Ensure proper error handling for database operations
+  - [x] Add transaction handling for user + assistant message persistence
 
 ### 2.3 Environment Configuration
-- [ ] Update `frontend/.env.example` with:
-  - [ ] `AGENT_SERVICE_URL=http://localhost:3001` (for local dev)
-  - [ ] Existing Supabase env vars (already present)
-- [ ] Add environment validation in API route
-  - [ ] Check required env vars on startup
-  - [ ] Provide clear error messages for missing config
+- [x] Update `frontend/.env.example` with:
+  - [x] `AGENT_SERVICE_URL=http://localhost:3001` (for local dev)
+  - [x] Existing Supabase env vars (already present)
+- [x] Add environment validation in API route
+  - [x] Check required env vars on startup
+  - [x] Provide clear error messages for missing config
 
 ---
 

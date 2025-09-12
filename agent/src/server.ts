@@ -75,8 +75,8 @@ app.post('/chat', async (req, res) => {
         embeddingModel: 'openai/text-embedding-3-small',
         retrieverProvider: 'memory', // Start with memory for simplicity
         searchKwargs: {},
-        responseModel: 'openai/gpt-4o-mini',
-        queryModel: 'openai/gpt-4o-mini'
+        responseModel: 'openai/gpt-5-nano',
+        queryModel: 'openai/gpt-5-nano'
       }
     });
 
@@ -86,12 +86,12 @@ app.post('/chat', async (req, res) => {
       {
         configurable: agentConfig,
         // LangSmith tracing configuration
-        tags: ['web', 'agent', config.nodeEnv, 'openai/gpt-4o-mini'],
+        tags: ['web', 'agent', config.nodeEnv, 'openai/gpt-5-nano'],
         metadata: {
           conversation_id,
           message_id: messageId,
           user_id: conversation_id, // Anonymous for now
-          model: 'openai/gpt-4o-mini',
+          model: 'openai/gpt-5-nano',
           latency_ms: Date.now() - startTime
         }
       }
@@ -103,7 +103,7 @@ app.post('/chat', async (req, res) => {
       id: messageId,
       role: 'assistant',
       content: lastMessage.content,
-      model: 'openai/gpt-4o-mini',
+      model: 'openai/gpt-5-nano',
       usage: {
         // Note: LangChain doesn't always provide usage info, so we'll add placeholders
         prompt_tokens: 0,
