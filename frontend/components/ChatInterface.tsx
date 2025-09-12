@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, RefreshCw } from 'lucide-react';
 import { db, Message } from '../lib/database';
-import { ai } from '../lib/ai';
+import { useToast } from '../hooks/useToast';
 
 interface ChatInterfaceProps {
   conversationId: string;
@@ -15,7 +15,10 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastFailedMessage, setLastFailedMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { showError, showSuccess, showWarning } = useToast();
 
   // Load existing messages
   useEffect(() => {
@@ -38,7 +41,7 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
     scrollToBottom();
   }, [messages]);
 
-  const sendMessage = async () => {
+  const sendMessage = async (retryAttempt = 0) => {
     if (!inputValue.trim() || isLoading) return;
 
     const content = inputValue.trim();
@@ -46,37 +49,108 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
     setIsLoading(true);
 
     try {
-      // Add user message to database
-      const userMessage = await db.addMessage(conversationId, 'user', content);
+      // Create user message object (not persisted yet)
+      const userMessage: Message = {
+        id: `temp-${Date.now()}`,
+        conversation_id: conversationId,
+        role: 'user',
+        content,
+        timestamp: new Date().toISOString(),
+        metadata: {}
+      };
+
+      // Add user message to UI immediately
       setMessages(prev => [...prev, userMessage]);
       onMessageSent?.(userMessage);
 
-      // Generate AI response
-      const aiResponse = await ai.generateResponse([...messages, userMessage], userId, conversationId);
+      // Call the API route which handles both user and assistant message persistence
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          conversationId,
+          userId,
+          messages: [...messages, userMessage],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        
+        // Check if it's a retryable error (5xx server errors)
+        if (response.status >= 500 && retryAttempt < 2) {
+          setLastFailedMessage(userMessage);
+          setRetryCount(retryAttempt + 1);
+          showWarning(
+            'Connection Issue', 
+            `Retrying... (${retryAttempt + 1}/2)`
+          );
+          
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryAttempt) * 1000));
+          return sendMessage(retryAttempt + 1);
+        }
+        
+        throw new Error(errorData.message || 'Failed to get AI response');
+      }
+
+      const data = await response.json();
       
-      // Add AI message to database
-      const assistantMessage = await db.addMessage(
-        conversationId, 
-        'assistant', 
-        aiResponse.content, 
-        aiResponse.metadata
-      );
-      
+      // Create assistant message object
+      const assistantMessage: Message = {
+        id: data.id || `assistant-${Date.now()}`,
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: data.content,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          model: data.model,
+          usage: data.usage,
+          ...data.metadata
+        }
+      };
+
+      // Add assistant message to UI
       setMessages(prev => [...prev, assistantMessage]);
       onMessageSent?.(assistantMessage);
+      
+      // Reset retry state on success
+      setRetryCount(0);
+      setLastFailedMessage(null);
+      showSuccess('Message sent successfully!');
 
     } catch (error) {
       console.error('Error sending message:', error);
       
-      // Show user-friendly error message
-      const errorMessage = await db.addMessage(
-        conversationId, 
-        'assistant', 
-        'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
-        { error: true }
-      );
+      // Determine error type and show appropriate toast
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
-      setMessages(prev => [...prev, errorMessage]);
+      if (retryAttempt >= 2) {
+        showError(
+          'Failed to send message', 
+          'Chef Chopsky is temporarily unavailable. Please try again in a few moments.'
+        );
+      } else {
+        showError(
+          'Connection Error', 
+          'Unable to connect to Chef Chopsky. Please check your internet connection.'
+        );
+      }
+      
+      // Show user-friendly error message in chat
+      const chatErrorMessage: Message = {
+        id: `error-${Date.now()}`,
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
+        timestamp: new Date().toISOString(),
+        metadata: { error: true }
+      };
+      
+      setMessages(prev => [...prev, chatErrorMessage]);
+      onMessageSent?.(chatErrorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +167,9 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
     <div className="flex flex-col h-full">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+        {messages
+          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+          .map((message) => (
           <div
             key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -102,15 +178,33 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
               className={`max-w-[70%] rounded-lg px-4 py-2 ${
                 message.role === 'user'
                   ? 'bg-chef-500 text-white'
+                  : message.metadata?.error
+                  ? 'bg-red-50 text-red-900 border border-red-200'
                   : 'bg-gray-100 text-gray-900'
               }`}
             >
               <div className="flex items-center space-x-2">
                 <p className="whitespace-pre-wrap">{message.content}</p>
               </div>
-              <p className="text-xs opacity-70 mt-1">
-                {new Date(message.timestamp).toLocaleTimeString()}
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs opacity-70">
+                  {new Date(message.timestamp).toLocaleTimeString()}
+                </p>
+                {message.metadata?.error && message.role === 'assistant' && (
+                  <button
+                    onClick={() => {
+                      if (lastFailedMessage) {
+                        setInputValue(lastFailedMessage.content);
+                        sendMessage();
+                      }
+                    }}
+                    className="flex items-center space-x-1 text-xs text-red-600 hover:text-red-800 transition-colors"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    <span>Retry</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -142,7 +236,7 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
             disabled={isLoading}
           />
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={!inputValue.trim() || isLoading}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
