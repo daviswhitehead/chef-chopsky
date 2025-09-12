@@ -25,6 +25,7 @@ alwaysApply: false
 - **Work plan (must-have)**: Story-oriented task list with subtasks mapping to acceptance criteria.
   - Mark dependencies, mocks vs real integrations, and risks.
 - **Scaffolding**: Prefer templates and stubs to get to runnable fast.
+- After major task(s), prove to me that the task(s) is complete.
 
 ### 3) DELIVERY (Build the Vertical Slice → Iterate)
 - **Skeleton first, then fill in**: ship a runnable end-to-end path early.

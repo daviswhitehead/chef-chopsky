@@ -52,3 +52,4 @@ alwaysApply: true
 - Make sure I understand what you're doing before you go off and write code.
 - Always use npm or npx instead of yarn.
 - When installing packages, use the latest, greatest, but well-supported versions. Make sure they're compatible with existing packages.
+- Unless I give you explicit instructions to do so, do not create git commits. Instead, at the appropriate times, please suggest that I create a commmit and provide a proposed commit message.
