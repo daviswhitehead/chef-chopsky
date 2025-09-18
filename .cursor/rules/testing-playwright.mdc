@@ -1,0 +1,19 @@
+# Automated Testing Guidance (Playwright-First)
+
+- Prefer Playwright E2E for user-visible flows; mock third-party services.
+- Use a11y-first selectors: `getByRole`, `getByText`, `[role="alert"]`. Add roles in UI when needed.
+- Resilient waits:
+  - Primary: wait for spinner text "Chef Chopsky is thinking..." to detach.
+  - Fallback: proceed if an assistant bubble `[class*="bg-gray-100"]` is visible.
+- Error/retry tests:
+  - Simulate error via `page.route('**/api/ai/chat', ...)` then fulfill success on retry.
+- Parallelism:
+  - Local: `workers=2`. CI: `workers=1`, `retries=1`, trace on-retry only.
+- Reports:
+  - Headless; do not auto-serve HTML report. Open explicitly when needed.
+- CI gates:
+  - Block merges if E2E fails.
+- Pro tips:
+  - Avoid brittle CSS selectors; assert on visible text/roles.
+  - Add brief grace waits after `page.reload()` if API loads data.
+  - Don’t blindly increase timeouts; prefer deterministic mocks.
