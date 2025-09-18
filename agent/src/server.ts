@@ -46,19 +46,33 @@ app.get('/health', (req, res) => {
 app.post('/chat', async (req, res) => {
   const startTime = Date.now();
   const messageId = uuidv4();
+  const requestId = Math.random().toString(36).substr(2, 9);
+  
+  console.log(`[${requestId}] 🚀 POST /chat - Request started at ${new Date().toISOString()}`);
   
   try {
     // Validate request
     const { conversation_id, messages, client_metadata } = req.body;
     
+    console.log(`[${requestId}] 📝 Request body parsed:`, {
+      conversation_id,
+      messagesCount: messages?.length,
+      client_metadata,
+      lastMessage: messages?.[messages.length - 1]
+    });
+    
     if (!conversation_id || !messages || !Array.isArray(messages) || messages.length === 0) {
+      console.log(`[${requestId}] ❌ Validation failed: missing required fields`);
       return res.status(400).json({
         error: 'Invalid request',
         message: 'conversation_id and non-empty messages array are required'
       });
     }
+    
+    console.log(`[${requestId}] ✅ Request validation passed`);
 
     // Convert messages to LangChain format
+    console.log(`[${requestId}] 🔄 Converting ${messages.length} messages to LangChain format`);
     const langchainMessages = messages.map((msg: any) => {
       if (msg.role === 'user') {
         return new HumanMessage(msg.content);
@@ -67,8 +81,10 @@ app.post('/chat', async (req, res) => {
       }
       throw new Error(`Unsupported message role: ${msg.role}`);
     });
+    console.log(`[${requestId}] ✅ Messages converted to LangChain format`);
 
     // Create configuration
+    console.log(`[${requestId}] ⚙️ Creating agent configuration`);
     const agentConfig = ensureConfiguration({
       configurable: {
         userId: conversation_id, // Use conversation_id as userId for now
@@ -79,8 +95,12 @@ app.post('/chat', async (req, res) => {
         queryModel: 'openai/gpt-5-nano'
       }
     });
+    console.log(`[${requestId}] ✅ Agent configuration created`);
 
     // Run the agent with LangSmith tracing
+    console.log(`[${requestId}] 🤖 Invoking LangChain agent graph`);
+    const agentStartTime = Date.now();
+    
     const result = await graph.invoke(
       { messages: langchainMessages },
       {
@@ -96,8 +116,17 @@ app.post('/chat', async (req, res) => {
         }
       }
     );
+    
+    const agentDuration = Date.now() - agentStartTime;
+    console.log(`[${requestId}] ✅ Agent graph completed in ${agentDuration}ms`);
+    console.log(`[${requestId}] 📊 Agent result:`, {
+      messagesCount: result.messages?.length,
+      lastMessageType: result.messages?.[result.messages.length - 1]?.constructor?.name,
+      lastMessageLength: result.messages?.[result.messages.length - 1]?.content?.length
+    });
 
     // Extract the last message (should be the AI response)
+    console.log(`[${requestId}] 📤 Extracting assistant message from result`);
     const lastMessage = result.messages[result.messages.length - 1];
     const assistantMessage = {
       id: messageId,
@@ -113,16 +142,21 @@ app.post('/chat', async (req, res) => {
     };
 
     const timing_ms = Date.now() - startTime;
+    console.log(`[${requestId}] ✅ Response prepared:`, {
+      contentLength: assistantMessage.content.length,
+      timing: timing_ms,
+      messageId
+    });
 
+    console.log(`[${requestId}] 🎉 Request completed successfully in ${timing_ms}ms`);
     res.json({
       assistant_message: assistantMessage,
       timing_ms
     });
 
   } catch (error) {
-    console.error('Chat endpoint error:', error);
-    
     const timing_ms = Date.now() - startTime;
+    console.error(`[${requestId}] 💥 Chat endpoint error after ${timing_ms}ms:`, error);
     
     res.status(500).json({
       error: 'Agent processing failed',

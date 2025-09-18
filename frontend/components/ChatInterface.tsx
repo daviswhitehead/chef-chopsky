@@ -8,11 +8,12 @@ import { useToast } from '../hooks/useToast';
 interface ChatInterfaceProps {
   conversationId: string;
   userId: string;
+  initialMessages?: Message[];
   onMessageSent?: (message: Message) => void;
 }
 
-export default function ChatInterface({ conversationId, userId, onMessageSent }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export default function ChatInterface({ conversationId, userId, initialMessages = [], onMessageSent }: ChatInterfaceProps) {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -20,18 +21,10 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { showError, showSuccess, showWarning } = useToast();
 
-  // Load existing messages
+  // Update messages when initialMessages prop changes
   useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        const existingMessages = await db.getMessagesByConversation(conversationId);
-        setMessages(existingMessages);
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      }
-    };
-    loadMessages();
-  }, [conversationId]);
+    setMessages(initialMessages);
+  }, [initialMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,10 +34,16 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
     scrollToBottom();
   }, [messages]);
 
-  const sendMessage = async (retryAttempt = 0) => {
-    if (!inputValue.trim() || isLoading) return;
+  const sendMessage = async (retryAttempt = 0, messageContent?: string) => {
+    const content = messageContent || inputValue.trim();
+    console.log('sendMessage called with:', { content, isLoading, retryAttempt });
+    
+    if (!content || isLoading) {
+      console.log('sendMessage early return:', { hasContent: !!content, isLoading });
+      return;
+    }
 
-    const content = inputValue.trim();
+    console.log('Sending message:', content);
     setInputValue('');
     setIsLoading(true);
 
@@ -64,6 +63,9 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
       onMessageSent?.(userMessage);
 
       // Call the API route which handles both user and assistant message persistence
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35 seconds (5 seconds longer than API route timeout)
+      
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
@@ -74,7 +76,10 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
           userId,
           messages: [...messages, userMessage],
         }),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -90,7 +95,9 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
           
           // Wait before retry (exponential backoff)
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryAttempt) * 1000));
-          return sendMessage(retryAttempt + 1);
+          
+          // Recursively retry without changing loading state
+          return sendMessage(retryAttempt + 1, content);
         }
         
         throw new Error(errorData.message || 'Failed to get AI response');
@@ -124,10 +131,27 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
     } catch (error) {
       console.error('Error sending message:', error);
       
+      // Set lastFailedMessage for retry functionality
+      const userMessage: Message = {
+        id: `temp-${Date.now()}`,
+        conversation_id: conversationId,
+        role: 'user',
+        content: content,
+        timestamp: new Date().toISOString(),
+        metadata: {}
+      };
+      setLastFailedMessage(userMessage);
+      
       // Determine error type and show appropriate toast
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
-      if (retryAttempt >= 2) {
+      // Handle specific error types
+      if (error.name === 'AbortError') {
+        showError(
+          'Request Timeout', 
+          'The request took too long to complete. Please try again.'
+        );
+      } else if (retryAttempt >= 2) {
         showError(
           'Failed to send message', 
           'Chef Chopsky is temporarily unavailable. Please try again in a few moments.'
@@ -194,8 +218,7 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
                   <button
                     onClick={() => {
                       if (lastFailedMessage) {
-                        setInputValue(lastFailedMessage.content);
-                        sendMessage();
+                        sendMessage(0, lastFailedMessage.content);
                       }
                     }}
                     className="flex items-center space-x-1 text-xs text-red-600 hover:text-red-800 transition-colors"
@@ -236,7 +259,10 @@ export default function ChatInterface({ conversationId, userId, onMessageSent }:
             disabled={isLoading}
           />
           <button
-            onClick={() => sendMessage()}
+            onClick={() => {
+              console.log('Send button clicked!');
+              sendMessage();
+            }}
             disabled={!inputValue.trim() || isLoading}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
