@@ -132,24 +132,46 @@ This task list implements the vertical slice: User creates conversation → send
 - [x] Graceful degradation if agent service is down
 
 ### 3.4 End-to-End Testing
-- [ ] Setup Playwright for E2E testing
-  - [ ] Install Playwright dependencies (`@playwright/test`)
-  - [ ] Configure Playwright for Next.js + Supabase integration
-  - [ ] Create `playwright.config.ts` with webServer configuration
-  - [ ] Add E2E test scripts to `package.json`
-- [ ] Create isolated test data management
-  - [ ] Create test database setup/teardown utilities
-  - [ ] Generate unique test conversation IDs and user data
-  - [ ] Add test data cleanup after each test run
-- [ ] Create core E2E test scenarios
-  - [ ] Happy path: create conversation → send message → receive response
-  - [ ] Error recovery: agent service down → retry → success
-  - [ ] Retry mechanism: network timeout → automatic retry → manual retry
-  - [ ] Message persistence: verify messages appear in Supabase
-- [ ] Test environment management
-  - [ ] Add service health checks before tests
-  - [ ] Configure test-specific environment variables
-  - [ ] Create test service startup/shutdown helpers
+- [x] Setup Playwright for E2E testing
+  - [x] Install Playwright dependencies (`@playwright/test`)
+  - [x] Configure Playwright for Next.js + Supabase integration
+  - [x] Create `playwright.config.ts` with webServer configuration
+  - [x] Add E2E test scripts to `package.json`
+- [x] Create isolated test data management
+  - [x] Create test database setup/teardown utilities
+  - [x] Generate unique test conversation IDs and user data
+  - [x] Add test data cleanup after each test run
+- [x] Create core E2E test scenarios
+  - [x] Happy path: create conversation → send message → receive response
+  - [x] Error recovery: agent service down → retry → success
+  - [x] Retry mechanism: network timeout → automatic retry → manual retry
+  - [x] Message persistence: verify messages appear in Supabase
+- [x] Test environment management
+  - [x] Add service health checks before tests
+  - [x] Configure test-specific environment variables
+  - [x] Create test service startup/shutdown helpers
+
+#### 3.4.1 Debug/Unblock Plan (Chat UI E2E)
+
+"Textarea not visible" on the conversation page indicates the `ChatInterface` never mounts because data-loading hangs in the browser. Core routes and services work; the blocker is browser-side data access.
+
+- Theories (most likely first)
+  - Supabase client calls hang in-browser due to environment/permissions or network (RLS/CORS) when invoked from the page component.
+  - SSR/CSR interplay causes data load to occur at the wrong time or with missing config; client guard reduces but does not remove the hang.
+  - UI is waiting on a promise that never resolves; timeout fallback is client-only and not reached due to render path.
+
+- Plan of record (stepwise to green E2E)
+  1) Add internal API routes for reads: `GET /api/conversations/:id`, `GET /api/conversations/:id/messages` (server-side Supabase).
+  2) Refactor conversation page to fetch via those API routes (client `fetch`) instead of browser Supabase client.
+  3) Optionally route writes through API as well to stabilize tests; later reintroduce direct client writes if needed.
+  4) Verify `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are present in the browser (console log once) and that no auth listeners run during tests.
+  5) Instrument fetches (console on client, logs on server) with start/stop timestamps to confirm no indefinite waits.
+  6) Harden Playwright waits/selectors for `ChatInterface` (textarea, send button, loading indicators) and avoid `networkidle` reliance.
+
+- Verification
+  - E2E: navigate to conversation → textarea visible within 2–5s.
+  - E2E: send message → loading indicator shows → response returns → assistant message appears.
+  - No indefinite loading; logs confirm timely API responses (<2s local).
 
 ### 3.5 Integration Testing
 - [ ] Setup integration test framework

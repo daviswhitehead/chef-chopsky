@@ -44,7 +44,10 @@ export default function Toast({ id, type, title, message, duration = 5000, onClo
         isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
     >
-      <div className={`${config.bg} ${config.border} border rounded-lg shadow-lg p-4 max-w-sm w-full`}>
+      <div 
+        role="alert" 
+        className={`${config.bg} ${config.border} border rounded-lg shadow-lg p-4 max-w-sm w-full`}
+      >
         <div className="flex items-start">
           <div className="flex-shrink-0">
             <Icon className={`h-5 w-5 ${config.color}`} />
