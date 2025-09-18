@@ -1,0 +1,5 @@
+# Frontend ignores
+playwright-report/
+test-results/
+*.png
+!public/**/*.png
