@@ -26,14 +26,14 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 
 // Request logging middleware
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${req.method} ${req.path} - ${req.ip}`);
   next();
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -43,14 +43,15 @@ app.get('/health', (req, res) => {
 });
 
 // Chat endpoint
-app.post('/chat', async (req, res) => {
+app.post('/chat', (req, res) => {
   const startTime = Date.now();
   const messageId = uuidv4();
   const requestId = Math.random().toString(36).substr(2, 9);
   
   console.log(`[${requestId}] 🚀 POST /chat - Request started at ${new Date().toISOString()}`);
   
-  try {
+  (async () => {
+    try {
     // Validate request
     const { conversation_id, messages, client_metadata } = req.body;
     
@@ -73,7 +74,7 @@ app.post('/chat', async (req, res) => {
 
     // Convert messages to LangChain format
     console.log(`[${requestId}] 🔄 Converting ${messages.length} messages to LangChain format`);
-    const langchainMessages = messages.map((msg: any) => {
+    const langchainMessages = messages.map((msg: { role: string; content: string }) => {
       if (msg.role === 'user') {
         return new HumanMessage(msg.content);
       } else if (msg.role === 'assistant') {
@@ -149,7 +150,7 @@ app.post('/chat', async (req, res) => {
     });
 
     console.log(`[${requestId}] 🎉 Request completed successfully in ${timing_ms}ms`);
-    res.json({
+    return res.json({
       assistant_message: assistantMessage,
       timing_ms
     });
@@ -158,16 +159,25 @@ app.post('/chat', async (req, res) => {
     const timing_ms = Date.now() - startTime;
     console.error(`[${requestId}] 💥 Chat endpoint error after ${timing_ms}ms:`, error);
     
+      return res.status(500).json({
+        error: 'Agent processing failed',
+        message: config.nodeEnv === 'development' ? (error as Error).message : 'Something went wrong',
+        timing_ms
+      });
+    }
+  })().catch((error) => {
+    const timing_ms = Date.now() - startTime;
+    console.error(`[${requestId}] 💥 Unhandled error after ${timing_ms}ms:`, error);
     res.status(500).json({
-      error: 'Agent processing failed',
-      message: config.nodeEnv === 'development' ? (error as Error).message : 'Something went wrong',
+      error: 'Internal server error',
+      message: 'Something went wrong',
       timing_ms
     });
-  }
+  });
 });
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Server error:', err);
   res.status(500).json({
     error: 'Internal server error',

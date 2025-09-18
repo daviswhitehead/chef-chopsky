@@ -22,7 +22,7 @@ describe('Defaults behavior (no configurable passed)', () => {
 
     for await (const chunk of stream) {
       if (chunk.event === 'values' && chunk.data) {
-        const data = chunk.data as any;
+        const data = chunk.data as { messages?: Array<{ type: string; content: string }>; retrievedDocs?: Array<any> };
         const messages = data.messages || [];
         const last = messages[messages.length - 1];
         if (last && last.type === 'ai' && last.content) {

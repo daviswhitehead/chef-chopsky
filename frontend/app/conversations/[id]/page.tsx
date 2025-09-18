@@ -144,7 +144,7 @@ export default function ConversationPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Conversation not found</h2>
-          <p className="text-gray-600 mb-4">The conversation you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-4">The conversation you&apos;re looking for doesn&apos;t exist.</p>
           <button
             onClick={() => router.push('/')}
             className="btn-primary"

@@ -77,7 +77,7 @@ describe('Chef Chopsky LangGraph Agent', () => {
 
       for await (const chunk of streamResponse) {
         if (chunk.event === 'values' && chunk.data) {
-          const data = chunk.data as any;
+          const data = chunk.data as { messages?: Array<{ type: string; content: string }>; retrievedDocs?: Array<any> };
           const messages = data.messages || [];
           const lastMessage = messages[messages.length - 1];
           
@@ -150,7 +150,7 @@ describe('Chef Chopsky LangGraph Agent', () => {
 
       for await (const chunk of streamResponse) {
         if (chunk.event === 'values' && chunk.data) {
-          const data = chunk.data as any;
+          const data = chunk.data as { messages?: Array<{ type: string; content: string }>; retrievedDocs?: Array<any> };
           const messages = data.messages || [];
           const lastMessage = messages[messages.length - 1];
           
@@ -215,7 +215,7 @@ describe('Chef Chopsky LangGraph Agent', () => {
 
       for await (const chunk of streamResponse) {
         if (chunk.event === 'values' && chunk.data) {
-          const data = chunk.data as any;
+          const data = chunk.data as { messages?: Array<{ type: string; content: string }>; retrievedDocs?: Array<any> };
           const messages = data.messages || [];
           const lastMessage = messages[messages.length - 1];
           
@@ -281,7 +281,7 @@ describe('Chef Chopsky LangGraph Agent', () => {
       let responseTime: number | null = null;
       for await (const chunk of streamResponse) {
         if (chunk.event === 'values' && chunk.data) {
-          const data = chunk.data as any;
+          const data = chunk.data as { messages?: Array<{ type: string; content: string }>; retrievedDocs?: Array<any> };
           const messages = data.messages || [];
           const lastMessage = messages[messages.length - 1];
           

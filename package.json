@@ -1,13 +1,36 @@
 {
   "name": "chef-chopsky",
   "version": "1.0.0",
-  "description": "AI sous chef with conversation monitoring and evaluation",
+  "description": "Chef Chopsky - AI-powered cooking assistant",
   "private": true,
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "start": "cd frontend && npm start",
-    "install:all": "npm install && cd frontend && npm install"
+    "dev": "concurrently --kill-others --prefix-colors \"blue,green\" \"npm run dev:frontend\" \"npm run dev:agent\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:agent": "cd agent && npm run server:dev",
+    "build": "npm run build:frontend && npm run build:agent",
+    "build:frontend": "cd frontend && npm run build",
+    "build:agent": "cd agent && npm run build",
+    "test": "npm run test:frontend && npm run test:agent",
+    "test:frontend": "cd frontend && npm run test",
+    "test:agent": "cd agent && npm run test",
+    "test:integration": "cd frontend && npm run test:integration",
+    "test:e2e": "cd frontend && npm run test:e2e",
+    "test:all": "npm run test && npm run test:integration && npm run test:e2e",
+    "test:ci": "npm run test:frontend && npm run test:agent && npm run test:integration && npm run test:e2e",
+    "lint": "npm run lint:frontend && npm run lint:agent",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:agent": "cd agent && npm run lint",
+    "install:all": "npm install && cd frontend && npm install && cd ../agent && npm install",
+    "clean": "rm -rf node_modules frontend/node_modules agent/node_modules frontend/.next agent/dist",
+    "health:check": "node scripts/health-check.js",
+    "start:services": "concurrently --kill-others --prefix-colors \"blue,green\" \"npm run dev:frontend\" \"npm run dev:agent\"",
+    "stop:services": "pkill -f 'next dev' && pkill -f 'tsx watch'"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
 }
