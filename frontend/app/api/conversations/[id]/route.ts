@@ -4,13 +4,13 @@ import { db } from '@/lib/database';
 // GET /api/conversations/:id
 export async function GET(
   _request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const requestId = Math.random().toString(36).substr(2, 9);
-  console.log(`[${requestId}] 🔍 GET /api/conversations/${context.params?.id} - Request started`);
+  const { id } = await params;
+  console.log(`[${requestId}] 🔍 GET /api/conversations/${id} - Request started`);
   
   try {
-    const id = context.params?.id;
     console.log(`[${requestId}] 📝 Conversation ID: ${id}`);
     
     if (!id) {

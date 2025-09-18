@@ -4,10 +4,10 @@ import { db } from '@/lib/database';
 // GET /api/conversations/:id/messages
 export async function GET(
   _request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = context.params?.id;
+    const { id } = await params;
     if (!id) {
       return NextResponse.json({ error: 'Missing conversation id' }, { status: 400 });
     }

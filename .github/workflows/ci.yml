@@ -14,8 +14,8 @@ env:
   AGENT_SERVICE_URL: http://localhost:3001
   
   # Supabase test configuration (using test database)
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.TEST_SUPABASE_PUBLISHABLE_KEY }}
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
   
   # OpenAI API key for agent tests
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -51,7 +51,11 @@ jobs:
       run: npm run lint
       
     - name: Run unit tests
-      run: npm run test
+      run: |
+        echo "🧪 Running frontend unit tests..."
+        npm run test:frontend
+        echo "🤖 Running agent unit tests..."
+        cd agent && npm run test:unit
       
     - name: Build applications
       run: npm run build
@@ -112,6 +116,11 @@ jobs:
       run: |
         echo "🧪 Running integration tests..."
         npm run test:integration
+        
+    - name: Run agent integration tests
+      run: |
+        echo "🤖 Running agent integration tests..."
+        cd agent && npm run test:integration
         
     - name: Run E2E tests
       run: |
