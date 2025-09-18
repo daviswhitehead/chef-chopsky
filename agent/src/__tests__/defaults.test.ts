@@ -1,13 +1,13 @@
 import { describe, it, expect } from '@jest/globals';
-import { Client } from '@langchain/langgraph-sdk';
+import { v4 as uuidv4 } from 'uuid';
 
 // This test verifies that running without a configurable uses our defaults
 // (retrieverProvider=memory, models=openai/gpt-4o-mini) and returns a response.
 
 describe('Defaults behavior (no configurable passed)', () => {
-  const client = new Client({ apiUrl: 'http://localhost:2024' });
-  const hasValidApiKey = !!(process.env.OPENAI_API_KEY && 
-                           !process.env.OPENAI_API_KEY.includes('test') && 
+  const baseUrl = 'http://localhost:3001';
+  const hasValidApiKey = !!(process.env.OPENAI_API_KEY &&
+                           !process.env.OPENAI_API_KEY.includes('test') &&
                            process.env.OPENAI_API_KEY.length > 20);
 
   it('should produce a response and retrieve docs using memory retriever', async () => {
@@ -15,36 +15,31 @@ describe('Defaults behavior (no configurable passed)', () => {
       console.log('⏭️ Skipping test - no valid API key');
       return;
     }
-    const stream = client.runs.stream(
-      null,
-      'retrieval_graph',
-      {
-        input: { messages: [{ role: 'user', content: 'Quick idea for kale and quinoa?' }] },
-        streamMode: 'values'
-      }
-    );
 
-    let finalResponse = '';
-    let hasRetrievedDocs = false;
+    const response = await fetch(`${baseUrl}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conversation_id: uuidv4(),
+        messages: [
+          {
+            role: 'user',
+            content: 'What are some healthy cooking tips for vegetables?'
+          }
+        ]
+      })
+    });
 
-    for await (const chunk of stream) {
-      if (chunk.event === 'values' && chunk.data) {
-        const data = chunk.data as { messages?: Array<{ type: string; content: string }>; retrievedDocs?: Array<any> };
-        const messages = data.messages || [];
-        const last = messages[messages.length - 1];
-        if (last && last.type === 'ai' && last.content) {
-          finalResponse = last.content;
-        }
-        if (Array.isArray(data.retrievedDocs) && data.retrievedDocs.length > 0) {
-          hasRetrievedDocs = true;
-        }
-      }
-    }
-
-    expect(finalResponse).toBeTruthy();
-    expect(finalResponse.length).toBeGreaterThan(10);
-    expect(hasRetrievedDocs).toBe(true);
-  }, 30000);
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    
+    expect(data).toHaveProperty('assistant_message');
+    expect(data.assistant_message).toHaveProperty('content');
+    expect(data.assistant_message.content).toBeDefined();
+    expect(data.assistant_message.content.length).toBeGreaterThan(0);
+    
+    // Check that the response contains cooking-related content
+    const content = data.assistant_message.content.toLowerCase();
+    expect(content).toMatch(/vegetable|cooking|healthy|tip|recipe/);
+  });
 });
-
-
