@@ -151,7 +151,11 @@ export async function POST(request: NextRequest) {
       )
       
       return NextResponse.json(
-        { error: 'Agent service error', message: err?.message || `Status ${agentResponse.status}` },
+        { 
+          error: 'Agent service error', 
+          message: err?.message || `Status ${agentResponse.status}`,
+          errorMessage: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later.'
+        },
         { status: agentResponse.status }
       )
     }

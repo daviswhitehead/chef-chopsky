@@ -16,7 +16,7 @@ test.describe('Debug Modal Issue', () => {
   test('debug modal appearance', async ({ page }) => {
     // Navigate to home page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('button:has-text("New Conversation")');
 
     // Take a screenshot before clicking
     await page.screenshot({ path: 'debug-before-click.png' });

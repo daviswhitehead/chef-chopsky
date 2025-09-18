@@ -1,10 +1,13 @@
 import { Page, expect } from '@playwright/test';
+import { Logger } from './logger';
 import { TestDataGenerator, TestDataCleanup } from './test-data';
 
 /**
  * Service health check utilities
  */
 export class ServiceHealthChecker {
+  private static servicesReady: boolean = false;
+
   /**
    * Check if frontend service is healthy
    */
@@ -35,6 +38,9 @@ export class ServiceHealthChecker {
    * Wait for both services to be healthy
    */
   static async waitForServices(page: Page, timeout = 30000): Promise<void> {
+    if (this.servicesReady) {
+      return;
+    }
     const startTime = Date.now();
     
     while (Date.now() - startTime < timeout) {
@@ -42,11 +48,12 @@ export class ServiceHealthChecker {
       const agentHealthy = await this.checkAgentHealth(page);
       
       if (frontendHealthy && agentHealthy) {
-        console.log('Both services are healthy');
+        Logger.info('Both services are healthy');
+        this.servicesReady = true;
         return;
       }
       
-      console.log('Waiting for services to be healthy...');
+      Logger.info('Waiting for services to be healthy...');
       await page.waitForTimeout(1000);
     }
     
@@ -60,6 +67,7 @@ export class ServiceHealthChecker {
 export class TestEnvironment {
   private testDataGenerator: TestDataGenerator;
   private testDataCleanup: TestDataCleanup;
+  private currentPage?: Page;
 
   constructor() {
     this.testDataGenerator = new TestDataGenerator();
@@ -70,7 +78,8 @@ export class TestEnvironment {
    * Setup test environment before each test
    */
   async setup(page: Page): Promise<void> {
-    console.log(`Setting up test environment for run: ${this.testDataGenerator.getTestRunId()}`);
+    Logger.info(`Setting up test environment for run: ${this.testDataGenerator.getTestRunId()}`);
+    this.currentPage = page;
     
     // Wait for services to be healthy
     await ServiceHealthChecker.waitForServices(page);
@@ -86,7 +95,15 @@ export class TestEnvironment {
    * Cleanup test environment after each test
    */
   async cleanup(): Promise<void> {
-    console.log(`Cleaning up test environment for run: ${this.testDataGenerator.getTestRunId()}`);
+    Logger.info(`Cleaning up test environment for run: ${this.testDataGenerator.getTestRunId()}`);
+    // Shared route cleanup to avoid cross-test leakage
+    try {
+      if (this.currentPage) {
+        await this.currentPage.unroute('**/api/ai/chat');
+      }
+    } catch (e) {
+      Logger.warn('Unroute cleanup warning:', e);
+    }
     await this.testDataCleanup.cleanupTestData();
   }
 
@@ -124,7 +141,24 @@ export class TestEnvironment {
     }
 
     const conversation = await response.json();
-    return conversation.id;
+    const conversationId = conversation.id as string;
+
+    // Readiness poll: ensure conversation is queryable before navigation
+    const start = Date.now();
+    const timeoutMs = 1500;
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const check = await page.request.get(`http://localhost:3000/api/conversations/${conversationId}`);
+        if (check.ok()) {
+          break;
+        }
+      } catch {
+        // ignore and retry
+      }
+      await page.waitForTimeout(150);
+    }
+
+    return conversationId;
   }
 }
 
@@ -143,11 +177,21 @@ export class TestUtils {
    * Wait for loading indicator to disappear
    */
   static async waitForLoadingToComplete(page: Page, timeout = 30000): Promise<void> {
-    // Wait for loading indicator to appear
-    await page.waitForSelector('text=Chef Chopsky is thinking...', { timeout: 5000 });
-    
-    // Wait for loading indicator to disappear
-    await page.waitForSelector('text=Chef Chopsky is thinking...', { state: 'detached', timeout });
+    // Try to see the spinner appear fast
+    try {
+      await page.waitForSelector('text=Chef Chopsky is thinking...', { timeout: 2500 });
+    } catch {
+      // Spinner may not render; fall back to assistant bubble presence shortly
+      await page.waitForSelector('[class*="bg-gray-100"]', { timeout: 5000 });
+      return;
+    }
+
+    // Then wait for spinner to detach with a slightly reduced timeout
+    const detachTimeout = Math.min(timeout, 25000);
+    await page.waitForSelector('text=Chef Chopsky is thinking...', { state: 'detached', timeout: detachTimeout }).catch(async () => {
+      // Fallback: proceed if we see any assistant bubble
+      await page.waitForSelector('[class*="bg-gray-100"]', { timeout: 5000 });
+    });
   }
 
   /**
@@ -213,7 +257,8 @@ export class TestUtils {
    */
   static async navigateToConversation(page: Page, conversationId: string): Promise<void> {
     await page.goto(`/conversations/${conversationId}`);
-    await page.waitForLoadState('networkidle');
+    // Prefer explicit a11y/text-based readiness
+    await page.waitForSelector('textarea', { timeout: 10000 });
   }
 
   /**

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { Logger } from './fixtures/logger';
 import { TestEnvironment } from './fixtures/setup';
 import { TestUtils } from './fixtures/setup';
 import { TEST_SCENARIOS } from './fixtures/test-data';
@@ -33,9 +34,9 @@ test.describe('Message Persistence', () => {
     // Verify messages are visible
     await TestUtils.waitForMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
 
-    // Refresh the page
+    // Refresh the page and wait for chat UI readiness
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('textarea', { timeout: 10000 });
 
     // Verify messages are still there after refresh
     await TestUtils.waitForMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
@@ -45,7 +46,7 @@ test.describe('Message Persistence', () => {
     const messageCount = await messages.count();
     expect(messageCount).toBeGreaterThanOrEqual(2); // 1 user + 1 assistant message
 
-    console.log('✅ Message persistence test completed successfully');
+    Logger.info('✅ Message persistence test completed successfully');
   });
 
   test('conversation list shows created conversations', async ({ page }) => {
@@ -54,7 +55,7 @@ test.describe('Message Persistence', () => {
 
     // Navigate to home page to see conversation list
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('Recent Conversations')).toBeVisible();
 
     // Create conversation
     const conversationId = await TestUtils.createConversation(page, conversation.title);
@@ -62,7 +63,7 @@ test.describe('Message Persistence', () => {
 
     // Navigate back to home page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('Recent Conversations')).toBeVisible();
 
     // Verify conversation appears in list
     const conversationItem = page.locator(`text=${conversation.title}`);
@@ -74,7 +75,7 @@ test.describe('Message Persistence', () => {
     await viewButton.click();
     await page.waitForURL(`/conversations/${conversationId}`);
 
-    console.log('✅ Conversation list persistence test completed successfully');
+    Logger.info('✅ Conversation list persistence test completed successfully');
   });
 
   test('message metadata is preserved', async ({ page }) => {
@@ -107,7 +108,7 @@ test.describe('Message Persistence', () => {
 
     // Refresh page and verify metadata is still there
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(200);
     
     // Wait for API calls to complete after refresh
     await page.waitForTimeout(2000);
@@ -116,7 +117,7 @@ test.describe('Message Persistence', () => {
     const timestampCountAfterRefresh = await timestampsAfterRefresh.count();
     expect(timestampCountAfterRefresh).toBeGreaterThanOrEqual(2);
 
-    console.log('✅ Message metadata persistence test completed successfully');
+    Logger.info('✅ Message metadata persistence test completed successfully');
   });
 
   test('error messages are persisted and can be retried', async ({ page }) => {
@@ -166,6 +167,6 @@ test.describe('Message Persistence', () => {
     await page.waitForSelector('text=Chef Chopsky is thinking...', { state: 'detached', timeout: 30000 });
     await TestUtils.waitForToast(page, 'success');
 
-    console.log('✅ Error message persistence and retry test completed successfully');
+    Logger.info('✅ Error message persistence and retry test completed successfully');
   });
 });

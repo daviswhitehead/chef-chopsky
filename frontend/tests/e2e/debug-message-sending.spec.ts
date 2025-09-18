@@ -20,7 +20,7 @@ test.describe('Debug Message Sending', () => {
     
     // Navigate to the conversation page
     await page.goto(`/conversations/${conversationId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('textarea', { timeout: 10000 });
 
     // Check that we're on a conversation page
     expect(page.url()).toMatch(/\/conversations\/[a-f0-9-]+/);
