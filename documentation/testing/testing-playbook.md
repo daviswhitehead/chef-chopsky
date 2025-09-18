@@ -17,6 +17,8 @@ Goal: Lightweight, repeatable, low‑friction testing that scales with features 
 - Write executable test spec before code (red) → implement (green) → stabilize (refactor).
 - Prefer a11y selectors; avoid brittle CSS.
 - Use AI to propose selectors/mocks/timeouts; you approve edits.
+- **NEW**: Use environment-gated logging (`DEBUG_E2E=1`) for verbose debugging during development.
+- **NEW**: Always use `TestEnvironment` for proper cleanup and isolation.
 
 #### Playwright Guidance
 - Selectors: roles/text (`getByRole`, `getByText`, `[role="alert"]`). Add roles/labels in UI.
@@ -47,8 +49,10 @@ await page.route('**/api/ai/chat', (route, req) => {
 - Deterministic factories when needed.
 
 #### Instrumentation
-- Standard requestId + timing logs in API routes and pages.
-- On failure: print console errors, critical server logs, and last failed network payload.
+- **Environment-gated logging**: Use `Logger.info/debug` (gated by `DEBUG_E2E`) instead of `console.log`.
+- **Centralized failure diagnostics**: Attach console errors, network payloads, screenshots on failure.
+- **Service health caching**: Per-worker health checks for faster test setup.
+- **Readiness polling**: Wait for data creation before navigation (e.g., conversation creation).
 - Enable trace only on CI retry.
 
 #### CI Policy
@@ -72,21 +76,42 @@ await page.route('**/api/ai/chat', (route, req) => {
 ```ts
 import { test, expect } from '@playwright/test';
 import { TestEnvironment, TestUtils } from './fixtures/setup';
+import { Logger } from './fixtures/logger';
 import { TEST_SCENARIOS } from './fixtures/test-data';
 
 test.describe('Feature: Chat flow', () => {
   let env: TestEnvironment;
-  test.beforeEach(async ({ page }) => { env = new TestEnvironment(); await env.setup(page); });
-  test.afterEach(async () => { await env.cleanup(); });
+  test.beforeEach(async ({ page }) => { 
+    env = new TestEnvironment(); 
+    await env.setup(page); 
+  });
+  test.afterEach(async () => { 
+    await env.cleanup(); 
+  });
 
   test('happy path', async ({ page }) => {
+    Logger.info('Starting happy path test');
+    
     const id = await TestUtils.createConversation(page, 'My convo');
     await TestUtils.sendMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
+    
+    // Use centralized wait with fallback
     await TestUtils.waitForLoadingToComplete(page).catch(async () => {
       await page.waitForSelector('[class*="bg-gray-100"]', { timeout: 5000 });
     });
+    
     await TestUtils.waitForToast(page, 'success');
     await expect(page.getByText(TEST_SCENARIOS.SIMPLE_MESSAGE)).toBeVisible();
+    
+    Logger.info('✅ Happy path test completed successfully');
   });
 });
 ```
+
+#### Anti-Patterns to Avoid
+- ❌ Using `console.log` instead of `Logger.info/debug`
+- ❌ Skipping `TestEnvironment.cleanup()` (causes cross-test contamination)
+- ❌ Using CSS selectors instead of a11y selectors
+- ❌ Hardcoded timeouts without fallback waits
+- ❌ Not waiting for data readiness before navigation
+- ❌ Registering routes after triggering user actions

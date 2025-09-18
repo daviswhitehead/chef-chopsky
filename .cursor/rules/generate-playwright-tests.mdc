@@ -13,5 +13,22 @@ Only after all steps are completed, emit a Playwright TypeScript test that uses 
 Save generated test file in the tests directory.
 Execute the test file and iterate until the test passes.
 
+## Best Practices (from E2E improvements experience):
+- Always use `TestEnvironment` for proper cleanup and isolation
+- Use `Logger.info/debug` instead of `console.log` for environment-gated output
+- Prefer a11y-first selectors (`getByRole`, `getByText`) over CSS selectors
+- Use centralized waits with fallback patterns
+- Register routes BEFORE triggering user actions
+- Wait for data readiness before navigation
+- Include proper error handling and retry patterns
+- Follow the established test patterns in existing specs
+
+## Required Imports:
+```ts
+import { test, expect } from '@playwright/test';
+import { TestEnvironment, TestUtils } from './fixtures/setup';
+import { Logger } from './fixtures/logger';
+```
+
 // https://playwright.dev/agents/playwright-mcp-generating-tests
 // https://github.com/microsoft/playwright-mcp

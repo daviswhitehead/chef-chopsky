@@ -29,8 +29,12 @@ links:
 - Pro tips:
   - Avoid brittle CSS selectors; assert on visible text/roles.
   - Add brief grace waits after `page.reload()` if API loads data.
-  - Don’t blindly increase timeouts; prefer deterministic mocks.
+  - Don't blindly increase timeouts; prefer deterministic mocks.
   - Keep retry logic observable (toasts, messages) for assertions.
+  - **NEW**: Use `Logger.info/debug` instead of `console.log` for environment-gated output.
+  - **NEW**: Always use `TestEnvironment` for proper cleanup and isolation.
+  - **NEW**: Wait for data readiness before navigation (e.g., conversation creation).
+  - **NEW**: Register routes BEFORE triggering user actions, cleanup in `TestEnvironment.cleanup`.
 
 Playwright snippets:
 
@@ -46,5 +50,19 @@ await page.route('**/api/ai/chat', (route, req) => {
 // Resilient spinner wait
 await TestUtils.waitForLoadingToComplete(page).catch(async () => {
   await page.waitForSelector('[class*="bg-gray-100"]', { timeout: 5000 });
+});
+
+// Environment-gated logging
+import { Logger } from './fixtures/logger';
+Logger.info('Test step completed'); // Only shows with DEBUG_E2E=1
+
+// Proper test environment setup
+let env: TestEnvironment;
+test.beforeEach(async ({ page }) => { 
+  env = new TestEnvironment(); 
+  await env.setup(page); 
+});
+test.afterEach(async () => { 
+  await env.cleanup(); // Critical for isolation
 });
 ```
