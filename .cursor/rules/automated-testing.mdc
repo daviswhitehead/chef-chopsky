@@ -1,10 +1,8 @@
+---
+description: "General-purpose automated testing rules for this repo. Optimized for an E2E-first approach using Playwright, with optional integration/unit tests. This rule helps Cursor invoke the right patterns, selectors, mocks, and CI behaviors while we implement or stabilize tests. See the Testing Playbook for full details."
+alwaysApply: false
+---
 # Automated Testing Guidance (General, Playwright-First)
-
-description: |
-  General-purpose automated testing rules for this repo. Optimized for an E2E-first
-  approach using Playwright, with optional integration/unit tests. This rule helps
-  Cursor invoke the right patterns, selectors, mocks, and CI behaviors while we
-  implement or stabilize tests. See the Testing Playbook for full details.
 
 links:
   - title: Testing Playbook (Markdown)
