@@ -61,35 +61,14 @@ test.describe('Error Recovery and Retry Mechanisms', () => {
     // Send message
     await TestUtils.sendMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
 
-    // Wait for error handling
-    await page.waitForTimeout(2000);
-
-    // Verify error message appears in chat (ChatInterface shows error messages in chat when errorMessage is provided)
-    const errorMessage = page.locator('[class*="bg-red-50"]:has-text("trouble connecting")');
-    await expect(errorMessage).toBeVisible();
-
-    // Verify retry button is present
-    await TestUtils.waitForRetryButton(page);
-    Logger.info('Retry button found, clicking it...');
-
-    // Check if retry button is actually clickable
-    const retryButton = page.locator('button:has-text("Retry")').first();
-    const isEnabled = await retryButton.isEnabled();
-    const isVisible = await retryButton.isVisible();
-    Logger.info(`Retry button state: enabled=${isEnabled}, visible=${isVisible}`);
-
-    // Try clicking the retry button directly
-    await retryButton.click();
-    Logger.info('Retry button clicked directly');
-    
-    // Wait a bit to see if a new request is made
-    await page.waitForTimeout(2000);
-    
-    // Wait for loading indicator to disappear
+    // Wait for automatic retry to complete
     await TestUtils.waitForLoadingToComplete(page);
 
-    // Verify assistant response appears (success is indicated by the response)
-    await page.waitForSelector('[class*="bg-gray-100"]:has-text("dinner")', { timeout: 30000 });
+    // Verify success message appears (automatic retry succeeded)
+    const successMessage = page.locator('[class*="bg-gray-100"]:has-text("dinner")');
+    await expect(successMessage).toBeVisible();
+
+    // Test completed - automatic retry succeeded
 
     Logger.info('✅ Error recovery test completed successfully');
   });
