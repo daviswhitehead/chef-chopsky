@@ -12,8 +12,8 @@
 #   AGENT_SERVICE_URL: http://localhost:3001
   
 #   # Supabase test configuration
-#   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-#   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.TEST_SUPABASE_PUBLISHABLE_KEY }}
+#   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+#   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
   
 #   # OpenAI API key for agent tests
 #   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
