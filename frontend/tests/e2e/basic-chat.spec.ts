@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { Logger } from './fixtures/logger';
 import { TestEnvironment } from './fixtures/setup';
 import { TestUtils } from './fixtures/setup';
 import { TEST_SCENARIOS } from './fixtures/test-data';
@@ -18,13 +19,13 @@ test.describe('Basic Chat Functionality', () => {
   test('can navigate to home page and see UI elements', async ({ page }) => {
     // Navigate to home page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('Recent Conversations')).toBeVisible();
 
     // Check that main elements are visible
     await expect(page.locator('text=Recent Conversations')).toBeVisible();
     await expect(page.locator('button:has-text("New Conversation")')).toBeVisible();
     
-    console.log('✅ Home page navigation test completed successfully');
+    Logger.info('✅ Home page navigation test completed successfully');
   });
 
   test('can create conversation via modal', async ({ page }) => {
@@ -33,7 +34,7 @@ test.describe('Basic Chat Functionality', () => {
 
     // Navigate to home page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('Recent Conversations')).toBeVisible();
 
     // Click create conversation button
     const createButton = page.locator('button:has-text("New Conversation")').first();
@@ -59,7 +60,7 @@ test.describe('Basic Chat Functionality', () => {
     // Verify we're on a conversation page
     expect(page.url()).toMatch(/\/conversations\/[a-f0-9-]+/);
 
-    console.log('✅ Conversation creation test completed successfully');
+    Logger.info('✅ Conversation creation test completed successfully');
   });
 
   test('can send message in chat interface', async ({ page }) => {
@@ -68,7 +69,7 @@ test.describe('Basic Chat Functionality', () => {
 
     // Create conversation first
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('Recent Conversations')).toBeVisible();
 
     const createButton = page.locator('button:has-text("New Conversation")').first();
     await createButton.click();
@@ -96,6 +97,6 @@ test.describe('Basic Chat Functionality', () => {
     // Wait for loading indicator
     await page.waitForSelector('text=Chef Chopsky is thinking...', { timeout: 5000 });
 
-    console.log('✅ Message sending test completed successfully');
+    Logger.info('✅ Message sending test completed successfully');
   });
 });

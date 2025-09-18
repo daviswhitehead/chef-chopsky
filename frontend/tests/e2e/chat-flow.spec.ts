@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { Logger } from './fixtures/logger';
 import { TestEnvironment } from './fixtures/setup';
 import { TestUtils } from './fixtures/setup';
 import { TEST_SCENARIOS, EXPECTED_PATTERNS } from './fixtures/test-data';
@@ -20,17 +21,17 @@ test.describe('Chat Flow - Happy Path', () => {
     const conversation = testData.generateConversation();
 
     // Step 1: Create a new conversation
-    console.log('Creating new conversation...');
+    Logger.info('Creating new conversation...');
     const conversationId = await TestUtils.createConversation(page, conversation.title);
     expect(conversationId).toBeTruthy();
-    console.log(`Created conversation: ${conversationId}`);
+    Logger.info(`Created conversation: ${conversationId}`);
 
     // Step 2: Send a simple message
-    console.log('Sending message...');
+    Logger.info('Sending message...');
     await TestUtils.sendMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
 
     // Step 3: Wait for loading indicator (resilient to timeouts)
-    console.log('Waiting for loading indicator...');
+    Logger.info('Waiting for loading indicator...');
     try {
       await TestUtils.waitForLoadingToComplete(page);
     } catch (e) {
@@ -39,7 +40,7 @@ test.describe('Chat Flow - Happy Path', () => {
     }
 
     // Step 4: Verify user message appears
-    console.log('Verifying user message appears...');
+    Logger.info('Verifying user message appears...');
     // Be lenient: either the exact text or any user bubble exists
     try {
       await TestUtils.waitForMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
@@ -48,27 +49,27 @@ test.describe('Chat Flow - Happy Path', () => {
     }
 
     // Step 5: Verify assistant response appears
-    console.log('Verifying assistant response appears...');
+    Logger.info('Verifying assistant response appears...');
     // Wait for any assistant message to appear (look for gray background which is assistant messages)
     await page.waitForSelector('[class*="bg-gray-100"]', { timeout: 30000 });
     
     // Step 6: Verify success toast appears
-    console.log('Verifying success toast...');
+    Logger.info('Verifying success toast...');
     await TestUtils.waitForToast(page, 'success');
 
     // Step 7: Verify message ordering (user message should be above assistant message)
-    console.log('Verifying message ordering...');
+    Logger.info('Verifying message ordering...');
     const messages = page.locator('[class*="rounded-lg"]');
     const messageCount = await messages.count();
     expect(messageCount).toBeGreaterThanOrEqual(2);
 
     // Step 8: Verify timestamps are present
-    console.log('Verifying timestamps...');
+    Logger.info('Verifying timestamps...');
     const timestamps = page.locator('text=/\\d{1,2}:\\d{2}/');
     const timestampCount = await timestamps.count();
     expect(timestampCount).toBeGreaterThanOrEqual(2);
 
-    console.log('✅ Happy path test completed successfully');
+    Logger.info('✅ Happy path test completed successfully');
   });
 
   test('send complex message and receive detailed response', async ({ page }) => {
@@ -99,7 +100,7 @@ test.describe('Chat Flow - Happy Path', () => {
     // Verify success toast
     await TestUtils.waitForToast(page, 'success');
 
-    console.log('✅ Complex message test completed successfully');
+    Logger.info('✅ Complex message test completed successfully');
   });
 
   test('send long message and verify proper text wrapping', async ({ page }) => {
@@ -128,16 +129,16 @@ test.describe('Chat Flow - Happy Path', () => {
     // Verify message doesn't overflow
     const messageBox = userMessage.locator('..');
     const boxWidth = await messageBox.boundingBox();
-    console.log('Message box width:', boxWidth?.width);
-    console.log('Message box height:', boxWidth?.height);
+    Logger.debug('Message box width:', boxWidth?.width);
+    Logger.debug('Message box height:', boxWidth?.height);
     
     // Check if the message content is wrapping (height should be greater than single line)
     const messageText = await userMessage.textContent();
-    console.log('Message text length:', messageText?.length);
+    Logger.debug('Message text length:', messageText?.length);
     
     // For now, just verify the message is visible and has reasonable dimensions
     expect(boxWidth?.width).toBeLessThan(1200); // More realistic expectation
 
-    console.log('✅ Long message test completed successfully');
+    Logger.info('✅ Long message test completed successfully');
   });
 });

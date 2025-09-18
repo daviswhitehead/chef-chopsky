@@ -19,7 +19,7 @@ test.describe('Debug Conversation Page', () => {
 
     // Navigate to conversation page
     await page.goto(`/conversations/${conversation.id}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('body');
 
     // Take a screenshot
     await page.screenshot({ path: 'debug-conversation-page.png' });

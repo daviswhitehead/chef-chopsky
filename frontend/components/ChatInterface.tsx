@@ -75,6 +75,7 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
           conversationId,
           userId,
           messages: [...messages, userMessage],
+          retryAttempt,
         }),
         signal: controller.signal,
       });
@@ -88,6 +89,7 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
         if (response.status >= 500 && retryAttempt < 2) {
           setLastFailedMessage(userMessage);
           setRetryCount(retryAttempt + 1);
+          console.log('Setting retryCount to:', retryAttempt + 1);
           showWarning(
             'Connection Issue', 
             `Retrying... (${retryAttempt + 1}/2)`
@@ -98,6 +100,20 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
           
           // Recursively retry without changing loading state
           return sendMessage(retryAttempt + 1, content);
+        }
+        
+        // Add error message to chat if provided
+        if (errorData.errorMessage) {
+          const errorChatMessage: Message = {
+            id: `error-${Date.now()}`,
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: errorData.errorMessage,
+            timestamp: new Date().toISOString(),
+            metadata: { error: true }
+          };
+          setMessages(prev => [...prev, errorChatMessage]);
+          setLastFailedMessage(userMessage);
         }
         
         throw new Error(errorData.message || 'Failed to get AI response');
@@ -218,7 +234,14 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
                   <button
                     onClick={() => {
                       if (lastFailedMessage) {
-                        sendMessage(0, lastFailedMessage.content);
+                        const newRetryAttempt = retryCount + 1;
+                        console.log('Retry button clicked:', { 
+                          retryCount, 
+                          newRetryAttempt, 
+                          content: lastFailedMessage.content,
+                          lastFailedMessageId: lastFailedMessage.id
+                        });
+                        sendMessage(newRetryAttempt, lastFailedMessage.content);
                       }
                     }}
                     className="flex items-center space-x-1 text-xs text-red-600 hover:text-red-800 transition-colors"

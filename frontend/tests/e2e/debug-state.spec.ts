@@ -16,7 +16,7 @@ test.describe('Debug State Issue', () => {
   test('debug state management', async ({ page }) => {
     // Navigate to home page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('button:has-text("New Conversation")');
 
     // Check if the button exists and is clickable
     const createButton = page.locator('button:has-text("New Conversation")').first();

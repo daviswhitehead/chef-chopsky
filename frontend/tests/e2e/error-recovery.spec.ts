@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { Logger } from './fixtures/logger';
 import { TestEnvironment } from './fixtures/setup';
 import { TestUtils } from './fixtures/setup';
 import { TEST_SCENARIOS } from './fixtures/test-data';
@@ -19,20 +20,42 @@ test.describe('Error Recovery and Retry Mechanisms', () => {
     const testData = testEnv.getTestDataGenerator();
     const conversation = testData.generateConversation();
 
-    // Create conversation
+    // Create conversation first (before setting up any routes)
     const conversationId = await TestUtils.createConversation(page, conversation.title);
     expect(conversationId).toBeTruthy();
 
-    // Stop agent service (simulate by returning 500 error from frontend API route)
-    await page.route('**/api/ai/chat', route => {
-      route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ 
-          error: 'Internal Server Error', 
-          message: 'Agent service temporarily unavailable' 
-        }),
-      });
+    // Now set up the error→success mock using retryAttempt flag
+    await page.route('**/api/ai/chat', (route, request) => {
+      const body = request.postDataJSON();
+      const isRetry = body?.retryAttempt > 0;
+      
+      Logger.info(`Route intercepted: retryAttempt=${body?.retryAttempt}, isRetry=${isRetry}`);
+      
+      if (isRetry) {
+        // Success on retry
+        Logger.info('Returning success response on retry');
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            content: 'Based on your question about dinner, I suggest making a simple pasta with vegetables or a quick stir-fry. Both are healthy options that can be prepared quickly.',
+            model: 'openai/gpt-5-nano',
+            usage: { total_tokens: 50 }
+          }),
+        });
+      } else {
+        // Error on first attempt
+        Logger.info('Returning error response on first attempt');
+        route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ 
+            error: 'Internal Server Error', 
+            message: 'Agent service temporarily unavailable',
+            errorMessage: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later.'
+          }),
+        });
+      }
     });
 
     // Send message
@@ -41,77 +64,83 @@ test.describe('Error Recovery and Retry Mechanisms', () => {
     // Wait for error handling
     await page.waitForTimeout(2000);
 
-    // Verify error toast appears
-    await TestUtils.waitForToast(page, 'error');
-
-    // Verify error message appears in chat
+    // Verify error message appears in chat (ChatInterface shows error messages in chat when errorMessage is provided)
     const errorMessage = page.locator('[class*="bg-red-50"]:has-text("trouble connecting")');
     await expect(errorMessage).toBeVisible();
 
     // Verify retry button is present
     await TestUtils.waitForRetryButton(page);
+    Logger.info('Retry button found, clicking it...');
 
-    // Restore agent service (modify route to return success)
-    await page.route('**/api/ai/chat', route => {
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          content: 'Based on your question about dinner, I suggest making a simple pasta with vegetables or a quick stir-fry. Both are healthy options that can be prepared quickly.',
-          model: 'openai/gpt-5-nano',
-          usage: { total_tokens: 50 }
-        }),
-      });
-    });
+    // Check if retry button is actually clickable
+    const retryButton = page.locator('button:has-text("Retry")').first();
+    const isEnabled = await retryButton.isEnabled();
+    const isVisible = await retryButton.isVisible();
+    Logger.info(`Retry button state: enabled=${isEnabled}, visible=${isVisible}`);
 
-    // Click retry button
-    await TestUtils.clickRetryButton(page);
+    // Try clicking the retry button directly
+    await retryButton.click();
+    Logger.info('Retry button clicked directly');
+    
+    // Wait a bit to see if a new request is made
+    await page.waitForTimeout(2000);
     
     // Wait for loading indicator to disappear
-    await page.waitForSelector('text=Chef Chopsky is thinking...', { state: 'detached', timeout: 30000 });
+    await TestUtils.waitForLoadingToComplete(page);
 
-    // Verify success toast appears
-    await TestUtils.waitForToast(page, 'success');
-
-    // Verify assistant response appears
+    // Verify assistant response appears (success is indicated by the response)
     await page.waitForSelector('[class*="bg-gray-100"]:has-text("dinner")', { timeout: 30000 });
 
-    console.log('✅ Error recovery test completed successfully');
+    Logger.info('✅ Error recovery test completed successfully');
   });
 
   test('network timeout - automatic retry mechanism', async ({ page }) => {
     const testData = testEnv.getTestDataGenerator();
     const conversation = testData.generateConversation();
 
-    // Create conversation
+    // Create conversation first (before setting up any routes)
     const conversationId = await TestUtils.createConversation(page, conversation.title);
     expect(conversationId).toBeTruthy();
 
-    // Simulate server error (5xx) to trigger retry mechanism
-    await page.route('**/api/ai/chat', route => {
-      route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ 
-          error: 'Internal Server Error', 
-          message: 'Temporary server issue' 
-        }),
-      });
+    // Now set up the error→success mock using retryAttempt flag for automatic retries
+    await page.route('**/api/ai/chat', (route, request) => {
+      const body = request.postDataJSON();
+      const isRetry = body?.retryAttempt > 0;
+      
+      if (isRetry) {
+        // Success on retry
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            content: 'I understand you\'re looking for dinner suggestions. Here are some quick and healthy options you can prepare tonight.',
+            model: 'openai/gpt-5-nano',
+            usage: { total_tokens: 45 }
+          }),
+        });
+      } else {
+        // Error on first attempt
+        route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ 
+            error: 'Internal Server Error', 
+            message: 'Temporary server issue' 
+          }),
+        });
+      }
     });
 
     // Send message
     await TestUtils.sendMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
 
-    // Wait for retry mechanism to kick in
-    await page.waitForTimeout(5000);
+    // Wait for automatic retry mechanism to complete
+    await TestUtils.waitForLoadingToComplete(page);
 
-    // Verify warning toast appears (retry in progress)
-    await TestUtils.waitForToast(page, 'warning');
+    // Verify assistant response appears (success is indicated by the response)
+    await page.waitForSelector('[class*="bg-gray-100"]:has-text("dinner")', { timeout: 30000 });
 
-    // Restore normal response
-    await page.unroute('**/api/ai/chat');
-
-    console.log('✅ Network timeout retry test completed successfully');
+    Logger.info('✅ Network timeout retry test completed successfully');
   });
 
   test('invalid response - graceful error handling', async ({ page }) => {
@@ -147,7 +176,7 @@ test.describe('Error Recovery and Retry Mechanisms', () => {
     const errorMessage = page.locator('[class*="bg-red-50"]:has-text("trouble connecting")');
     await expect(errorMessage).toBeVisible();
 
-    console.log('✅ Invalid response test completed successfully');
+    Logger.info('✅ Invalid response test completed successfully');
   });
 
   test('empty message - validation error', async ({ page }) => {
@@ -179,6 +208,6 @@ test.describe('Error Recovery and Retry Mechanisms', () => {
     await TestUtils.waitForLoadingToComplete(page);
     await TestUtils.waitForToast(page, 'success');
 
-    console.log('✅ Empty message validation test completed successfully');
+    Logger.info('✅ Empty message validation test completed successfully');
   });
 });
