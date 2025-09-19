@@ -137,5 +137,3 @@ jobs:
 
           When analysis is complete and debugging prompt is ready, print exactly DONE on a single line and exit immediately.
           " --force --model "$MODEL" --output-format=text
-      
-      
