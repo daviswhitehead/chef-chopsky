@@ -104,15 +104,18 @@ jobs:
         run: |
           echo "🔧 Applying basic fixes..."
           
-          # Try common fixes
+          # Try common fixes with timeout protection
           echo "Running lint fix..."
-          npm run lint || echo "Lint check completed"
+          timeout 300 npm run lint || echo "Lint check completed"
+          
+          echo "Running type-check..."
+          timeout 300 npm run type-check || echo "Type-check completed with some issues"
           
           echo "Running tests..."
-          npm run test || echo "Tests completed with some failures"
+          timeout 600 npm run test || echo "Tests completed with some failures"
           
           echo "Running build..."
-          npm run build || echo "Build completed with some issues"
+          timeout 600 npm run build || echo "Build completed with some issues"
           
           # Check if any files were modified
           if [ -n "$(git status --porcelain)" ]; then
