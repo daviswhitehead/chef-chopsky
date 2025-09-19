@@ -81,16 +81,17 @@ async function gatherFailureContext() {
     headBranch: process.env.HEAD_BRANCH || 'Unknown'
   };
   
-  // Try to get recent CI logs (if available)
+  // Get comprehensive failure context
   try {
+    context.failedChecks = await getFailedChecks();
     context.recentLogs = await getRecentCILogs();
+    context.environmentInfo = await getEnvironmentInfo();
+    context.changedFiles = await getChangedFiles();
+    context.repositoryStructure = await getRepositoryStructure();
+    context.recentCommits = await getRecentCommits();
   } catch (error) {
-    console.log('⚠️ Could not retrieve CI logs:', error.message);
-    context.recentLogs = 'CI logs not available';
+    console.log('⚠️ Could not retrieve some context:', error.message);
   }
-  
-  // Get repository structure
-  context.repositoryStructure = await getRepositoryStructure();
   
   return context;
 }
@@ -291,19 +292,124 @@ function getFallbackRecommendations() {
 }
 
 /**
- * Get recent CI logs (placeholder implementation)
+ * Get failed GitHub checks
+ */
+async function getFailedChecks() {
+  try {
+    // Try to get check runs from GitHub API
+    const result = execSync('gh api repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/check-runs --jq ".check_runs[] | select(.conclusion == \"failure\") | {name: .name, status: .status, conclusion: .conclusion, html_url: .html_url}"', { 
+      encoding: 'utf8',
+      stdio: 'pipe',
+      timeout: 10000
+    });
+    return result.trim() || 'No failed checks found via API';
+  } catch (error) {
+    // Fallback: try to get recent CI output
+    try {
+      const ciOutput = execSync('npm run test 2>&1 | head -50', { 
+        encoding: 'utf8',
+        stdio: 'pipe',
+        timeout: 15000
+      });
+      return `Recent CI output:\n${ciOutput}`;
+    } catch (ciError) {
+      return 'Could not retrieve failed checks or CI output';
+    }
+  }
+}
+
+/**
+ * Get recent CI logs with error details
  */
 async function getRecentCILogs() {
-  // In a real implementation, you'd fetch actual CI logs
-  // For now, return a placeholder
-  return `
-Recent CI logs would be fetched from GitHub API here.
-This would include:
-- Build output
-- Test results
-- Error messages
-- Stack traces
-`;
+  try {
+    // Get recent build/test output
+    const commands = [
+      'npm run build 2>&1 | tail -100',
+      'npm run test 2>&1 | tail -100', 
+      'npm run lint 2>&1 | tail -50',
+      'npm run type-check 2>&1 | tail -50'
+    ];
+    
+    const logs = {};
+    for (const cmd of commands) {
+      try {
+        const output = execSync(cmd, { 
+          encoding: 'utf8',
+          stdio: 'pipe',
+          timeout: 10000
+        });
+        const commandName = cmd.split(' ')[2]; // Extract command name
+        logs[commandName] = output.trim();
+      } catch (error) {
+        logs[cmd.split(' ')[2]] = `Error running ${cmd}: ${error.message}`;
+      }
+    }
+    
+    return JSON.stringify(logs, null, 2);
+  } catch (error) {
+    return `Could not retrieve CI logs: ${error.message}`;
+  }
+}
+
+/**
+ * Get environment information
+ */
+async function getEnvironmentInfo() {
+  try {
+    const nodeVersion = execSync('node --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const npmVersion = execSync('npm --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const osInfo = execSync('uname -a', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    
+    return {
+      nodeVersion,
+      npmVersion,
+      osInfo,
+      workingDirectory: process.cwd()
+    };
+  } catch (error) {
+    return `Could not retrieve environment info: ${error.message}`;
+  }
+}
+
+/**
+ * Get changed files in the current branch
+ */
+async function getChangedFiles() {
+  try {
+    // Get files changed in the last few commits
+    const changedFiles = execSync('git diff --name-only HEAD~3..HEAD', { 
+      encoding: 'utf8',
+      stdio: 'pipe'
+    }).trim();
+    
+    const statusFiles = execSync('git status --porcelain', { 
+      encoding: 'utf8',
+      stdio: 'pipe'
+    }).trim();
+    
+    return {
+      recentChanges: changedFiles.split('\n').filter(f => f),
+      currentStatus: statusFiles.split('\n').filter(f => f)
+    };
+  } catch (error) {
+    return `Could not retrieve changed files: ${error.message}`;
+  }
+}
+
+/**
+ * Get recent commits
+ */
+async function getRecentCommits() {
+  try {
+    const commits = execSync('git log --oneline -5', { 
+      encoding: 'utf8',
+      stdio: 'pipe'
+    }).trim();
+    return commits.split('\n');
+  } catch (error) {
+    return `Could not retrieve recent commits: ${error.message}`;
+  }
 }
 
 /**
@@ -322,25 +428,48 @@ async function getRepositoryStructure() {
 }
 
 /**
- * Create analysis report
+ * Create analysis report with enhanced context for Cursor sessions
  */
 async function createAnalysisReport(context, analysis, recommendations) {
-  const report = `# Auto-Fix Analysis Report
+  const report = `# CI Failure Analysis - Ready for Cursor Session
 
-## CI Failure Context
+## 📋 Context Summary
 - **Repository**: ${context.repository}
 - **PR Number**: ${context.prNumber}
 - **Branch**: ${context.headBranch}
-- **Workflow Run**: ${context.workflowRunUrl}
 - **Fix Branch**: ${context.fixBranch}
+- **Workflow Run**: ${context.workflowRunUrl}
 - **Analysis Date**: ${context.timestamp}
 
-## Cursor AI Analysis
+## ❌ Failed Checks
+${context.failedChecks || 'No failed checks detected'}
+
+## 🔍 Error Logs & Details
+${context.recentLogs || 'No recent logs available'}
+
+## 🖥️ Environment Info
+${typeof context.environmentInfo === 'object' 
+  ? Object.entries(context.environmentInfo).map(([key, value]) => `- **${key}**: ${value}`).join('\n')
+  : context.environmentInfo || 'Environment info not available'}
+
+## 📁 Changed Files
+${context.changedFiles ? `
+**Recent Changes:**
+${context.changedFiles.recentChanges ? context.changedFiles.recentChanges.map(f => `- ${f}`).join('\n') : 'None'}
+
+**Current Status:**
+${context.changedFiles.currentStatus ? context.changedFiles.currentStatus.map(f => `- ${f}`).join('\n') : 'None'}
+` : 'File changes not available'}
+
+## 📝 Recent Commits
+${context.recentCommits ? context.recentCommits.map(c => `- ${c}`).join('\n') : 'Recent commits not available'}
+
+## 🤖 Cursor AI Analysis
 ${analysis.success ? '✅ Analysis completed successfully' : '❌ Analysis failed'}
 
 ${analysis.success ? analysis.analysis : `Error: ${analysis.error}`}
 
-## Fix Recommendations
+## 🔧 Fix Recommendations
 ${recommendations.status === 'success' ? '✅ Recommendations generated' : '⚠️ Using fallback recommendations'}
 
 ${recommendations.recommendations.map((rec, index) => `
@@ -353,36 +482,133 @@ ${rec.code}
 \`\`\`
 `).join('\n')}
 
-## Next Steps
-1. Review the analysis and recommendations above
-2. Apply the appropriate fixes to resolve the CI failure
-3. Test the fixes locally before pushing
-4. Create a PR from the fix branch for review
+---
+
+## 🚀 Ready-to-Paste Cursor Session Prompt
+
+Copy the prompt below and paste it into a new Cursor session for interactive debugging:
+
+\`\`\`
+# CI Failure Debugging Session
+
+## Context
+I'm debugging a CI failure in the ${context.repository} repository. Here are the details:
+
+**Branch**: ${context.headBranch}
+**PR**: #${context.prNumber}
+**Workflow**: ${context.workflowRunUrl}
+
+## Failed Checks
+${context.failedChecks || 'No specific failed checks identified'}
+
+## Error Details
+${context.recentLogs || 'No recent error logs available'}
+
+## Environment
+${typeof context.environmentInfo === 'object' 
+  ? Object.entries(context.environmentInfo).map(([key, value]) => `- ${key}: ${value}`).join('\n')
+  : context.environmentInfo || 'Environment info not available'}
+
+## Files Changed Recently
+${context.changedFiles && context.changedFiles.recentChanges 
+  ? context.changedFiles.recentChanges.map(f => `- ${f}`).join('\n')
+  : 'No recent file changes detected'}
+
+## Recent Commits
+${context.recentCommits ? context.recentCommits.map(c => `- ${c}`).join('\n') : 'No recent commits available'}
+
+## What I Need Help With
+Please help me:
+1. Identify the root cause of the CI failure
+2. Provide specific fixes for the issues
+3. Suggest a debugging approach
+4. Help me test the fixes
+
+## Suggested Debugging Approach
+1. Start by running \`npm run type-check\` to see TypeScript errors
+2. Then run \`npm run test\` to identify failing tests
+3. Check \`npm run lint\` for code quality issues
+4. Review the changed files above for potential issues
+
+Please analyze the error logs and provide targeted fixes.
+\`\`\`
+
+## 🎯 Quick Actions
+1. **Copy the prompt above** and paste into Cursor
+2. **Open the repository** in Cursor: \`${context.environmentInfo?.workingDirectory || process.cwd()}\`
+3. **Run diagnostic commands**:
+   - \`npm run type-check\` - Check TypeScript errors
+   - \`npm run test\` - Run tests
+   - \`npm run lint\` - Check linting
+   - \`npm run build\` - Test build process
+
+## 📚 Repository Structure
+${context.repositoryStructure || 'Repository structure not available'}
 
 ---
-*Generated by Cursor CLI Auto-Fix System*
+*Generated by Cursor CLI Auto-Fix System - Enhanced for Interactive Debugging*
 `;
 
   fs.writeFileSync(CONFIG.outputFile, report);
-  console.log(`📄 Analysis report saved to ${CONFIG.outputFile}`);
+  console.log(`📄 Enhanced analysis report saved to ${CONFIG.outputFile}`);
+  console.log(`🎯 Copy-paste ready Cursor prompt included!`);
 }
 
 /**
  * Create fallback analysis when Cursor CLI fails
  */
 async function createFallbackAnalysis(error) {
-  const fallbackReport = `# Auto-Fix Analysis Report (Fallback)
+  // Gather basic context even in fallback mode
+  const context = {
+    timestamp: new Date().toISOString(),
+    repository: process.env.GITHUB_REPOSITORY || 'Unknown',
+    prNumber: process.env.PR_NUMBER || 'Unknown',
+    headBranch: process.env.HEAD_BRANCH || 'Unknown',
+    workflowRunUrl: process.env.WORKFLOW_RUN_URL || 'Unknown'
+  };
 
-## CI Failure Context
-- **Analysis Date**: ${new Date().toISOString()}
-- **Status**: Fallback analysis due to Cursor CLI error
+  // Try to get some basic context even in fallback
+  try {
+    context.environmentInfo = await getEnvironmentInfo();
+    context.changedFiles = await getChangedFiles();
+    context.recentCommits = await getRecentCommits();
+  } catch (contextError) {
+    console.log('Could not gather context in fallback mode:', contextError.message);
+  }
 
-## Error Details
+  const fallbackReport = `# CI Failure Analysis - Fallback Mode (Ready for Cursor Session)
+
+## 📋 Context Summary
+- **Repository**: ${context.repository}
+- **PR Number**: ${context.prNumber}
+- **Branch**: ${context.headBranch}
+- **Workflow Run**: ${context.workflowRunUrl}
+- **Analysis Date**: ${context.timestamp}
+- **Status**: ⚠️ Fallback analysis due to Cursor CLI error
+
+## ❌ Cursor CLI Error
 \`\`\`
 ${error.message}
 \`\`\`
 
-## Fix Recommendations
+## 🖥️ Environment Info
+${typeof context.environmentInfo === 'object' 
+  ? Object.entries(context.environmentInfo).map(([key, value]) => `- **${key}**: ${value}`).join('\n')
+  : context.environmentInfo || 'Environment info not available'}
+
+## 📁 Changed Files
+${context.changedFiles ? `
+**Recent Changes:**
+${context.changedFiles.recentChanges ? context.changedFiles.recentChanges.map(f => `- ${f}`).join('\n') : 'None'}
+
+**Current Status:**
+${context.changedFiles.currentStatus ? context.changedFiles.currentStatus.map(f => `- ${f}`).join('\n') : 'None'}
+` : 'File changes not available'}
+
+## 📝 Recent Commits
+${context.recentCommits ? context.recentCommits.map(c => `- ${c}`).join('\n') : 'Recent commits not available'}
+
+## 🔧 Fallback Fix Recommendations
 ⚠️ Using fallback recommendations due to Cursor CLI error
 
 ### 1. ESLint Errors
@@ -425,18 +651,70 @@ npm run test
 npm install
 \`\`\`
 
-## Next Steps
-1. Try the common fixes above
-2. Check the CI logs for specific error messages
-3. Manually analyze the failure and apply appropriate fixes
-4. Consider setting up Cursor CLI properly for future automated analysis
+---
+
+## 🚀 Ready-to-Paste Cursor Session Prompt
+
+Copy the prompt below and paste it into a new Cursor session for interactive debugging:
+
+\`\`\`
+# CI Failure Debugging Session (Fallback Mode)
+
+## Context
+I'm debugging a CI failure in the ${context.repository} repository. The automated Cursor CLI analysis failed, so I need help with manual debugging.
+
+**Branch**: ${context.headBranch}
+**PR**: #${context.prNumber}
+**Workflow**: ${context.workflowRunUrl}
+
+## Cursor CLI Error
+The automated analysis failed with: ${error.message}
+
+## Environment
+${typeof context.environmentInfo === 'object' 
+  ? Object.entries(context.environmentInfo).map(([key, value]) => `- ${key}: ${value}`).join('\n')
+  : context.environmentInfo || 'Environment info not available'}
+
+## Files Changed Recently
+${context.changedFiles && context.changedFiles.recentChanges 
+  ? context.changedFiles.recentChanges.map(f => `- ${f}`).join('\n')
+  : 'No recent file changes detected'}
+
+## Recent Commits
+${context.recentCommits ? context.recentCommits.map(c => `- ${c}`).join('\n') : 'No recent commits available'}
+
+## What I Need Help With
+Please help me:
+1. Identify the root cause of the CI failure
+2. Provide specific fixes for the issues
+3. Suggest a debugging approach
+4. Help me test the fixes
+
+## Suggested Debugging Approach
+1. Start by running \`npm run type-check\` to see TypeScript errors
+2. Then run \`npm run test\` to identify failing tests
+3. Check \`npm run lint\` for code quality issues
+4. Review the changed files above for potential issues
+
+Please analyze the situation and provide targeted fixes.
+\`\`\`
+
+## 🎯 Quick Actions
+1. **Copy the prompt above** and paste into Cursor
+2. **Open the repository** in Cursor: \`${context.environmentInfo?.workingDirectory || process.cwd()}\`
+3. **Run diagnostic commands**:
+   - \`npm run type-check\` - Check TypeScript errors
+   - \`npm run test\` - Run tests
+   - \`npm run lint\` - Check linting
+   - \`npm run build\` - Test build process
 
 ---
-*Generated by Auto-Fix System (Fallback Mode)*
+*Generated by Cursor CLI Auto-Fix System (Fallback Mode - Enhanced for Interactive Debugging)*
 `;
 
   fs.writeFileSync(CONFIG.outputFile, fallbackReport);
-  console.log(`📄 Fallback analysis report saved to ${CONFIG.outputFile}`);
+  console.log(`📄 Enhanced fallback analysis report saved to ${CONFIG.outputFile}`);
+  console.log(`🎯 Copy-paste ready Cursor prompt included!`);
 }
 
 // Run the analysis
