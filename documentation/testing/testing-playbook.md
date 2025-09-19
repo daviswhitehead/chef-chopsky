@@ -116,6 +116,12 @@ test.describe('Feature: Chat flow', () => {
 - **OPTIONAL**: Domain-specific content, exact words, topic relevance
 - **LOG, DON'T FAIL**: Use optional checks for debugging, not test failures
 
+##### Available Utility Functions
+- `TestUtils.validateLLMResponse(page, selector, terms, context)` - Full control
+- `TestUtils.validateFoodResponse(page, context, additionalTerms)` - Food/cooking responses
+- `TestUtils.validateCookingResponse(page, context, additionalTerms)` - Recipe/cooking responses  
+- `TestUtils.validateAnyResponse(page, context)` - No content validation
+
 ##### ✅ Good Patterns
 ```ts
 // REQUIRED: Test response structure and quality
@@ -190,6 +196,30 @@ it('should handle different message types', async () => {
     console.log('Response:', data.assistant_message.content.substring(0, 200) + '...');
     console.log('This is OK - LLMs are non-deterministic');
   }
+});
+```
+
+##### E2E Test Example (Using TestUtils)
+```ts
+test('send complex message and receive detailed response', async ({ page }) => {
+  // Send message
+  await TestUtils.sendMessage(page, 'I have tomatoes, onions, and chicken. Any suggestions?');
+  
+  // Wait for loading to complete
+  await TestUtils.waitForLoadingToComplete(page);
+  
+  // Verify user message appears
+  await TestUtils.waitForMessage(page, 'I have tomatoes, onions, and chicken. Any suggestions?');
+  
+  // Validate LLM response with optional content checking
+  await TestUtils.validateFoodResponse(
+    page, 
+    'Complex message response',
+    ['tomato', 'onion', 'chicken'] // Additional specific terms from user's message
+  );
+  
+  // Verify success toast
+  await TestUtils.waitForToast(page, 'success');
 });
 ```
 

@@ -94,8 +94,12 @@ test.describe('Chat Flow - Happy Path', () => {
     // Verify user message appears
     await TestUtils.waitForMessage(page, TEST_SCENARIOS.COMPLEX_MESSAGE);
 
-    // Verify assistant response contains relevant content
-    await page.waitForSelector('[class*="bg-gray-100"]:has-text("tomato")', { timeout: 30000 });
+    // Verify assistant response appears with optional content validation
+    await TestUtils.validateFoodResponse(
+      page, 
+      'Complex message response',
+      ['tomato', 'onion', 'chicken'] // Additional specific terms from the user's message
+    );
 
     // Verify success toast
     await TestUtils.waitForToast(page, 'success');
