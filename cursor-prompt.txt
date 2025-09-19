@@ -1,0 +1,56 @@
+
+Analyze this CI failure and provide a detailed fix recommendation:
+
+CONTEXT:
+- Repository: daviswhitehead/chef-chopsky
+- PR Number: 12
+- Branch: test-auto-fix-1758298659
+- Workflow Run: https://github.com/daviswhitehead/chef-chopsky/actions/runs/17867229861
+- Fix Branch: ci-fix-12
+
+REPOSITORY STRUCTURE:
+./scripts/cursor-analysis.js
+./scripts/health-check.js
+./agent/jest.config.js
+./agent/src/retrieval_graph/graph.ts
+./agent/src/retrieval_graph/configuration.ts
+./agent/src/retrieval_graph/prompts.ts
+./agent/src/retrieval_graph/tests/graph.int.test.ts
+./agent/src/retrieval_graph/tests/graph.test.ts
+./agent/src/retrieval_graph/index_graph.ts
+./agent/src/retrieval_graph/state.ts
+./agent/src/retrieval_graph/retrieval.ts
+./agent/src/retrieval_graph/utils.ts
+./agent/src/server.ts
+./agent/src/config/index.ts
+./agent/src/__tests__/setup.ts
+./agent/src/__tests__/agent.test.ts
+./agent/src/__tests__/agent-unit.test.ts
+./agent/src/__tests__/defaults.test.ts
+./agent/src/__tests__/server.test.ts
+./agent/test-agent.js
+
+RECENT CI LOGS:
+{
+  "build": "Error running npm run build 2>&1 | tail -100: spawnSync /bin/sh ETIMEDOUT",
+  "test": "Error running npm run test 2>&1 | tail -100: spawnSync /bin/sh ETIMEDOUT",
+  "lint": "Error running npm run lint 2>&1 | tail -50: spawnSync /bin/sh ETIMEDOUT",
+  "type-check": "> chef-chopsky@1.0.0 type-check\n> npm run type-check:frontend && npm run type-check:agent\n\n\n> chef-chopsky@1.0.0 type-check:frontend\n> cd frontend && npx tsc --noEmit\n\n\n> chef-chopsky@1.0.0 type-check:agent\n> cd agent && npx tsc --noEmit"
+}
+
+Please provide:
+1. Root cause analysis of the CI failure
+2. Specific code changes needed to fix the issue
+3. Step-by-step fix instructions
+4. Any potential risks or considerations
+5. Testing recommendations
+
+Focus on common CI failure types:
+- ESLint/Prettier errors
+- TypeScript compilation errors
+- Jest test failures
+- Playwright E2E test failures
+- Dependency/npm issues
+- Build configuration problems
+
+Provide actionable, specific recommendations that can be implemented immediately.
