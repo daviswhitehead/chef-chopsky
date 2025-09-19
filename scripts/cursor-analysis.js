@@ -64,6 +64,7 @@ async function checkCursorCLI() {
     console.log('✅ Cursor API key is configured');
     
   } catch (error) {
+    console.log('⚠️ Cursor CLI not available, using fallback analysis mode');
     throw new Error(`Cursor CLI not properly configured: ${error.message}`);
   }
 }
