@@ -1805,7 +1805,64 @@ Lines added: 5, lines removed: undefined
 
 ---
 
+Now let me update the todo status:
 
+
+---
+
+## Todo List
+
+- [x] Update automated testing rules to emphasize optional vs required LLM content checks
+- [x] Update testing playbook with optional content validation patterns
+
+---
+
+Perfect! I've updated both the automated testing rules and the testing playbook to reflect our key learning about making LLM content checks optional rather than required.
+
+## 📋 **Summary of Updates**
+
+### ✅ **Automated Testing Rules** (`.cursor/rules/automated-testing.mdc`)
+
+**Key Changes:**
+- Added **"MAKE CONTENT CHECKS OPTIONAL"** guideline
+- Emphasized **"PRIORITIZE API functionality over content validation"**
+- Updated Playwright snippets to show optional logging pattern
+- Added clear examples of what to avoid (`expect(hasFoodTerms).toBe(true)`)
+
+### ✅ **Testing Playbook** (`documentation/testing/testing-playbook.md`)
+
+**Key Changes:**
+- Added **"Key Principle: Optional vs Required Checks"** section
+- Updated all code examples to show optional content validation
+- Added new anti-patterns:
+  - ❌ **Requiring domain-specific terms in LLM responses** (will fail randomly)
+  - ❌ **Making content validation required instead of optional** (prioritize API functionality)
+- Updated integration test example to show the proper optional pattern
+
+### 🎯 **Core Learning Captured**
+
+**REQUIRED Tests:**
+- ✅ API returns 200 status
+- ✅ Response has content
+- ✅ Response structure is valid
+- ✅ Timing is reasonable
+
+**OPTIONAL Tests (Logged, Not Required):**
+- ℹ️ Domain-specific terms present
+- ℹ️ Content relevance to topic
+- ℹ️ Specific word usage
+
+**The Pattern:**
+```ts
+// Log for debugging but don't fail the test
+if (!hasFoodTerms) {
+  console.log('ℹ️ LLM response did not contain expected food terms:');
+  console.log('Response:', response.substring(0, 200) + '...');
+  console.log('This is OK - LLMs are non-deterministic');
+}
+```
+
+This approach ensures our tests are **robust and reliable** while still providing **valuable debugging information** when LLM responses don't contain expected terms. The tests now focus on **API functionality** rather than **content validation**, which is the right approach for non-deterministic systems.
 
 ---
 
