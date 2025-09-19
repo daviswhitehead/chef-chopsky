@@ -108,6 +108,70 @@ test.describe('Feature: Chat flow', () => {
 });
 ```
 
+#### LLM Response Testing Patterns
+**CRITICAL**: LLMs are non-deterministic. Never test exact content.
+
+##### ✅ Good Patterns
+```ts
+// Test response structure and quality
+expect(response.assistant_message.content).toBeTruthy();
+expect(response.assistant_message.content.length).toBeGreaterThan(20);
+expect(response.assistant_message.content).toMatch(/[.!?]$/); // Proper sentence ending
+
+// Test domain relevance with multiple related terms
+const foodTerms = ['food', 'nutrition', 'diet', 'meal', 'recipe', 'cooking', 'healthy', 'eat', 'ingredient'];
+const hasFoodTerms = foodTerms.some(term => 
+  response.assistant_message.content.toLowerCase().includes(term)
+);
+expect(hasFoodTerms).toBe(true);
+
+// Test response format and timing
+expect(response).toHaveProperty('assistant_message');
+expect(response).toHaveProperty('timing_ms');
+expect(response.timing_ms).toBeGreaterThan(0);
+expect(response.timing_ms).toBeLessThan(30000);
+```
+
+##### ❌ Bad Patterns (Avoid These)
+```ts
+// DON'T: Test exact content
+expect(response.assistant_message.content).toContain('protein');
+expect(response.assistant_message.content).toMatch(/vegetable|veggie/);
+
+// DON'T: Test specific words that might vary
+expect(response.assistant_message.content).toContain('chicken');
+expect(response.assistant_message.content).toContain('broccoli');
+```
+
+##### Integration Test Example
+```ts
+it('should handle different message types', async () => {
+  const response = await fetch(`${TEST_CONFIG.baseUrl}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      conversation_id: uuidv4(),
+      messages: [{ role: 'user', content: 'What are some good sources of plant protein?' }]
+    }),
+  });
+
+  expect(response.status).toBe(200);
+  const data = await response.json();
+  
+  // Test response quality, not content
+  expect(data.assistant_message.content).toBeTruthy();
+  expect(data.assistant_message.content.length).toBeGreaterThan(20);
+  expect(data.assistant_message.content).toMatch(/[.!?]$/);
+  
+  // Test domain relevance
+  const foodTerms = ['food', 'nutrition', 'diet', 'meal', 'recipe', 'cooking', 'healthy', 'eat', 'ingredient'];
+  const hasFoodTerms = foodTerms.some(term => 
+    data.assistant_message.content.toLowerCase().includes(term)
+  );
+  expect(hasFoodTerms).toBe(true);
+});
+```
+
 #### Anti-Patterns to Avoid
 - ❌ Using `console.log` instead of `Logger.info/debug`
 - ❌ Skipping `TestEnvironment.cleanup()` (causes cross-test contamination)
@@ -115,3 +179,5 @@ test.describe('Feature: Chat flow', () => {
 - ❌ Hardcoded timeouts without fallback waits
 - ❌ Not waiting for data readiness before navigation
 - ❌ Registering routes after triggering user actions
+- ❌ **Testing exact LLM response content** (LLMs are non-deterministic)
+- ❌ **Using `toContain()` with specific words** (use broader term matching instead)
