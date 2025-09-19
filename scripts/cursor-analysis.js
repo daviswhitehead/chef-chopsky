@@ -24,49 +24,38 @@ const CONFIG = {
 async function analyzeCIFailure() {
   console.log('🔍 Starting Cursor CLI analysis...');
   
-  try {
-    // Check if Cursor CLI is available
-    await checkCursorCLI();
-    
-    // Gather failure context
-    const context = await gatherFailureContext();
-    
-    // Run Cursor analysis
-    const analysis = await runCursorAnalysis(context);
-    
-    // Generate fix recommendations
-    const recommendations = await generateFixRecommendations(analysis);
-    
-    // Create analysis report
-    await createAnalysisReport(context, analysis, recommendations);
-    
-    console.log('✅ Cursor analysis complete!');
-    
-  } catch (error) {
-    console.error('❌ Analysis failed:', error.message);
-    await createFallbackAnalysis(error);
-  }
+  // Check if Cursor CLI is available
+  await checkCursorCLI();
+  
+  // Gather failure context
+  const context = await gatherFailureContext();
+  
+  // Run Cursor analysis
+  const analysis = await runCursorAnalysis(context);
+  
+  // Create analysis report
+  await createAnalysisReport(context, analysis);
+  
+  console.log('✅ Cursor analysis complete!');
 }
 
 /**
  * Check if Cursor CLI is installed and configured
  */
 async function checkCursorCLI() {
+  // Check if cursor-agent command exists
   try {
-    // Check if cursor-agent command exists
     execSync('cursor-agent --version', { stdio: 'pipe' });
     console.log('✅ Cursor CLI is available');
-    
-    // Check if API key is configured
-    if (!process.env.CURSOR_API_KEY) {
-      throw new Error('CURSOR_API_KEY environment variable is not set');
-    }
-    console.log('✅ Cursor API key is configured');
-    
   } catch (error) {
-    console.log('⚠️ Cursor CLI not available, using fallback analysis mode');
-    throw new Error(`Cursor CLI not properly configured: ${error.message}`);
+    throw new Error(`Cursor CLI not found. Please install it: curl -fsSL https://cursor.com/install | bash`);
   }
+  
+  // Check if API key is configured
+  if (!process.env.CURSOR_API_KEY) {
+    throw new Error('CURSOR_API_KEY environment variable is not set. Please add it to your GitHub repository secrets.');
+  }
+  console.log('✅ Cursor API key is configured');
 }
 
 /**
@@ -113,21 +102,7 @@ async function runCursorAnalysis(context) {
     
     fs.writeFileSync(tempFile, prompt, 'utf8');
     
-    console.log('Testing Cursor CLI command formats...');
-    
-    // First, let's see what cursor-agent actually supports
-    try {
-      const helpResult = execSync('cursor-agent --help', { 
-        encoding: 'utf8',
-        timeout: 10000,
-        stdio: 'pipe'
-      });
-      console.log('Cursor CLI help output:', helpResult);
-    } catch (helpError) {
-      console.log('Help command failed:', helpError.message);
-    }
-    
-    // Try the main analysis command with file input
+    // Use cursor-agent with --print flag and file input (non-interactive mode)
     const command = `cursor-agent --print "$(cat ${tempFile})"`;
     console.log('Running Cursor CLI command...');
     const result = execSync(command, { 
@@ -198,106 +173,6 @@ Provide actionable, specific recommendations that can be implemented immediately
 `;
 }
 
-/**
- * Generate fix recommendations based on analysis
- */
-async function generateFixRecommendations(analysis) {
-  if (!analysis.success) {
-    return {
-      status: 'failed',
-      message: 'Analysis failed, using fallback recommendations',
-      recommendations: getFallbackRecommendations()
-    };
-  }
-  
-  // Parse the Cursor analysis and extract recommendations
-  const recommendations = parseAnalysisOutput(analysis.analysis);
-  
-  return {
-    status: 'success',
-    recommendations: recommendations,
-    confidence: 'high'
-  };
-}
-
-/**
- * Parse Cursor CLI output to extract recommendations
- */
-function parseAnalysisOutput(analysis) {
-  // This is a simplified parser - in practice, you'd want more sophisticated parsing
-  const lines = analysis.split('\n');
-  const recommendations = [];
-  
-  let currentRecommendation = null;
-  
-  for (const line of lines) {
-    const trimmed = line.trim();
-    
-    if (trimmed.match(/^\d+\./)) {
-      // New numbered recommendation
-      if (currentRecommendation) {
-        recommendations.push(currentRecommendation);
-      }
-      currentRecommendation = {
-        title: trimmed,
-        description: '',
-        code: '',
-        priority: 'medium'
-      };
-    } else if (currentRecommendation && trimmed) {
-      // Add to current recommendation
-      if (trimmed.startsWith('```')) {
-        currentRecommendation.code += trimmed + '\n';
-      } else {
-        currentRecommendation.description += trimmed + '\n';
-      }
-    }
-  }
-  
-  if (currentRecommendation) {
-    recommendations.push(currentRecommendation);
-  }
-  
-  return recommendations.length > 0 ? recommendations : getFallbackRecommendations();
-}
-
-/**
- * Get fallback recommendations when analysis fails
- */
-function getFallbackRecommendations() {
-  return [
-    {
-      title: '1. Run ESLint Fix',
-      description: 'Automatically fix ESLint errors',
-      code: 'npm run lint:fix',
-      priority: 'high'
-    },
-    {
-      title: '2. Run Prettier Format',
-      description: 'Format code with Prettier',
-      code: 'npm run format',
-      priority: 'high'
-    },
-    {
-      title: '3. Check TypeScript Errors',
-      description: 'Review and fix TypeScript compilation errors',
-      code: 'npm run type-check',
-      priority: 'medium'
-    },
-    {
-      title: '4. Run Tests',
-      description: 'Execute test suite to identify failing tests',
-      code: 'npm run test',
-      priority: 'medium'
-    },
-    {
-      title: '5. Install Dependencies',
-      description: 'Ensure all dependencies are properly installed',
-      code: 'npm install',
-      priority: 'low'
-    }
-  ];
-}
 
 /**
  * Get failed GitHub checks
@@ -305,21 +180,41 @@ function getFallbackRecommendations() {
 async function getFailedChecks() {
   try {
     // Try to get check runs from GitHub API
-    const result = execSync('gh api repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/check-runs --jq ".check_runs[] | select(.conclusion == \"failure\") | {name: .name, status: .status, conclusion: .conclusion, html_url: .html_url}"', { 
+    const result = execSync('gh api repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/check-runs --jq ".check_runs[] | select(.conclusion == \"failure\") | .name"', { 
       encoding: 'utf8',
       stdio: 'pipe',
       timeout: 10000
     });
-    return result.trim() || 'No failed checks found via API';
+    
+    const failedChecks = result.trim().split('\n').filter(name => name.trim());
+    if (failedChecks.length > 0) {
+      return failedChecks.map(name => `- ${name}`).join('\n');
+    }
+    return 'No failed checks found via API';
   } catch (error) {
-    // Fallback: try to get recent CI output
+    // Fallback: try to get recent CI output and extract failure info
     try {
-      const ciOutput = execSync('npm run test 2>&1 | head -50', { 
-        encoding: 'utf8',
-        stdio: 'pipe',
-        timeout: 15000
-      });
-      return `Recent CI output:\n${ciOutput}`;
+      const commands = ['npm run test', 'npm run build', 'npm run lint', 'npm run type-check'];
+      const failures = [];
+      
+      for (const cmd of commands) {
+        try {
+          const output = execSync(`${cmd} 2>&1`, { 
+            encoding: 'utf8',
+            stdio: 'pipe',
+            timeout: 10000
+          });
+          // If command succeeds, no failure
+        } catch (cmdError) {
+          const cmdName = cmd.split(' ')[2] || cmd;
+          failures.push(`- ${cmdName} (failed)`);
+        }
+      }
+      
+      if (failures.length > 0) {
+        return failures.join('\n');
+      }
+      return 'Could not retrieve failed checks or CI output';
     } catch (ciError) {
       return 'Could not retrieve failed checks or CI output';
     }
@@ -438,7 +333,7 @@ async function getRepositoryStructure() {
 /**
  * Create analysis report with enhanced context for Cursor sessions
  */
-async function createAnalysisReport(context, analysis, recommendations) {
+async function createAnalysisReport(context, analysis) {
   const report = `# CI Failure Analysis - Ready for Cursor Session
 
 ## 📋 Context Summary
@@ -477,29 +372,10 @@ ${analysis.success ? '✅ Analysis completed successfully' : '❌ Analysis faile
 
 ${analysis.success ? analysis.analysis : `Error: ${analysis.error}`}
 
-## 🔧 Fix Recommendations
-${recommendations.status === 'success' ? '✅ Recommendations generated' : '⚠️ Using fallback recommendations'}
-
-${recommendations.recommendations.map((rec, index) => `
-### ${rec.title}
-**Priority**: ${rec.priority}
-**Description**: ${rec.description}
-
-\`\`\`bash
-${rec.code}
-\`\`\`
-`).join('\n')}
-
 ---
 
-## 🚀 Ready-to-Paste Cursor Session Prompt
+## 🚀 Interactive Debugging Session
 
-Copy the prompt below and paste it into a new Cursor session for interactive debugging:
-
-\`\`\`
-# CI Failure Debugging Session
-
-## Context
 I'm debugging a CI failure in the ${context.repository} repository. Here are the details:
 
 **Branch**: ${context.headBranch}
@@ -539,19 +415,6 @@ Please help me:
 4. Review the changed files above for potential issues
 
 Please analyze the error logs and provide targeted fixes.
-\`\`\`
-
-## 🎯 Quick Actions
-1. **Copy the prompt above** and paste into Cursor
-2. **Open the repository** in Cursor: \`${context.environmentInfo?.workingDirectory || process.cwd()}\`
-3. **Run diagnostic commands**:
-   - \`npm run type-check\` - Check TypeScript errors
-   - \`npm run test\` - Run tests
-   - \`npm run lint\` - Check linting
-   - \`npm run build\` - Test build process
-
-## 📚 Repository Structure
-${context.repositoryStructure || 'Repository structure not available'}
 
 ---
 *Generated by Cursor CLI Auto-Fix System - Enhanced for Interactive Debugging*
@@ -562,168 +425,6 @@ ${context.repositoryStructure || 'Repository structure not available'}
   console.log(`🎯 Copy-paste ready Cursor prompt included!`);
 }
 
-/**
- * Create fallback analysis when Cursor CLI fails
- */
-async function createFallbackAnalysis(error) {
-  // Gather basic context even in fallback mode
-  const context = {
-    timestamp: new Date().toISOString(),
-    repository: process.env.GITHUB_REPOSITORY || 'Unknown',
-    prNumber: process.env.PR_NUMBER || 'Unknown',
-    headBranch: process.env.HEAD_BRANCH || 'Unknown',
-    workflowRunUrl: process.env.WORKFLOW_RUN_URL || 'Unknown'
-  };
-
-  // Try to get some basic context even in fallback
-  try {
-    context.environmentInfo = await getEnvironmentInfo();
-    context.changedFiles = await getChangedFiles();
-    context.recentCommits = await getRecentCommits();
-  } catch (contextError) {
-    console.log('Could not gather context in fallback mode:', contextError.message);
-  }
-
-  const fallbackReport = `# CI Failure Analysis - Fallback Mode (Ready for Cursor Session)
-
-## 📋 Context Summary
-- **Repository**: ${context.repository}
-- **PR Number**: ${context.prNumber}
-- **Branch**: ${context.headBranch}
-- **Workflow Run**: ${context.workflowRunUrl}
-- **Analysis Date**: ${context.timestamp}
-- **Status**: ⚠️ Fallback analysis due to Cursor CLI error
-
-## ❌ Cursor CLI Error
-\`\`\`
-${error.message}
-\`\`\`
-
-## 🖥️ Environment Info
-${typeof context.environmentInfo === 'object' 
-  ? Object.entries(context.environmentInfo).map(([key, value]) => `- **${key}**: ${value}`).join('\n')
-  : context.environmentInfo || 'Environment info not available'}
-
-## 📁 Changed Files
-${context.changedFiles ? `
-**Recent Changes:**
-${context.changedFiles.recentChanges ? context.changedFiles.recentChanges.map(f => `- ${f}`).join('\n') : 'None'}
-
-**Current Status:**
-${context.changedFiles.currentStatus ? context.changedFiles.currentStatus.map(f => `- ${f}`).join('\n') : 'None'}
-` : 'File changes not available'}
-
-## 📝 Recent Commits
-${context.recentCommits ? context.recentCommits.map(c => `- ${c}`).join('\n') : 'Recent commits not available'}
-
-## 🔧 Fallback Fix Recommendations
-⚠️ Using fallback recommendations due to Cursor CLI error
-
-### 1. ESLint Errors
-**Priority**: high
-**Description**: Automatically fix ESLint errors
-
-\`\`\`bash
-npm run lint:fix
-\`\`\`
-
-### 2. Prettier Formatting
-**Priority**: high
-**Description**: Format code with Prettier
-
-\`\`\`bash
-npm run format
-\`\`\`
-
-### 3. TypeScript Errors
-**Priority**: medium
-**Description**: Check type definitions
-
-\`\`\`bash
-npm run type-check
-\`\`\`
-
-### 4. Test Failures
-**Priority**: medium
-**Description**: Review test logic and assertions
-
-\`\`\`bash
-npm run test
-\`\`\`
-
-### 5. Dependency Issues
-**Priority**: low
-**Description**: Ensure all dependencies are properly installed
-
-\`\`\`bash
-npm install
-\`\`\`
-
----
-
-## 🚀 Ready-to-Paste Cursor Session Prompt
-
-Copy the prompt below and paste it into a new Cursor session for interactive debugging:
-
-\`\`\`
-# CI Failure Debugging Session (Fallback Mode)
-
-## Context
-I'm debugging a CI failure in the ${context.repository} repository. The automated Cursor CLI analysis failed, so I need help with manual debugging.
-
-**Branch**: ${context.headBranch}
-**PR**: #${context.prNumber}
-**Workflow**: ${context.workflowRunUrl}
-
-## Cursor CLI Error
-The automated analysis failed with: ${error.message}
-
-## Environment
-${typeof context.environmentInfo === 'object' 
-  ? Object.entries(context.environmentInfo).map(([key, value]) => `- ${key}: ${value}`).join('\n')
-  : context.environmentInfo || 'Environment info not available'}
-
-## Files Changed Recently
-${context.changedFiles && context.changedFiles.recentChanges 
-  ? context.changedFiles.recentChanges.map(f => `- ${f}`).join('\n')
-  : 'No recent file changes detected'}
-
-## Recent Commits
-${context.recentCommits ? context.recentCommits.map(c => `- ${c}`).join('\n') : 'No recent commits available'}
-
-## What I Need Help With
-Please help me:
-1. Identify the root cause of the CI failure
-2. Provide specific fixes for the issues
-3. Suggest a debugging approach
-4. Help me test the fixes
-
-## Suggested Debugging Approach
-1. Start by running \`npm run type-check\` to see TypeScript errors
-2. Then run \`npm run test\` to identify failing tests
-3. Check \`npm run lint\` for code quality issues
-4. Review the changed files above for potential issues
-
-Please analyze the situation and provide targeted fixes.
-\`\`\`
-
-## 🎯 Quick Actions
-1. **Copy the prompt above** and paste into Cursor
-2. **Open the repository** in Cursor: \`${context.environmentInfo?.workingDirectory || process.cwd()}\`
-3. **Run diagnostic commands**:
-   - \`npm run type-check\` - Check TypeScript errors
-   - \`npm run test\` - Run tests
-   - \`npm run lint\` - Check linting
-   - \`npm run build\` - Test build process
-
----
-*Generated by Cursor CLI Auto-Fix System (Fallback Mode - Enhanced for Interactive Debugging)*
-`;
-
-  fs.writeFileSync(CONFIG.outputFile, fallbackReport);
-  console.log(`📄 Enhanced fallback analysis report saved to ${CONFIG.outputFile}`);
-  console.log(`🎯 Copy-paste ready Cursor prompt included!`);
-}
 
 // Run the analysis
 if (require.main === module) {
