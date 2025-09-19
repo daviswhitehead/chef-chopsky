@@ -8721,3 +8721,1257 @@ You can now push these changes and test them in a GitHub Actions environment. Th
 
 ---
 
+_**User (2025-09-18 18:15Z)**_
+
+OK. Now just the integration-e2e test is failing in the @ci.yml  file. Paste below are the logs. Let's talk through what's going on, debug, fix, and validate the fix as much as possible locally.
+
+2025-09-19T02:14:23.5449374Z Current runner version: '2.328.0'
+2025-09-19T02:14:23.5483544Z ##[group]Runner Image Provisioner
+2025-09-19T02:14:23.5484803Z Hosted Compute Agent
+2025-09-19T02:14:23.5485908Z Version: 20250829.383
+2025-09-19T02:14:23.5486982Z Commit: 27cb235aab5b0e52e153a26cd86b4742e89dac5d
+2025-09-19T02:14:23.5488527Z Build Date: 2025-08-29T13:48:48Z
+2025-09-19T02:14:23.5489666Z ##[endgroup]
+2025-09-19T02:14:23.5490714Z ##[group]Operating System
+2025-09-19T02:14:23.5491661Z Ubuntu
+2025-09-19T02:14:23.5492491Z 24.04.3
+2025-09-19T02:14:23.5493375Z LTS
+2025-09-19T02:14:23.5494224Z ##[endgroup]
+2025-09-19T02:14:23.5495329Z ##[group]Runner Image
+2025-09-19T02:14:23.5496414Z Image: ubuntu-24.04
+2025-09-19T02:14:23.5497366Z Version: 20250907.24.1
+2025-09-19T02:14:23.5499557Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250907.24/images/ubuntu/Ubuntu2404-Readme.md
+2025-09-19T02:14:23.5502318Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250907.24
+2025-09-19T02:14:23.5504322Z ##[endgroup]
+2025-09-19T02:14:23.5506277Z ##[group]GITHUB_TOKEN Permissions
+2025-09-19T02:14:23.5509583Z Contents: read
+2025-09-19T02:14:23.5510474Z Metadata: read
+2025-09-19T02:14:23.5511901Z Packages: read
+2025-09-19T02:14:23.5512899Z ##[endgroup]
+2025-09-19T02:14:23.5516325Z Secret source: Actions
+2025-09-19T02:14:23.5518076Z Prepare workflow directory
+2025-09-19T02:14:23.6174771Z Prepare all required actions
+2025-09-19T02:14:23.6229866Z Getting action download info
+2025-09-19T02:14:23.9666040Z Download action repository 'actions/checkout@v4' (SHA:08eba0b27e820071cde6df949e0beb9ba4906955)
+2025-09-19T02:14:24.1381307Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2025-09-19T02:14:24.5276777Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2025-09-19T02:14:24.7315351Z Complete job name: integration-e2e
+2025-09-19T02:14:24.8103537Z ##[group]Run actions/checkout@v4
+2025-09-19T02:14:24.8104877Z with:
+2025-09-19T02:14:24.8105754Z   repository: daviswhitehead/chef-chopsky
+2025-09-19T02:14:24.8107113Z   token: ***
+2025-09-19T02:14:24.8107895Z   ssh-strict: true
+2025-09-19T02:14:24.8108920Z   ssh-user: git
+2025-09-19T02:14:24.8109760Z   persist-credentials: true
+2025-09-19T02:14:24.8110685Z   clean: true
+2025-09-19T02:14:24.8111522Z   sparse-checkout-cone-mode: true
+2025-09-19T02:14:24.8112536Z   fetch-depth: 1
+2025-09-19T02:14:24.8113351Z   fetch-tags: false
+2025-09-19T02:14:24.8114176Z   show-progress: true
+2025-09-19T02:14:24.8115013Z   lfs: false
+2025-09-19T02:14:24.8115780Z   submodules: false
+2025-09-19T02:14:24.8116612Z   set-safe-directory: true
+2025-09-19T02:14:24.8117755Z env:
+2025-09-19T02:14:24.8118617Z   NODE_ENV: test
+2025-09-19T02:14:24.8119530Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:14:24.8120629Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:14:24.8121780Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:14:24.8123301Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:14:24.8124840Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:14:24.8128011Z   OPENAI_API_KEY: ***
+2025-09-19T02:14:24.8129002Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:14:24.8129968Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:14:24.8131006Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:14:24.8131844Z ##[endgroup]
+2025-09-19T02:14:24.9275915Z Syncing repository: daviswhitehead/chef-chopsky
+2025-09-19T02:14:24.9279198Z ##[group]Getting Git version info
+2025-09-19T02:14:24.9280651Z Working directory is '/home/runner/work/chef-chopsky/chef-chopsky'
+2025-09-19T02:14:24.9282613Z [command]/usr/bin/git version
+2025-09-19T02:14:24.9344354Z git version 2.51.0
+2025-09-19T02:14:24.9371898Z ##[endgroup]
+2025-09-19T02:14:24.9387988Z Temporarily overriding HOME='/home/runner/work/_temp/799ebf21-ae28-49a2-b8e6-5d9355b7d439' before making global git config changes
+2025-09-19T02:14:24.9393049Z Adding repository directory to the temporary git global config as a safe directory
+2025-09-19T02:14:24.9402976Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/chef-chopsky/chef-chopsky
+2025-09-19T02:14:24.9440039Z Deleting the contents of '/home/runner/work/chef-chopsky/chef-chopsky'
+2025-09-19T02:14:24.9443847Z ##[group]Initializing the repository
+2025-09-19T02:14:24.9449296Z [command]/usr/bin/git init /home/runner/work/chef-chopsky/chef-chopsky
+2025-09-19T02:14:24.9547259Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-09-19T02:14:24.9549837Z hint: is subject to change. To configure the initial branch name to use in all
+2025-09-19T02:14:24.9552496Z hint: of your new repositories, which will suppress this warning, call:
+2025-09-19T02:14:24.9554936Z hint:
+2025-09-19T02:14:24.9556629Z hint: 	git config --global init.defaultBranch <name>
+2025-09-19T02:14:24.9558915Z hint:
+2025-09-19T02:14:24.9560797Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-09-19T02:14:24.9564084Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-09-19T02:14:24.9566652Z hint:
+2025-09-19T02:14:24.9567919Z hint: 	git branch -m <name>
+2025-09-19T02:14:24.9569591Z hint:
+2025-09-19T02:14:24.9571268Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-09-19T02:14:24.9573393Z Initialized empty Git repository in /home/runner/work/chef-chopsky/chef-chopsky/.git/
+2025-09-19T02:14:24.9577906Z [command]/usr/bin/git remote add origin https://github.com/daviswhitehead/chef-chopsky
+2025-09-19T02:14:24.9603217Z ##[endgroup]
+2025-09-19T02:14:24.9605741Z ##[group]Disabling automatic garbage collection
+2025-09-19T02:14:24.9608029Z [command]/usr/bin/git config --local gc.auto 0
+2025-09-19T02:14:24.9637385Z ##[endgroup]
+2025-09-19T02:14:24.9639946Z ##[group]Setting up auth
+2025-09-19T02:14:24.9645007Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-09-19T02:14:24.9677390Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-09-19T02:14:25.0001760Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-09-19T02:14:25.0037182Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-09-19T02:14:25.0258707Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-09-19T02:14:25.0295439Z ##[endgroup]
+2025-09-19T02:14:25.0297891Z ##[group]Fetching the repository
+2025-09-19T02:14:25.0307870Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +e13b4a4ebd9cb9aa020b8db97b39e79c2def912f:refs/remotes/origin/feat/frontend-agent-integration
+2025-09-19T02:14:25.5276265Z From https://github.com/daviswhitehead/chef-chopsky
+2025-09-19T02:14:25.5279663Z  * [new ref]         e13b4a4ebd9cb9aa020b8db97b39e79c2def912f -> origin/feat/frontend-agent-integration
+2025-09-19T02:14:25.5312082Z ##[endgroup]
+2025-09-19T02:14:25.5314033Z ##[group]Determining the checkout info
+2025-09-19T02:14:25.5315701Z ##[endgroup]
+2025-09-19T02:14:25.5319915Z [command]/usr/bin/git sparse-checkout disable
+2025-09-19T02:14:25.5362351Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-09-19T02:14:25.5389693Z ##[group]Checking out the ref
+2025-09-19T02:14:25.5393834Z [command]/usr/bin/git checkout --progress --force -B feat/frontend-agent-integration refs/remotes/origin/feat/frontend-agent-integration
+2025-09-19T02:14:25.5839884Z Switched to a new branch 'feat/frontend-agent-integration'
+2025-09-19T02:14:25.5844784Z branch 'feat/frontend-agent-integration' set up to track 'origin/feat/frontend-agent-integration'.
+2025-09-19T02:14:25.5852863Z ##[endgroup]
+2025-09-19T02:14:25.5897727Z [command]/usr/bin/git log -1 --format=%H
+2025-09-19T02:14:25.5921197Z e13b4a4ebd9cb9aa020b8db97b39e79c2def912f
+2025-09-19T02:14:25.6228560Z ##[group]Run actions/setup-node@v4
+2025-09-19T02:14:25.6229552Z with:
+2025-09-19T02:14:25.6230247Z   node-version: 20.x
+2025-09-19T02:14:25.6231015Z   cache: npm
+2025-09-19T02:14:25.6231730Z   always-auth: false
+2025-09-19T02:14:25.6232512Z   check-latest: false
+2025-09-19T02:14:25.6233584Z   token: ***
+2025-09-19T02:14:25.6234313Z env:
+2025-09-19T02:14:25.6234979Z   NODE_ENV: test
+2025-09-19T02:14:25.6235800Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:14:25.6236842Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:14:25.6237870Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:14:25.6239641Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:14:25.6241360Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:14:25.6244568Z   OPENAI_API_KEY: ***
+2025-09-19T02:14:25.6245468Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:14:25.6246394Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:14:25.6247366Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:14:25.6248427Z ##[endgroup]
+2025-09-19T02:14:25.8083409Z Found in cache @ /opt/hostedtoolcache/node/20.19.5/x64
+2025-09-19T02:14:25.8089516Z ##[group]Environment details
+2025-09-19T02:14:28.1652669Z node: v20.19.5
+2025-09-19T02:14:28.1653136Z npm: 10.8.2
+2025-09-19T02:14:28.1653460Z yarn: 1.22.22
+2025-09-19T02:14:28.1654699Z ##[endgroup]
+2025-09-19T02:14:28.1687194Z [command]/opt/hostedtoolcache/node/20.19.5/x64/bin/npm config get cache
+2025-09-19T02:14:28.4624472Z /home/runner/.npm
+2025-09-19T02:14:28.6728018Z Cache hit for: node-cache-Linux-x64-npm-abb3c4792b476017477a361b65dace4ed3737f88bc7f8a563b86044c1ffafc98
+2025-09-19T02:14:29.8596914Z Received 88080384 of 212895253 (41.4%), 83.8 MBs/sec
+2025-09-19T02:14:30.5512564Z Received 212895253 of 212895253 (100.0%), 119.9 MBs/sec
+2025-09-19T02:14:30.5513976Z Cache Size: ~203 MB (212895253 B)
+2025-09-19T02:14:30.5550507Z [command]/usr/bin/tar -xf /home/runner/work/_temp/ebdab102-f8d1-4be9-8576-d0a5fb815c56/cache.tzst -P -C /home/runner/work/chef-chopsky/chef-chopsky --use-compress-program unzstd
+2025-09-19T02:14:31.0144408Z Cache restored successfully
+2025-09-19T02:14:31.0537846Z Cache restored from key: node-cache-Linux-x64-npm-abb3c4792b476017477a361b65dace4ed3737f88bc7f8a563b86044c1ffafc98
+2025-09-19T02:14:31.0701559Z ##[group]Run npm run install:all
+2025-09-19T02:14:31.0701926Z [36;1mnpm run install:all[0m
+2025-09-19T02:14:31.0850980Z shell: /usr/bin/bash -e {0}
+2025-09-19T02:14:31.0851279Z env:
+2025-09-19T02:14:31.0851487Z   NODE_ENV: test
+2025-09-19T02:14:31.0851767Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:14:31.0852120Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:14:31.0852468Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:14:31.0853153Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:14:31.0853632Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:14:31.0854631Z   OPENAI_API_KEY: ***
+2025-09-19T02:14:31.0854886Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:14:31.0855182Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:14:31.0855514Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:14:31.0855745Z ##[endgroup]
+2025-09-19T02:14:31.3004845Z 
+2025-09-19T02:14:31.3010923Z > chef-chopsky@1.0.0 install:all
+2025-09-19T02:14:31.3011700Z > npm install && cd frontend && npm install && cd ../agent && npm install
+2025-09-19T02:14:31.3012080Z 
+2025-09-19T02:14:38.9373875Z 
+2025-09-19T02:14:38.9374605Z added 29 packages, and audited 32 packages in 8s
+2025-09-19T02:14:38.9375114Z 
+2025-09-19T02:14:38.9375426Z 7 packages are looking for funding
+2025-09-19T02:14:38.9375968Z   run `npm fund` for details
+2025-09-19T02:14:38.9384441Z 
+2025-09-19T02:14:38.9385001Z found 0 vulnerabilities
+2025-09-19T02:14:42.8788550Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2025-09-19T02:14:43.0023802Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+2025-09-19T02:14:43.0115078Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+2025-09-19T02:14:43.0993585Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+2025-09-19T02:14:43.1126772Z npm warn deprecated glob@7.1.7: Glob versions prior to v9 are no longer supported
+2025-09-19T02:14:44.6392455Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+2025-09-19T02:14:52.4760618Z 
+2025-09-19T02:14:52.4761675Z added 634 packages, and audited 635 packages in 13s
+2025-09-19T02:14:52.4762151Z 
+2025-09-19T02:14:52.4762476Z 175 packages are looking for funding
+2025-09-19T02:14:52.4763006Z   run `npm fund` for details
+2025-09-19T02:14:52.4774336Z 
+2025-09-19T02:14:52.4774685Z found 0 vulnerabilities
+2025-09-19T02:14:55.6447268Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2025-09-19T02:14:55.8091059Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+2025-09-19T02:14:55.8254056Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+2025-09-19T02:14:55.9388849Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+2025-09-19T02:14:55.9498347Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+2025-09-19T02:14:56.0104152Z npm warn deprecated @aws-sdk/signature-v4@3.374.0: This package has moved to @smithy/signature-v4
+2025-09-19T02:14:56.0108721Z npm warn deprecated @aws-sdk/protocol-http@3.374.0: This package has moved to @smithy/protocol-http
+2025-09-19T02:14:56.5394366Z npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+2025-09-19T02:14:57.7638761Z npm warn deprecated bson@6.8.0: a critical bug affecting only useBigInt64=true deserialization usage is fixed in bson@6.10.3
+2025-09-19T02:14:58.6930835Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+2025-09-19T02:15:00.4387468Z 
+2025-09-19T02:15:00.4388927Z added 875 packages, and audited 876 packages in 8s
+2025-09-19T02:15:00.4389354Z 
+2025-09-19T02:15:00.4389544Z 152 packages are looking for funding
+2025-09-19T02:15:00.4405339Z   run `npm fund` for details
+2025-09-19T02:15:00.4416683Z 
+2025-09-19T02:15:00.4417053Z found 0 vulnerabilities
+2025-09-19T02:15:00.4971462Z ##[group]Run cd frontend && npx playwright install --with-deps chromium
+2025-09-19T02:15:00.4971984Z [36;1mcd frontend && npx playwright install --with-deps chromium[0m
+2025-09-19T02:15:00.5001838Z shell: /usr/bin/bash -e {0}
+2025-09-19T02:15:00.5002070Z env:
+2025-09-19T02:15:00.5002243Z   NODE_ENV: test
+2025-09-19T02:15:00.5002472Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:15:00.5002774Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:15:00.5003065Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:15:00.5003505Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:15:00.5003893Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:15:00.5004697Z   OPENAI_API_KEY: ***
+2025-09-19T02:15:00.5004920Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:15:00.5005169Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:15:00.5005414Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:15:00.5005611Z ##[endgroup]
+2025-09-19T02:15:01.3628788Z Installing dependencies...
+2025-09-19T02:15:01.3708459Z Switching to root user to install dependencies...
+2025-09-19T02:15:01.5255436Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2025-09-19T02:15:01.5681491Z Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
+2025-09-19T02:15:01.5687274Z Hit:6 https://packages.microsoft.com/repos/azure-cli noble InRelease
+2025-09-19T02:15:01.5692403Z Get:7 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+2025-09-19T02:15:01.5700538Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+2025-09-19T02:15:01.5744815Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+2025-09-19T02:15:01.5789953Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+2025-09-19T02:15:01.7785574Z Get:8 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [53.5 kB]
+2025-09-19T02:15:01.7892582Z Get:9 https://packages.microsoft.com/ubuntu/24.04/prod noble/main armhf Packages [10.2 kB]
+2025-09-19T02:15:01.7925057Z Get:10 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [36.0 kB]
+2025-09-19T02:15:01.8249623Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1415 kB]
+2025-09-19T02:15:01.8347942Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [278 kB]
+2025-09-19T02:15:01.8377052Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Components [175 kB]
+2025-09-19T02:15:01.8393668Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 c-n-f Metadata [15.2 kB]
+2025-09-19T02:15:01.8405548Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1484 kB]
+2025-09-19T02:15:01.8508573Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [299 kB]
+2025-09-19T02:15:01.8537538Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Components [377 kB]
+2025-09-19T02:15:01.8574718Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 c-n-f Metadata [31.1 kB]
+2025-09-19T02:15:01.8591894Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1901 kB]
+2025-09-19T02:15:01.8732454Z Get:20 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [426 kB]
+2025-09-19T02:15:01.9192832Z Get:21 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Components [212 B]
+2025-09-19T02:15:01.9203049Z Get:22 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 c-n-f Metadata [544 B]
+2025-09-19T02:15:01.9213936Z Get:23 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [32.0 kB]
+2025-09-19T02:15:01.9226752Z Get:24 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse Translation-en [5500 B]
+2025-09-19T02:15:01.9235269Z Get:25 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Components [940 B]
+2025-09-19T02:15:01.9245111Z Get:26 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 c-n-f Metadata [488 B]
+2025-09-19T02:15:01.9263674Z Get:27 http://azure.archive.ubuntu.com/ubuntu noble-backports/main amd64 Components [7076 B]
+2025-09-19T02:15:01.9276331Z Get:28 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Components [19.2 kB]
+2025-09-19T02:15:01.9283950Z Get:29 http://azure.archive.ubuntu.com/ubuntu noble-backports/restricted amd64 Components [216 B]
+2025-09-19T02:15:01.9333513Z Get:30 http://azure.archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Components [212 B]
+2025-09-19T02:15:01.9351578Z Get:31 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1143 kB]
+2025-09-19T02:15:01.9413389Z Get:32 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [195 kB]
+2025-09-19T02:15:01.9430505Z Get:33 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Components [21.6 kB]
+2025-09-19T02:15:01.9440868Z Get:34 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 c-n-f Metadata [8744 B]
+2025-09-19T02:15:01.9914158Z Get:35 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [880 kB]
+2025-09-19T02:15:01.9966172Z Get:36 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [195 kB]
+2025-09-19T02:15:01.9984963Z Get:37 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Components [52.3 kB]
+2025-09-19T02:15:02.0001006Z Get:38 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 c-n-f Metadata [18.0 kB]
+2025-09-19T02:15:02.0017576Z Get:39 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1815 kB]
+2025-09-19T02:15:02.0109243Z Get:40 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [408 kB]
+2025-09-19T02:15:02.0139417Z Get:41 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Components [212 B]
+2025-09-19T02:15:02.0143241Z Get:42 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 c-n-f Metadata [520 B]
+2025-09-19T02:15:02.0154133Z Get:43 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [28.0 kB]
+2025-09-19T02:15:02.0163498Z Get:44 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse Translation-en [5228 B]
+2025-09-19T02:15:02.0173572Z Get:45 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 Components [212 B]
+2025-09-19T02:15:02.0182924Z Get:46 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 c-n-f Metadata [384 B]
+2025-09-19T02:15:07.8521884Z Fetched 11.7 MB in 1s (7905 kB/s)
+2025-09-19T02:15:08.5670104Z Reading package lists...
+2025-09-19T02:15:08.5928484Z Reading package lists...
+2025-09-19T02:15:08.7742158Z Building dependency tree...
+2025-09-19T02:15:08.7750063Z Reading state information...
+2025-09-19T02:15:08.9466885Z libasound2t64 is already the newest version (1.2.11-1ubuntu0.1).
+2025-09-19T02:15:08.9467705Z libasound2t64 set to manually installed.
+2025-09-19T02:15:08.9468807Z libatk-bridge2.0-0t64 is already the newest version (2.52.0-1build1).
+2025-09-19T02:15:08.9469579Z libatk-bridge2.0-0t64 set to manually installed.
+2025-09-19T02:15:08.9470381Z libatk1.0-0t64 is already the newest version (2.52.0-1build1).
+2025-09-19T02:15:08.9471010Z libatk1.0-0t64 set to manually installed.
+2025-09-19T02:15:08.9471690Z libatspi2.0-0t64 is already the newest version (2.52.0-1build1).
+2025-09-19T02:15:08.9472336Z libatspi2.0-0t64 set to manually installed.
+2025-09-19T02:15:08.9472938Z libcairo2 is already the newest version (1.18.0-3build1).
+2025-09-19T02:15:08.9473482Z libcairo2 set to manually installed.
+2025-09-19T02:15:08.9473870Z libdbus-1-3 is already the newest version (1.14.10-4ubuntu4.1).
+2025-09-19T02:15:08.9474256Z libdbus-1-3 set to manually installed.
+2025-09-19T02:15:08.9474654Z libdrm2 is already the newest version (2.4.122-1~ubuntu0.24.04.1).
+2025-09-19T02:15:08.9475019Z libdrm2 set to manually installed.
+2025-09-19T02:15:08.9475494Z libgbm1 is already the newest version (25.0.7-0ubuntu0.24.04.2).
+2025-09-19T02:15:08.9476380Z libgbm1 set to manually installed.
+2025-09-19T02:15:08.9476777Z libglib2.0-0t64 is already the newest version (2.80.0-6ubuntu3.4).
+2025-09-19T02:15:08.9477157Z libglib2.0-0t64 set to manually installed.
+2025-09-19T02:15:08.9477548Z libnspr4 is already the newest version (2:4.35-1.1build1).
+2025-09-19T02:15:08.9477895Z libnspr4 set to manually installed.
+2025-09-19T02:15:08.9478533Z libnss3 is already the newest version (2:3.98-1build1).
+2025-09-19T02:15:08.9479024Z libnss3 set to manually installed.
+2025-09-19T02:15:08.9479432Z libpango-1.0-0 is already the newest version (1.52.1+ds-1build1).
+2025-09-19T02:15:08.9479824Z libpango-1.0-0 set to manually installed.
+2025-09-19T02:15:08.9480207Z libx11-6 is already the newest version (2:1.8.7-1build1).
+2025-09-19T02:15:08.9480546Z libx11-6 set to manually installed.
+2025-09-19T02:15:08.9480890Z libxcb1 is already the newest version (1.15-1ubuntu2).
+2025-09-19T02:15:08.9481221Z libxcb1 set to manually installed.
+2025-09-19T02:15:08.9481616Z libxcomposite1 is already the newest version (1:0.4.5-1build3).
+2025-09-19T02:15:08.9482000Z libxcomposite1 set to manually installed.
+2025-09-19T02:15:08.9482384Z libxdamage1 is already the newest version (1:1.1.6-1build1).
+2025-09-19T02:15:08.9482744Z libxdamage1 set to manually installed.
+2025-09-19T02:15:08.9483107Z libxext6 is already the newest version (2:1.3.4-1build2).
+2025-09-19T02:15:08.9483445Z libxext6 set to manually installed.
+2025-09-19T02:15:08.9483985Z libxfixes3 is already the newest version (1:6.0.0-2build1).
+2025-09-19T02:15:08.9484338Z libxfixes3 set to manually installed.
+2025-09-19T02:15:08.9484708Z libxkbcommon0 is already the newest version (1.6.0-1build1).
+2025-09-19T02:15:08.9485067Z libxkbcommon0 set to manually installed.
+2025-09-19T02:15:08.9485442Z libxrandr2 is already the newest version (2:1.5.2-2build1).
+2025-09-19T02:15:08.9485790Z libxrandr2 set to manually installed.
+2025-09-19T02:15:08.9486158Z xvfb is already the newest version (2:21.1.12-1ubuntu1.4).
+2025-09-19T02:15:08.9486661Z fonts-noto-color-emoji is already the newest version (2.047-0ubuntu0.24.04.1).
+2025-09-19T02:15:08.9487181Z libfontconfig1 is already the newest version (2.15.0-1.1ubuntu2).
+2025-09-19T02:15:08.9487567Z libfontconfig1 set to manually installed.
+2025-09-19T02:15:08.9487972Z libfreetype6 is already the newest version (2.13.2+dfsg-1build3).
+2025-09-19T02:15:08.9488527Z libfreetype6 set to manually installed.
+2025-09-19T02:15:08.9488924Z fonts-liberation is already the newest version (1:2.1.5-3).
+2025-09-19T02:15:08.9489303Z fonts-liberation set to manually installed.
+2025-09-19T02:15:08.9489673Z The following additional packages will be installed:
+2025-09-19T02:15:08.9490009Z   xfonts-encodings xfonts-utils
+2025-09-19T02:15:08.9490267Z Suggested packages:
+2025-09-19T02:15:08.9490469Z   cups-common
+2025-09-19T02:15:08.9490670Z Recommended packages:
+2025-09-19T02:15:08.9490922Z   fonts-ipafont-mincho fonts-tlwg-loma
+2025-09-19T02:15:08.9910337Z The following NEW packages will be installed:
+2025-09-19T02:15:08.9911283Z   fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont
+2025-09-19T02:15:08.9919266Z   fonts-wqy-zenhei xfonts-cyrillic xfonts-encodings xfonts-scalable
+2025-09-19T02:15:08.9919860Z   xfonts-utils
+2025-09-19T02:15:08.9924723Z The following packages will be upgraded:
+2025-09-19T02:15:08.9932002Z   libcups2t64
+2025-09-19T02:15:09.0121349Z 1 upgraded, 9 newly installed, 0 to remove and 46 not upgraded.
+2025-09-19T02:15:09.0122246Z Need to get 21.4 MB of archives.
+2025-09-19T02:15:09.0123199Z After this operation, 79.5 MB of additional disk space will be used.
+2025-09-19T02:15:09.0124051Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2025-09-19T02:15:09.0704586Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-ipafont-gothic all 00303-21ubuntu1 [3513 kB]
+2025-09-19T02:15:09.2404981Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 fonts-freefont-ttf all 20211204+svn4273-2 [5641 kB]
+2025-09-19T02:15:09.4439177Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-tlwg-loma-otf all 1:0.7.3-1 [107 kB]
+2025-09-19T02:15:09.4857813Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-unifont all 1:15.1.01-1build1 [2993 kB]
+2025-09-19T02:15:09.6450557Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-wqy-zenhei all 0.9.45-8 [7472 kB]
+2025-09-19T02:15:09.9767683Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libcups2t64 amd64 2.4.7-1.2ubuntu7.4 [272 kB]
+2025-09-19T02:15:10.0236796Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-encodings all 1:1.0.5-0ubuntu2 [578 kB]
+2025-09-19T02:15:10.0727103Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-utils amd64 1:7.7+6build3 [94.4 kB]
+2025-09-19T02:15:10.1103850Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 xfonts-cyrillic all 1:1.0.5+nmu1 [384 kB]
+2025-09-19T02:15:10.1522787Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-scalable all 1:1.0.3-1.3 [304 kB]
+2025-09-19T02:15:10.4246780Z Fetched 21.4 MB in 1s (18.5 MB/s)
+2025-09-19T02:15:10.4534155Z Selecting previously unselected package fonts-ipafont-gothic.
+2025-09-19T02:15:10.4886289Z (Reading database ... 
+2025-09-19T02:15:10.4886761Z (Reading database ... 5%
+2025-09-19T02:15:10.4887196Z (Reading database ... 10%
+2025-09-19T02:15:10.4887627Z (Reading database ... 15%
+2025-09-19T02:15:10.4887937Z (Reading database ... 20%
+2025-09-19T02:15:10.4888731Z (Reading database ... 25%
+2025-09-19T02:15:10.4889003Z (Reading database ... 30%
+2025-09-19T02:15:10.4889275Z (Reading database ... 35%
+2025-09-19T02:15:10.4889551Z (Reading database ... 40%
+2025-09-19T02:15:10.4889827Z (Reading database ... 45%
+2025-09-19T02:15:10.4890101Z (Reading database ... 50%
+2025-09-19T02:15:10.6057100Z (Reading database ... 55%
+2025-09-19T02:15:11.1782789Z (Reading database ... 60%
+2025-09-19T02:15:11.7501115Z (Reading database ... 65%
+2025-09-19T02:15:12.3367436Z (Reading database ... 70%
+2025-09-19T02:15:12.9115282Z (Reading database ... 75%
+2025-09-19T02:15:13.4785882Z (Reading database ... 80%
+2025-09-19T02:15:14.0891819Z (Reading database ... 85%
+2025-09-19T02:15:14.7260897Z (Reading database ... 90%
+2025-09-19T02:15:15.3785985Z (Reading database ... 95%
+2025-09-19T02:15:15.3786488Z (Reading database ... 100%
+2025-09-19T02:15:15.3787225Z (Reading database ... 218657 files and directories currently installed.)
+2025-09-19T02:15:15.3835469Z Preparing to unpack .../0-fonts-ipafont-gothic_00303-21ubuntu1_all.deb ...
+2025-09-19T02:15:15.3930377Z Unpacking fonts-ipafont-gothic (00303-21ubuntu1) ...
+2025-09-19T02:15:15.6237155Z Selecting previously unselected package fonts-freefont-ttf.
+2025-09-19T02:15:15.6375162Z Preparing to unpack .../1-fonts-freefont-ttf_20211204+svn4273-2_all.deb ...
+2025-09-19T02:15:15.6384078Z Unpacking fonts-freefont-ttf (20211204+svn4273-2) ...
+2025-09-19T02:15:15.7296238Z Selecting previously unselected package fonts-tlwg-loma-otf.
+2025-09-19T02:15:15.7430178Z Preparing to unpack .../2-fonts-tlwg-loma-otf_1%3a0.7.3-1_all.deb ...
+2025-09-19T02:15:15.7439075Z Unpacking fonts-tlwg-loma-otf (1:0.7.3-1) ...
+2025-09-19T02:15:15.7649772Z Selecting previously unselected package fonts-unifont.
+2025-09-19T02:15:15.7787332Z Preparing to unpack .../3-fonts-unifont_1%3a15.1.01-1build1_all.deb ...
+2025-09-19T02:15:15.7795951Z Unpacking fonts-unifont (1:15.1.01-1build1) ...
+2025-09-19T02:15:15.9035587Z Selecting previously unselected package fonts-wqy-zenhei.
+2025-09-19T02:15:15.9172542Z Preparing to unpack .../4-fonts-wqy-zenhei_0.9.45-8_all.deb ...
+2025-09-19T02:15:15.9345263Z Unpacking fonts-wqy-zenhei (0.9.45-8) ...
+2025-09-19T02:15:16.4136412Z Preparing to unpack .../5-libcups2t64_2.4.7-1.2ubuntu7.4_amd64.deb ...
+2025-09-19T02:15:16.4205786Z Unpacking libcups2t64:amd64 (2.4.7-1.2ubuntu7.4) over (2.4.7-1.2ubuntu7.3) ...
+2025-09-19T02:15:16.4541393Z Selecting previously unselected package xfonts-encodings.
+2025-09-19T02:15:16.4676093Z Preparing to unpack .../6-xfonts-encodings_1%3a1.0.5-0ubuntu2_all.deb ...
+2025-09-19T02:15:16.4683375Z Unpacking xfonts-encodings (1:1.0.5-0ubuntu2) ...
+2025-09-19T02:15:16.4964322Z Selecting previously unselected package xfonts-utils.
+2025-09-19T02:15:16.5099943Z Preparing to unpack .../7-xfonts-utils_1%3a7.7+6build3_amd64.deb ...
+2025-09-19T02:15:16.5108016Z Unpacking xfonts-utils (1:7.7+6build3) ...
+2025-09-19T02:15:16.6108824Z Selecting previously unselected package xfonts-cyrillic.
+2025-09-19T02:15:16.6244618Z Preparing to unpack .../8-xfonts-cyrillic_1%3a1.0.5+nmu1_all.deb ...
+2025-09-19T02:15:16.6252664Z Unpacking xfonts-cyrillic (1:1.0.5+nmu1) ...
+2025-09-19T02:15:16.6615091Z Selecting previously unselected package xfonts-scalable.
+2025-09-19T02:15:16.6752035Z Preparing to unpack .../9-xfonts-scalable_1%3a1.0.3-1.3_all.deb ...
+2025-09-19T02:15:16.6759475Z Unpacking xfonts-scalable (1:1.0.3-1.3) ...
+2025-09-19T02:15:16.7171816Z Setting up fonts-wqy-zenhei (0.9.45-8) ...
+2025-09-19T02:15:16.7287122Z Setting up fonts-freefont-ttf (20211204+svn4273-2) ...
+2025-09-19T02:15:16.7306681Z Setting up fonts-tlwg-loma-otf (1:0.7.3-1) ...
+2025-09-19T02:15:16.7325956Z Setting up xfonts-encodings (1:1.0.5-0ubuntu2) ...
+2025-09-19T02:15:16.7344472Z Setting up fonts-ipafont-gothic (00303-21ubuntu1) ...
+2025-09-19T02:15:16.7407958Z update-alternatives: using /usr/share/fonts/opentype/ipafont-gothic/ipag.ttf to provide /usr/share/fonts/truetype/fonts-japanese-gothic.ttf (fonts-japanese-gothic.ttf) in auto mode
+2025-09-19T02:15:16.7425275Z Setting up libcups2t64:amd64 (2.4.7-1.2ubuntu7.4) ...
+2025-09-19T02:15:16.7446367Z Setting up fonts-unifont (1:15.1.01-1build1) ...
+2025-09-19T02:15:16.7465713Z Setting up xfonts-utils (1:7.7+6build3) ...
+2025-09-19T02:15:16.7505922Z Setting up xfonts-cyrillic (1:1.0.5+nmu1) ...
+2025-09-19T02:15:16.7981690Z Setting up xfonts-scalable (1:1.0.3-1.3) ...
+2025-09-19T02:15:16.8243917Z Processing triggers for libc-bin (2.39-0ubuntu8.5) ...
+2025-09-19T02:15:16.9183503Z Processing triggers for man-db (2.12.0-4build2) ...
+2025-09-19T02:16:37.1168852Z Processing triggers for fontconfig (2.15.0-1.1ubuntu2) ...
+2025-09-19T02:16:38.7677580Z 
+2025-09-19T02:16:38.7680050Z Running kernel seems to be up-to-date.
+2025-09-19T02:16:38.7680472Z 
+2025-09-19T02:16:38.7680709Z Restarting services...
+2025-09-19T02:16:38.7748736Z 
+2025-09-19T02:16:38.7749427Z Service restarts being deferred:
+2025-09-19T02:16:38.7753009Z  systemctl restart hosted-compute-agent.service
+2025-09-19T02:16:38.7753340Z 
+2025-09-19T02:16:38.7753833Z No containers need to be restarted.
+2025-09-19T02:16:38.7754152Z 
+2025-09-19T02:16:38.7754431Z No user sessions are running outdated binaries.
+2025-09-19T02:16:38.7754757Z 
+2025-09-19T02:16:38.7755198Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2025-09-19T02:16:39.6740050Z Downloading Chromium 140.0.7339.16 (playwright build v1187) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1187/chromium-linux.zip
+2025-09-19T02:16:39.9445484Z |                                                                                |   0% of 173.7 MiB
+2025-09-19T02:16:40.3037806Z |■■■■■■■■                                                                        |  10% of 173.7 MiB
+2025-09-19T02:16:40.4691435Z |■■■■■■■■■■■■■■■■                                                                |  20% of 173.7 MiB
+2025-09-19T02:16:40.6512001Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 173.7 MiB
+2025-09-19T02:16:40.8425036Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 173.7 MiB
+2025-09-19T02:16:41.0122870Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 173.7 MiB
+2025-09-19T02:16:41.2028742Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 173.7 MiB
+2025-09-19T02:16:41.3841601Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 173.7 MiB
+2025-09-19T02:16:41.5459640Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 173.7 MiB
+2025-09-19T02:16:41.7048664Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 173.7 MiB
+2025-09-19T02:16:41.8700100Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 173.7 MiB
+2025-09-19T02:16:45.7783001Z Chromium 140.0.7339.16 (playwright build v1187) downloaded to /home/runner/.cache/ms-playwright/chromium-1187
+2025-09-19T02:16:45.7785520Z Downloading FFMPEG playwright build v1011 from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
+2025-09-19T02:16:46.0892614Z |                                                                                |   0% of 2.3 MiB
+2025-09-19T02:16:46.1748423Z |■■■■■■■■                                                                        |  10% of 2.3 MiB
+2025-09-19T02:16:46.2123797Z |■■■■■■■■■■■■■■■■                                                                |  20% of 2.3 MiB
+2025-09-19T02:16:46.2370704Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.3 MiB
+2025-09-19T02:16:46.2507573Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.3 MiB
+2025-09-19T02:16:46.2630023Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.3 MiB
+2025-09-19T02:16:46.2744432Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.3 MiB
+2025-09-19T02:16:46.2828432Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.3 MiB
+2025-09-19T02:16:46.2899995Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.3 MiB
+2025-09-19T02:16:46.2967044Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.3 MiB
+2025-09-19T02:16:46.3025235Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.3 MiB
+2025-09-19T02:16:46.3707096Z FFMPEG playwright build v1011 downloaded to /home/runner/.cache/ms-playwright/ffmpeg-1011
+2025-09-19T02:16:46.3710207Z Downloading Chromium Headless Shell 140.0.7339.16 (playwright build v1187) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1187/chromium-headless-shell-linux.zip
+2025-09-19T02:16:46.6380816Z |                                                                                |   0% of 104.3 MiB
+2025-09-19T02:16:46.9722666Z |■■■■■■■■                                                                        |  10% of 104.3 MiB
+2025-09-19T02:16:47.0911539Z |■■■■■■■■■■■■■■■■                                                                |  20% of 104.3 MiB
+2025-09-19T02:16:47.2264161Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 104.3 MiB
+2025-09-19T02:16:47.3533573Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 104.3 MiB
+2025-09-19T02:16:47.4813223Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 104.3 MiB
+2025-09-19T02:16:47.6029098Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 104.3 MiB
+2025-09-19T02:16:47.7255786Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 104.3 MiB
+2025-09-19T02:16:47.8728342Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 104.3 MiB
+2025-09-19T02:16:48.0024380Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 104.3 MiB
+2025-09-19T02:16:48.1268707Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 104.3 MiB
+2025-09-19T02:16:50.2136824Z Chromium Headless Shell 140.0.7339.16 (playwright build v1187) downloaded to /home/runner/.cache/ms-playwright/chromium_headless_shell-1187
+2025-09-19T02:16:50.4722958Z ##[group]Run npm run build
+2025-09-19T02:16:50.4723242Z [36;1mnpm run build[0m
+2025-09-19T02:16:50.4752644Z shell: /usr/bin/bash -e {0}
+2025-09-19T02:16:50.4752875Z env:
+2025-09-19T02:16:50.4753044Z   NODE_ENV: test
+2025-09-19T02:16:50.4753267Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:16:50.4753535Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:16:50.4753795Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:16:50.4754226Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:16:50.4754610Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:16:50.4755411Z   OPENAI_API_KEY: ***
+2025-09-19T02:16:50.4755625Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:16:50.4755858Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:16:50.4756101Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:16:50.4756299Z ##[endgroup]
+2025-09-19T02:16:50.5864035Z 
+2025-09-19T02:16:50.5864479Z > chef-chopsky@1.0.0 build
+2025-09-19T02:16:50.5865067Z > npm run build:frontend && npm run build:agent
+2025-09-19T02:16:50.5865379Z 
+2025-09-19T02:16:50.6978541Z 
+2025-09-19T02:16:50.6979073Z > chef-chopsky@1.0.0 build:frontend
+2025-09-19T02:16:50.6979437Z > cd frontend && npm run build
+2025-09-19T02:16:50.6979606Z 
+2025-09-19T02:16:50.8038477Z 
+2025-09-19T02:16:50.8039053Z > chef-chopsky-frontend@1.0.0 build
+2025-09-19T02:16:50.8039604Z > next build
+2025-09-19T02:16:50.8039813Z 
+2025-09-19T02:16:51.3489332Z  ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+2025-09-19T02:16:51.3490818Z  We detected multiple lockfiles and selected the directory of /home/runner/work/chef-chopsky/chef-chopsky/package-lock.json as the root directory.
+2025-09-19T02:16:51.3492611Z  To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+2025-09-19T02:16:51.3494133Z    See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+2025-09-19T02:16:51.3495009Z  Detected additional lockfiles: 
+2025-09-19T02:16:51.3495763Z    * /home/runner/work/chef-chopsky/chef-chopsky/frontend/package-lock.json
+2025-09-19T02:16:51.3496279Z 
+2025-09-19T02:16:51.3509060Z ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+2025-09-19T02:16:51.3574787Z Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2025-09-19T02:16:51.3575845Z This information is used to shape Next.js' roadmap and prioritize features.
+2025-09-19T02:16:51.3576780Z You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+2025-09-19T02:16:51.3577386Z https://nextjs.org/telemetry
+2025-09-19T02:16:51.3577550Z 
+2025-09-19T02:16:51.4068283Z    ▲ Next.js 15.5.3
+2025-09-19T02:16:51.4068564Z 
+2025-09-19T02:16:51.4792814Z    Creating an optimized production build ...
+2025-09-19T02:16:59.2920280Z 
+2025-09-19T02:16:59.2920406Z 
+2025-09-19T02:16:59.2920884Z Retrying 1/3...
+2025-09-19T02:17:01.5539114Z  ✓ Compiled successfully in 7.7s
+2025-09-19T02:17:01.5576755Z    Linting and checking validity of types ...
+2025-09-19T02:17:06.1228867Z    Collecting page data ...
+2025-09-19T02:17:07.7047652Z    Generating static pages (0/6) ...
+2025-09-19T02:17:08.1939409Z    Generating static pages (1/6) 
+2025-09-19T02:17:08.2237794Z    Generating static pages (2/6) 
+2025-09-19T02:17:08.4144457Z    Generating static pages (4/6) 
+2025-09-19T02:17:08.4145311Z  ✓ Generating static pages (6/6)
+2025-09-19T02:17:08.9050508Z    Finalizing page optimization ...
+2025-09-19T02:17:08.9051695Z    Collecting build traces ...
+2025-09-19T02:17:15.3470675Z 
+2025-09-19T02:17:15.3497265Z Route (app)                                 Size  First Load JS
+2025-09-19T02:17:15.3498596Z ┌ ○ /                                      13 kB         155 kB
+2025-09-19T02:17:15.3499456Z ├ ○ /_not-found                            995 B         103 kB
+2025-09-19T02:17:15.3500674Z ├ ƒ /api/ai/chat                           134 B         102 kB
+2025-09-19T02:17:15.3501546Z ├ ƒ /api/conversations                     134 B         102 kB
+2025-09-19T02:17:15.3502498Z ├ ƒ /api/conversations/[id]                134 B         102 kB
+2025-09-19T02:17:15.3503422Z ├ ƒ /api/conversations/[id]/messages       134 B         102 kB
+2025-09-19T02:17:15.3504311Z └ ƒ /conversations/[id]                  5.83 kB         148 kB
+2025-09-19T02:17:15.3505023Z + First Load JS shared by all             102 kB
+2025-09-19T02:17:15.3505760Z   ├ chunks/255-40634877ae3e8e9d.js       45.7 kB
+2025-09-19T02:17:15.3506448Z   ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB
+2025-09-19T02:17:15.3507145Z   └ other shared chunks (total)          1.93 kB
+2025-09-19T02:17:15.3507440Z 
+2025-09-19T02:17:15.3507449Z 
+2025-09-19T02:17:15.3507820Z ○  (Static)   prerendered as static content
+2025-09-19T02:17:15.3508628Z ƒ  (Dynamic)  server-rendered on demand
+2025-09-19T02:17:15.3508957Z 
+2025-09-19T02:17:15.4929877Z 
+2025-09-19T02:17:15.4930357Z > chef-chopsky@1.0.0 build:agent
+2025-09-19T02:17:15.4930767Z > cd agent && npm run build
+2025-09-19T02:17:15.4930943Z 
+2025-09-19T02:17:15.6038541Z 
+2025-09-19T02:17:15.6039039Z > retrieval-graph@0.0.1 build
+2025-09-19T02:17:15.6039542Z > tsc
+2025-09-19T02:17:15.6039742Z 
+2025-09-19T02:17:18.2998027Z ##[group]Run echo "🚀 Starting services for integration and E2E tests..."
+2025-09-19T02:17:18.2998963Z [36;1mecho "🚀 Starting services for integration and E2E tests..."[0m
+2025-09-19T02:17:18.2999407Z [36;1mnpm run start:services &[0m
+2025-09-19T02:17:18.2999666Z [36;1mecho "Services started in background"[0m
+2025-09-19T02:17:18.3029075Z shell: /usr/bin/bash -e {0}
+2025-09-19T02:17:18.3029306Z env:
+2025-09-19T02:17:18.3029475Z   NODE_ENV: test
+2025-09-19T02:17:18.3029690Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:17:18.3029960Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:17:18.3030224Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:17:18.3030656Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:17:18.3031034Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:17:18.3031833Z   OPENAI_API_KEY: ***
+2025-09-19T02:17:18.3032042Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:17:18.3032273Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:17:18.3032552Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:17:18.3032744Z ##[endgroup]
+2025-09-19T02:17:18.3084462Z 🚀 Starting services for integration and E2E tests...
+2025-09-19T02:17:18.3085592Z Services started in background
+2025-09-19T02:17:18.4116263Z 
+2025-09-19T02:17:18.4116861Z > chef-chopsky@1.0.0 start:services
+2025-09-19T02:17:18.4117734Z > concurrently --kill-others --prefix-colors "blue,green" "npm run dev:frontend" "npm run dev:agent"
+2025-09-19T02:17:18.4118489Z 
+2025-09-19T02:17:18.7004446Z [0] 
+2025-09-19T02:17:18.7005603Z [0] > chef-chopsky@1.0.0 dev:frontend
+2025-09-19T02:17:18.7042877Z [0] > cd frontend && npm run dev
+2025-09-19T02:17:18.7043311Z [0] 
+2025-09-19T02:17:18.7230592Z [1] 
+2025-09-19T02:17:18.7231051Z [1] > chef-chopsky@1.0.0 dev:agent
+2025-09-19T02:17:18.7231508Z [1] > cd agent && npm run server:dev
+2025-09-19T02:17:18.7231770Z [1] 
+2025-09-19T02:17:18.8190006Z [0] 
+2025-09-19T02:17:18.8191255Z [0] > chef-chopsky-frontend@1.0.0 dev
+2025-09-19T02:17:18.8192116Z [0] > next dev
+2025-09-19T02:17:18.8193180Z [0] 
+2025-09-19T02:17:18.8406671Z [1] 
+2025-09-19T02:17:18.8411803Z [1] > retrieval-graph@0.0.1 server:dev
+2025-09-19T02:17:18.8412397Z [1] > npx tsx watch src/server.ts
+2025-09-19T02:17:18.8412818Z [1] 
+2025-09-19T02:17:19.0967432Z [0]  ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+2025-09-19T02:17:19.0969746Z [0]  We detected multiple lockfiles and selected the directory of /home/runner/work/chef-chopsky/chef-chopsky/package-lock.json as the root directory.
+2025-09-19T02:17:19.0974257Z [0]  To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+2025-09-19T02:17:19.0975880Z [0]    See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+2025-09-19T02:17:19.0976872Z [0]  Detected additional lockfiles: 
+2025-09-19T02:17:19.0977675Z [0]    * /home/runner/work/chef-chopsky/chef-chopsky/frontend/package-lock.json
+2025-09-19T02:17:19.0978545Z [0] 
+2025-09-19T02:17:19.5079267Z [0]    ▲ Next.js 15.5.3
+2025-09-19T02:17:19.5111033Z [0]    - Local:        http://localhost:3000
+2025-09-19T02:17:19.5114013Z [0]    - Network:      http://10.1.0.190:3000
+2025-09-19T02:17:19.5117532Z [0] 
+2025-09-19T02:17:19.5118036Z [0]  ✓ Starting...
+2025-09-19T02:17:21.2074474Z [0]  ✓ Ready in 1829ms
+2025-09-19T02:17:22.1364190Z [1] 🚀 Chef Chopsky Agent Service running on http://localhost:3001
+2025-09-19T02:17:22.1367189Z [1] 📊 Health check: http://localhost:3001/health
+2025-09-19T02:17:22.1367612Z [1] 🔧 Environment: test
+2025-09-19T02:17:23.3121465Z ##[group]Run echo "⏳ Waiting for services to be ready..."
+2025-09-19T02:17:23.3121886Z [36;1mecho "⏳ Waiting for services to be ready..."[0m
+2025-09-19T02:17:23.3122209Z [36;1mtimeout 120s node scripts/health-check.js[0m
+2025-09-19T02:17:23.3122492Z [36;1mif [ $? -ne 0 ]; then[0m
+2025-09-19T02:17:23.3122798Z [36;1m  echo "❌ Services failed to start within 120 seconds"[0m
+2025-09-19T02:17:23.3123125Z [36;1m  echo "📋 Checking service status..."[0m
+2025-09-19T02:17:23.3123487Z [36;1m  ps aux | grep -E "(next|tsx)" | grep -v grep || echo "No services found"[0m
+2025-09-19T02:17:23.3123818Z [36;1m  exit 1[0m
+2025-09-19T02:17:23.3123989Z [36;1mfi[0m
+2025-09-19T02:17:23.3124182Z [36;1mecho "✅ All services are ready!"[0m
+2025-09-19T02:17:23.3153084Z shell: /usr/bin/bash -e {0}
+2025-09-19T02:17:23.3153323Z env:
+2025-09-19T02:17:23.3153491Z   NODE_ENV: test
+2025-09-19T02:17:23.3153708Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:17:23.3154002Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:17:23.3154263Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:17:23.3154679Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:17:23.3155049Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:17:23.3155867Z   OPENAI_API_KEY: ***
+2025-09-19T02:17:23.3156082Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:17:23.3156315Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:17:23.3156549Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:17:23.3156748Z ##[endgroup]
+2025-09-19T02:17:23.3206257Z ⏳ Waiting for services to be ready...
+2025-09-19T02:17:23.3472403Z [1m🚀 Chef Chopsky Service Health Check[0m
+2025-09-19T02:17:23.3476559Z [1m=====================================[0m
+2025-09-19T02:17:23.3477765Z [36m🔍 Checking service health...[0m
+2025-09-19T02:17:23.3478582Z [34m
+2025-09-19T02:17:23.3479124Z 📡 Health check attempt 1/30[0m
+2025-09-19T02:17:28.3649879Z [31m❌ Frontend service is not responding (http://localhost:3000/)[0m
+2025-09-19T02:17:28.3817657Z [32m✅ Agent service is healthy (http://localhost:3001/health)[0m
+2025-09-19T02:17:28.3829996Z [33m⏳ Waiting 1000ms before next check...[0m
+2025-09-19T02:17:29.3833079Z [34m
+2025-09-19T02:17:29.3834371Z 📡 Health check attempt 2/30[0m
+2025-09-19T02:17:29.4318925Z [32m✅ Frontend service is healthy (http://localhost:3000/)[0m
+2025-09-19T02:17:29.4319793Z [32m
+2025-09-19T02:17:29.4321007Z 🎉 All services are healthy and ready![0m
+2025-09-19T02:17:29.4324185Z [32m
+2025-09-19T02:17:29.4325183Z ✅ Health check passed - services are ready for testing![0m
+2025-09-19T02:17:29.4411862Z ✅ All services are ready!
+2025-09-19T02:17:29.4445276Z ##[group]Run echo "🧪 Running integration tests..."
+2025-09-19T02:17:29.4445869Z [36;1mecho "🧪 Running integration tests..."[0m
+2025-09-19T02:17:29.4446342Z [36;1mnpm run test:integration[0m
+2025-09-19T02:17:29.4481128Z shell: /usr/bin/bash -e {0}
+2025-09-19T02:17:29.4481488Z env:
+2025-09-19T02:17:29.4481668Z   NODE_ENV: test
+2025-09-19T02:17:29.4481891Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:17:29.4482173Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:17:29.4482444Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:17:29.4482889Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:17:29.4483442Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:17:29.4484258Z   OPENAI_API_KEY: ***
+2025-09-19T02:17:29.4484465Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:17:29.4484704Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:17:29.4484941Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:17:29.4485133Z ##[endgroup]
+2025-09-19T02:17:29.4540225Z 🧪 Running integration tests...
+2025-09-19T02:17:29.5719770Z 
+2025-09-19T02:17:29.5734170Z > chef-chopsky@1.0.0 test:integration
+2025-09-19T02:17:29.5735911Z > cd frontend && npm run test:integration
+2025-09-19T02:17:29.5736243Z 
+2025-09-19T02:17:29.7150519Z 
+2025-09-19T02:17:29.7151260Z > chef-chopsky-frontend@1.0.0 test:integration
+2025-09-19T02:17:29.7152204Z > jest --config jest.integration.config.js --verbose
+2025-09-19T02:17:29.7152697Z 
+2025-09-19T02:17:30.1601806Z  ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+2025-09-19T02:17:30.1607540Z  We detected multiple lockfiles and selected the directory of /home/runner/work/chef-chopsky/chef-chopsky/package-lock.json as the root directory.
+2025-09-19T02:17:30.1609681Z  To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+2025-09-19T02:17:30.1611315Z    See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+2025-09-19T02:17:30.1612382Z  Detected additional lockfiles: 
+2025-09-19T02:17:30.1613380Z    * /home/runner/work/chef-chopsky/chef-chopsky/frontend/package-lock.json
+2025-09-19T02:17:30.1614051Z 
+2025-09-19T02:17:30.3517888Z ● Validation Warning:
+2025-09-19T02:17:30.3519630Z 
+2025-09-19T02:17:30.3520167Z   Unknown option "moduleNameMapping" with value {"^@/(.*)$": "<rootDir>/$1"} was found.
+2025-09-19T02:17:30.3521092Z   This is probably a typing mistake. Fixing it will remove this message.
+2025-09-19T02:17:30.3521544Z 
+2025-09-19T02:17:30.3521751Z   Configuration Documentation:
+2025-09-19T02:17:30.3522223Z   https://jestjs.io/docs/configuration
+2025-09-19T02:17:30.3522528Z 
+2025-09-19T02:17:30.3760729Z ● Validation Warning:
+2025-09-19T02:17:30.3761030Z 
+2025-09-19T02:17:30.3761572Z   Unknown option "moduleNameMapping" with value {"^@/(.*)$": "<rootDir>/$1"} was found.
+2025-09-19T02:17:30.3762484Z   This is probably a typing mistake. Fixing it will remove this message.
+2025-09-19T02:17:30.3762936Z 
+2025-09-19T02:17:30.3763176Z   Configuration Documentation:
+2025-09-19T02:17:30.3763673Z   https://jestjs.io/docs/configuration
+2025-09-19T02:17:30.3763974Z 
+2025-09-19T02:17:34.4464983Z PASS tests/integration/integration-communication.test.ts
+2025-09-19T02:17:34.4467701Z   Integration Communication Tests
+2025-09-19T02:17:34.4468502Z     Cross-Service Configuration Validation
+2025-09-19T02:17:34.4471074Z       ✓ should validate both services have correct configuration (3 ms)
+2025-09-19T02:17:34.4472036Z       ✓ should validate environment variable consistency
+2025-09-19T02:17:34.4472841Z     Frontend → Agent Communication Error Handling
+2025-09-19T02:17:34.4473575Z       ✓ should handle agent service unavailable in frontend API (1151 ms)
+2025-09-19T02:17:34.4474399Z       ✓ should handle agent service timeout in frontend API (15 ms)
+2025-09-19T02:17:34.4475053Z       ✓ should handle agent service error response in frontend API (12 ms)
+2025-09-19T02:17:34.4475535Z     Service Health Check Integration
+2025-09-19T02:17:34.4476483Z       ✓ should check both services health independently (241 ms)
+2025-09-19T02:17:34.4477095Z       ✓ should validate health check endpoint consistency (37 ms)
+2025-09-19T02:17:34.4477538Z     Service Lifecycle Management
+2025-09-19T02:17:34.4478357Z       ✓ should stop both services independently (1 ms)
+2025-09-19T02:17:34.4478909Z       ✓ should validate service lifecycle state consistency
+2025-09-19T02:17:34.4479340Z     API Request Validation Integration
+2025-09-19T02:17:34.4479930Z       ✓ should validate request format consistency between services (2020 ms)
+2025-09-19T02:17:34.4480291Z 
+2025-09-19T02:17:34.5613148Z PASS tests/integration/agent-service.test.ts
+2025-09-19T02:17:34.5613774Z   Agent Service Integration Tests
+2025-09-19T02:17:34.5614247Z     Service Configuration Validation
+2025-09-19T02:17:34.5615135Z       ✓ should have correct agent service configuration (2 ms)
+2025-09-19T02:17:34.5615845Z       ✓ should validate agent environment variables
+2025-09-19T02:17:34.5616391Z     Agent API Route Validation Logic
+2025-09-19T02:17:34.5616857Z       ✓ should handle missing conversation_id in chat requests (7 ms)
+2025-09-19T02:17:34.5617335Z       ✓ should handle missing messages in chat requests (2 ms)
+2025-09-19T02:17:34.5617811Z       ✓ should handle empty messages array in chat requests (3 ms)
+2025-09-19T02:17:34.5618488Z       ✓ should handle invalid message format in chat requests (4 ms)
+2025-09-19T02:17:34.5618955Z       ✓ should handle malformed JSON in chat requests (3 ms)
+2025-09-19T02:17:34.5619292Z     Health Check Endpoint Validation
+2025-09-19T02:17:34.5619708Z       ✓ should validate agent health check endpoint structure (2 ms)
+2025-09-19T02:17:34.5620175Z       ✓ should reject non-GET requests to health endpoint (5 ms)
+2025-09-19T02:17:34.5620519Z     Service Lifecycle Management
+2025-09-19T02:17:34.5620822Z       ✓ should stop agent service
+2025-09-19T02:17:34.5621192Z       ✓ should detect agent service health correctly (1 ms)
+2025-09-19T02:17:34.5621542Z     Chat Endpoint HTTP Method Validation
+2025-09-19T02:17:34.5621957Z       ✓ should reject non-POST requests to chat endpoint (5 ms)
+2025-09-19T02:17:34.5622207Z 
+2025-09-19T02:17:34.8892774Z PASS tests/integration/frontend-service.test.ts
+2025-09-19T02:17:34.8893523Z   Frontend Service Integration Tests
+2025-09-19T02:17:34.8894110Z     Service Configuration Validation
+2025-09-19T02:17:34.8895179Z       ✓ should have correct frontend service configuration (1 ms)
+2025-09-19T02:17:34.8896175Z       ✓ should validate frontend environment variables
+2025-09-19T02:17:34.8896878Z     API Route Error Handling Logic
+2025-09-19T02:17:34.8897771Z       ✓ should handle missing conversationId in API requests (11 ms)
+2025-09-19T02:17:34.8899024Z       ✓ should handle missing userId in API requests (9 ms)
+2025-09-19T02:17:34.8899967Z       ✓ should handle missing messages in API requests (11 ms)
+2025-09-19T02:17:34.8900870Z       ✓ should handle invalid message format in API requests (9 ms)
+2025-09-19T02:17:34.8901738Z       ✓ should handle malformed JSON in API requests (139 ms)
+2025-09-19T02:17:34.8902359Z     Service Lifecycle Management
+2025-09-19T02:17:34.8902975Z       ✓ should stop frontend service (1 ms)
+2025-09-19T02:17:34.8903748Z       ✓ should detect frontend service health correctly (41 ms)
+2025-09-19T02:17:34.8904404Z     HTTP Method Validation
+2025-09-19T02:17:34.8905099Z       ✓ should reject non-POST requests to chat API (31 ms)
+2025-09-19T02:17:34.8905581Z 
+2025-09-19T02:17:35.0972559Z PASS tests/integration/basic-integration.test.ts
+2025-09-19T02:17:35.0973421Z   High-Value Integration Tests
+2025-09-19T02:17:35.0974030Z     Service Configuration Validation
+2025-09-19T02:17:35.0975088Z       ✓ should have correct frontend service configuration (1 ms)
+2025-09-19T02:17:35.0976155Z       ✓ should have correct agent service configuration (1 ms)
+2025-09-19T02:17:35.0976899Z     API Route Structure Validation
+2025-09-19T02:17:35.0977733Z       ✓ should validate frontend API route structure (11 ms)
+2025-09-19T02:17:35.0979203Z       ✓ should validate agent API route structure (2 ms)
+2025-09-19T02:17:35.0979966Z     Health Check Endpoint Validation
+2025-09-19T02:17:35.0980910Z       ✓ should validate frontend health check endpoint exists (41 ms)
+2025-09-19T02:17:35.0982301Z       ✓ should validate agent health check endpoint exists (2 ms)
+2025-09-19T02:17:35.0983053Z     Request Validation Logic
+2025-09-19T02:17:35.0983968Z       ✓ should validate frontend API request validation logic (63 ms)
+2025-09-19T02:17:35.0985028Z       ✓ should validate agent API request validation logic (9 ms)
+2025-09-19T02:17:35.0985566Z 
+2025-09-19T02:17:35.0996698Z Test Suites: 4 passed, 4 total
+2025-09-19T02:17:35.0997373Z Tests:       40 passed, 40 total
+2025-09-19T02:17:35.0997953Z Snapshots:   0 total
+2025-09-19T02:17:35.0998665Z Time:        4.334 s
+2025-09-19T02:17:35.0999566Z Ran all test suites.
+2025-09-19T02:17:35.2294691Z ##[group]Run echo "🤖 Running agent integration tests..."
+2025-09-19T02:17:35.2295091Z [36;1mecho "🤖 Running agent integration tests..."[0m
+2025-09-19T02:17:35.2295396Z [36;1mcd agent && npm run test:integration[0m
+2025-09-19T02:17:35.2324988Z shell: /usr/bin/bash -e {0}
+2025-09-19T02:17:35.2325221Z env:
+2025-09-19T02:17:35.2325392Z   NODE_ENV: test
+2025-09-19T02:17:35.2325632Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:17:35.2325898Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:17:35.2326172Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:17:35.2326597Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:17:35.2326980Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:17:35.2327765Z   OPENAI_API_KEY: ***
+2025-09-19T02:17:35.2327981Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:17:35.2328636Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:17:35.2328897Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:17:35.2329096Z ##[endgroup]
+2025-09-19T02:17:35.2380709Z 🤖 Running agent integration tests...
+2025-09-19T02:17:35.3465109Z 
+2025-09-19T02:17:35.3466596Z > retrieval-graph@0.0.1 test:integration
+2025-09-19T02:17:35.3467904Z > node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern="server|agent|defaults"
+2025-09-19T02:17:35.3468796Z 
+2025-09-19T02:17:45.1746979Z   console.log
+2025-09-19T02:17:45.1747810Z     🧪 Starting Chef Chopsky Agent Tests...
+2025-09-19T02:17:45.1748391Z 
+2025-09-19T02:17:45.1748731Z       at Object.<anonymous> (src/__tests__/setup.ts:7:11)
+2025-09-19T02:17:45.1749119Z 
+2025-09-19T02:17:45.1783109Z   console.log
+2025-09-19T02:17:45.1783837Z     📋 Make sure LangGraph dev server is running on port 2024
+2025-09-19T02:17:45.1784257Z 
+2025-09-19T02:17:45.1784562Z       at Object.<anonymous> (src/__tests__/setup.ts:8:11)
+2025-09-19T02:17:45.1784937Z 
+2025-09-19T02:17:45.1785077Z   console.log
+2025-09-19T02:17:45.1785695Z     🔍 Make sure LangSmith environment variables are set
+2025-09-19T02:17:45.1786078Z 
+2025-09-19T02:17:45.1786393Z       at Object.<anonymous> (src/__tests__/setup.ts:9:11)
+2025-09-19T02:17:45.1786770Z 
+2025-09-19T02:17:45.1800312Z   console.log
+2025-09-19T02:17:45.1801065Z     📋 Configuration Status:
+2025-09-19T02:17:45.1801624Z 
+2025-09-19T02:17:45.1802105Z       at Object.<anonymous> (src/__tests__/setup.ts:12:11)
+2025-09-19T02:17:45.1802693Z 
+2025-09-19T02:17:45.1810480Z   console.log
+2025-09-19T02:17:45.1811380Z        - OpenAI API Key: ✅ Set
+2025-09-19T02:17:45.1811970Z 
+2025-09-19T02:17:45.1812487Z       at Object.<anonymous> (src/__tests__/setup.ts:13:11)
+2025-09-19T02:17:45.1813076Z 
+2025-09-19T02:17:45.1824425Z   console.log
+2025-09-19T02:17:45.1825407Z        - LangSmith API Key: ℹ️ Not set (tracing disabled)
+2025-09-19T02:17:45.1826100Z 
+2025-09-19T02:17:45.1826699Z       at Object.<anonymous> (src/__tests__/setup.ts:14:11)
+2025-09-19T02:17:45.1827324Z 
+2025-09-19T02:17:45.1859327Z   console.log
+2025-09-19T02:17:45.1861961Z        - LangSmith Tracing: ℹ️ Disabled
+2025-09-19T02:17:45.1862310Z 
+2025-09-19T02:17:45.1862655Z       at Object.<anonymous> (src/__tests__/setup.ts:15:11)
+2025-09-19T02:17:45.1863054Z 
+2025-09-19T02:17:45.1863210Z   console.log
+2025-09-19T02:17:45.1863633Z        - LangSmith Project: chef chopsky
+2025-09-19T02:17:45.1863967Z 
+2025-09-19T02:17:45.1864283Z       at Object.<anonymous> (src/__tests__/setup.ts:16:11)
+2025-09-19T02:17:45.1864661Z 
+2025-09-19T02:17:45.1868746Z (node:4051) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+2025-09-19T02:17:45.1879032Z (Use `node --trace-warnings ...` to show where the warning was created)
+2025-09-19T02:17:45.2187058Z   console.log
+2025-09-19T02:17:45.2188378Z     🧪 Starting Chef Chopsky Agent Tests...
+2025-09-19T02:17:45.2189025Z 
+2025-09-19T02:17:45.2189611Z       at Object.<anonymous> (src/__tests__/setup.ts:7:11)
+2025-09-19T02:17:45.2190007Z 
+2025-09-19T02:17:45.2294898Z   console.log
+2025-09-19T02:17:45.2295699Z     📋 Make sure LangGraph dev server is running on port 2024
+2025-09-19T02:17:45.2296638Z 
+2025-09-19T02:17:45.2296978Z       at Object.<anonymous> (src/__tests__/setup.ts:8:11)
+2025-09-19T02:17:45.2297356Z 
+2025-09-19T02:17:45.2297501Z   console.log
+2025-09-19T02:17:45.2298299Z     🔍 Make sure LangSmith environment variables are set
+2025-09-19T02:17:45.2298672Z 
+2025-09-19T02:17:45.2298964Z       at Object.<anonymous> (src/__tests__/setup.ts:9:11)
+2025-09-19T02:17:45.2299316Z 
+2025-09-19T02:17:45.2299478Z   console.log
+2025-09-19T02:17:45.2299904Z     📋 Configuration Status:
+2025-09-19T02:17:45.2300164Z 
+2025-09-19T02:17:45.2300474Z       at Object.<anonymous> (src/__tests__/setup.ts:12:11)
+2025-09-19T02:17:45.2300856Z 
+2025-09-19T02:17:45.2304644Z   console.log
+2025-09-19T02:17:45.2306521Z        - OpenAI API Key: ✅ Set
+2025-09-19T02:17:45.2306816Z 
+2025-09-19T02:17:45.2307109Z       at Object.<anonymous> (src/__tests__/setup.ts:13:11)
+2025-09-19T02:17:45.2307492Z 
+2025-09-19T02:17:45.2313878Z   console.log
+2025-09-19T02:17:45.2314572Z        - LangSmith API Key: ℹ️ Not set (tracing disabled)
+2025-09-19T02:17:45.2314968Z 
+2025-09-19T02:17:45.2315274Z       at Object.<anonymous> (src/__tests__/setup.ts:14:11)
+2025-09-19T02:17:45.2315661Z 
+2025-09-19T02:17:45.2323511Z   console.log
+2025-09-19T02:17:45.2324087Z        - LangSmith Tracing: ℹ️ Disabled
+2025-09-19T02:17:45.2324429Z 
+2025-09-19T02:17:45.2324732Z       at Object.<anonymous> (src/__tests__/setup.ts:15:11)
+2025-09-19T02:17:45.2325126Z 
+2025-09-19T02:17:45.2332026Z   console.log
+2025-09-19T02:17:45.2333842Z        - LangSmith Project: chef chopsky
+2025-09-19T02:17:45.2337137Z 
+2025-09-19T02:17:45.2337470Z       at Object.<anonymous> (src/__tests__/setup.ts:16:11)
+2025-09-19T02:17:45.2337858Z 
+2025-09-19T02:17:45.2345645Z (node:4052) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+2025-09-19T02:17:45.2347129Z (Use `node --trace-warnings ...` to show where the warning was created)
+2025-09-19T02:17:45.3316222Z   console.log
+2025-09-19T02:17:45.3317094Z     🧪 Starting Chef Chopsky Agent Tests...
+2025-09-19T02:17:45.3317505Z 
+2025-09-19T02:17:45.3317813Z       at Object.<anonymous> (src/__tests__/setup.ts:7:11)
+2025-09-19T02:17:45.3318490Z 
+2025-09-19T02:17:45.3327266Z   console.log
+2025-09-19T02:17:45.3328372Z     📋 Make sure LangGraph dev server is running on port 2024
+2025-09-19T02:17:45.3328947Z 
+2025-09-19T02:17:45.3329334Z       at Object.<anonymous> (src/__tests__/setup.ts:8:11)
+2025-09-19T02:17:45.3329731Z 
+2025-09-19T02:17:45.3336118Z   console.log
+2025-09-19T02:17:45.3336950Z     🔍 Make sure LangSmith environment variables are set
+2025-09-19T02:17:45.3337452Z 
+2025-09-19T02:17:45.3337828Z       at Object.<anonymous> (src/__tests__/setup.ts:9:11)
+2025-09-19T02:17:45.3338439Z 
+2025-09-19T02:17:45.3344670Z   console.log
+2025-09-19T02:17:45.3345901Z     📋 Configuration Status:
+2025-09-19T02:17:45.3346696Z 
+2025-09-19T02:17:45.3347191Z       at Object.<anonymous> (src/__tests__/setup.ts:12:11)
+2025-09-19T02:17:45.3347582Z 
+2025-09-19T02:17:45.3353116Z   console.log
+2025-09-19T02:17:45.3353606Z        - OpenAI API Key: ✅ Set
+2025-09-19T02:17:45.3353865Z 
+2025-09-19T02:17:45.3354229Z       at Object.<anonymous> (src/__tests__/setup.ts:13:11)
+2025-09-19T02:17:45.3354478Z 
+2025-09-19T02:17:45.3360891Z   console.log
+2025-09-19T02:17:45.3361374Z        - LangSmith API Key: ℹ️ Not set (tracing disabled)
+2025-09-19T02:17:45.3361626Z 
+2025-09-19T02:17:45.3361897Z       at Object.<anonymous> (src/__tests__/setup.ts:14:11)
+2025-09-19T02:17:45.3362505Z 
+2025-09-19T02:17:45.3367582Z   console.log
+2025-09-19T02:17:45.3367950Z        - LangSmith Tracing: ℹ️ Disabled
+2025-09-19T02:17:45.3368345Z 
+2025-09-19T02:17:45.3368544Z       at Object.<anonymous> (src/__tests__/setup.ts:15:11)
+2025-09-19T02:17:45.3368781Z 
+2025-09-19T02:17:45.3373904Z   console.log
+2025-09-19T02:17:45.3374196Z        - LangSmith Project: chef chopsky
+2025-09-19T02:17:45.3374404Z 
+2025-09-19T02:17:45.3374596Z       at Object.<anonymous> (src/__tests__/setup.ts:16:11)
+2025-09-19T02:17:45.3374834Z 
+2025-09-19T02:17:45.3507889Z   console.log
+2025-09-19T02:17:45.3508963Z     ✅ Chef Chopsky Agent Tests Complete!
+2025-09-19T02:17:45.3509181Z 
+2025-09-19T02:17:45.3509500Z       at Object.<anonymous> (src/__tests__/setup.ts:20:11)
+2025-09-19T02:17:45.3509792Z 
+2025-09-19T02:17:45.3526289Z (node:4058) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+2025-09-19T02:17:45.3527635Z (Use `node --trace-warnings ...` to show where the warning was created)
+2025-09-19T02:17:45.3566281Z PASS src/__tests__/agent-unit.test.ts (9.441 s)
+2025-09-19T02:17:45.3566743Z   Chef Chopsky Agent Unit Tests
+2025-09-19T02:17:45.3567012Z     Environment Configuration
+2025-09-19T02:17:45.3567558Z       ✓ should have required environment variables (4 ms)
+2025-09-19T02:17:45.3567952Z       ✓ should handle missing API key gracefully
+2025-09-19T02:17:45.3568538Z     Message Validation
+2025-09-19T02:17:45.3568867Z       ✓ should validate message format (1 ms)
+2025-09-19T02:17:45.3569238Z       ✓ should validate conversation ID format (1 ms)
+2025-09-19T02:17:45.3569541Z     Error Handling
+2025-09-19T02:17:45.3569816Z       ✓ should handle empty messages array
+2025-09-19T02:17:45.3570149Z       ✓ should handle malformed JSON (6 ms)
+2025-09-19T02:17:45.3570407Z     Service Configuration
+2025-09-19T02:17:45.3570697Z       ✓ should have correct service metadata
+2025-09-19T02:17:45.3570869Z 
+2025-09-19T02:17:45.8493315Z   console.log
+2025-09-19T02:17:45.8494543Z     🧪 Starting Chef Chopsky Agent Tests...
+2025-09-19T02:17:45.8494883Z 
+2025-09-19T02:17:45.8495326Z       at Object.<anonymous> (src/__tests__/setup.ts:7:11)
+2025-09-19T02:17:45.8495555Z 
+2025-09-19T02:17:45.8502077Z   console.log
+2025-09-19T02:17:45.8503260Z     📋 Make sure LangGraph dev server is running on port 2024
+2025-09-19T02:17:45.8503700Z 
+2025-09-19T02:17:45.8504129Z       at Object.<anonymous> (src/__tests__/setup.ts:8:11)
+2025-09-19T02:17:45.8504348Z 
+2025-09-19T02:17:45.8511461Z   console.log
+2025-09-19T02:17:45.8512578Z     🔍 Make sure LangSmith environment variables are set
+2025-09-19T02:17:45.8513032Z 
+2025-09-19T02:17:45.8513433Z       at Object.<anonymous> (src/__tests__/setup.ts:9:11)
+2025-09-19T02:17:45.8513656Z 
+2025-09-19T02:17:45.8521276Z   console.log
+2025-09-19T02:17:45.8522109Z     📋 Configuration Status:
+2025-09-19T02:17:45.8522478Z 
+2025-09-19T02:17:45.8522855Z       at Object.<anonymous> (src/__tests__/setup.ts:12:11)
+2025-09-19T02:17:45.8523091Z 
+2025-09-19T02:17:45.8531209Z   console.log
+2025-09-19T02:17:45.8532188Z        - OpenAI API Key: ✅ Set
+2025-09-19T02:17:45.8533457Z 
+2025-09-19T02:17:45.8533850Z       at Object.<anonymous> (src/__tests__/setup.ts:13:11)
+2025-09-19T02:17:45.8534968Z 
+2025-09-19T02:17:45.8540924Z   console.log
+2025-09-19T02:17:45.8541956Z        - LangSmith API Key: ℹ️ Not set (tracing disabled)
+2025-09-19T02:17:45.8542444Z 
+2025-09-19T02:17:45.8542873Z       at Object.<anonymous> (src/__tests__/setup.ts:14:11)
+2025-09-19T02:17:45.8543112Z 
+2025-09-19T02:17:45.8550104Z   console.log
+2025-09-19T02:17:45.8551182Z        - LangSmith Tracing: ℹ️ Disabled
+2025-09-19T02:17:45.8551639Z 
+2025-09-19T02:17:45.8552040Z       at Object.<anonymous> (src/__tests__/setup.ts:15:11)
+2025-09-19T02:17:45.8552274Z 
+2025-09-19T02:17:45.8558362Z   console.log
+2025-09-19T02:17:45.8559212Z        - LangSmith Project: chef chopsky
+2025-09-19T02:17:45.8559641Z 
+2025-09-19T02:17:45.8560074Z       at Object.<anonymous> (src/__tests__/setup.ts:16:11)
+2025-09-19T02:17:45.8560609Z 
+2025-09-19T02:17:55.6160822Z   console.log
+2025-09-19T02:17:55.6161916Z     ✅ Chef Chopsky Agent Tests Complete!
+2025-09-19T02:17:55.6162455Z 
+2025-09-19T02:17:55.6162841Z       at Object.<anonymous> (src/__tests__/setup.ts:20:11)
+2025-09-19T02:17:55.6163242Z 
+2025-09-19T02:17:55.6179864Z PASS src/__tests__/defaults.test.ts (10.256 s)
+2025-09-19T02:17:55.6180471Z   Defaults behavior (no configurable passed)
+2025-09-19T02:17:55.6181426Z     ✓ should produce a response and retrieve docs using memory retriever (9758 ms)
+2025-09-19T02:17:55.6181925Z 
+2025-09-19T02:18:34.0239439Z   console.log
+2025-09-19T02:18:34.0286973Z PASS src/__tests__/agent.test.ts (58.129 s)
+2025-09-19T02:18:34.0287854Z     ✅ Chef Chopsky Agent Tests Complete!
+2025-09-19T02:18:34.0288619Z 
+2025-09-19T02:18:34.0312395Z   Chef Chopsky LangGraph Agent
+2025-09-19T02:18:34.0312822Z     Basic Functionality
+2025-09-19T02:18:34.0313464Z       ✓ should respond to CSA cooking questions (10430 ms)
+2025-09-19T02:18:34.0314215Z       ✓ should handle different ingredient combinations (10855 ms)
+2025-09-19T02:18:34.0314742Z     Error Handling
+2025-09-19T02:18:34.0315264Z       ✓ should handle empty messages gracefully (14127 ms)
+2025-09-19T02:18:34.0315720Z     Performance
+2025-09-19T02:18:34.0316332Z       ✓ should respond within reasonable time (11368 ms)
+2025-09-19T02:18:34.0316740Z 
+2025-09-19T02:18:34.0317057Z       at Object.<anonymous> (src/__tests__/setup.ts:20:11)
+2025-09-19T02:18:34.0319044Z 
+2025-09-19T02:18:49.8056208Z   console.log
+2025-09-19T02:18:49.8058016Z     ✅ Chef Chopsky Agent Tests Complete!
+2025-09-19T02:18:49.8058597Z 
+2025-09-19T02:18:49.8059008Z       at Object.<anonymous> (src/__tests__/setup.ts:20:11)
+2025-09-19T02:18:49.8059496Z 
+2025-09-19T02:18:49.8063779Z PASS src/__tests__/server.test.ts (73.889 s)
+2025-09-19T02:18:49.8064295Z   Chef Chopsky Agent Service
+2025-09-19T02:18:49.8064697Z     Health Check
+2025-09-19T02:18:49.8066087Z       ✓ should return health status (9 ms)
+2025-09-19T02:18:49.8066917Z     Chat Endpoint
+2025-09-19T02:18:49.8069234Z       ✓ should process valid chat request and return assistant response (7915 ms)
+2025-09-19T02:18:49.8070087Z       ✓ should handle different message types (8579 ms)
+2025-09-19T02:18:49.8070752Z       ✓ should handle conversation context (26636 ms)
+2025-09-19T02:18:49.8071214Z     Error Handling
+2025-09-19T02:18:49.8071751Z       ✓ should return 400 for invalid request body (3 ms)
+2025-09-19T02:18:49.8075024Z       ✓ should return 400 for missing conversation_id (1 ms)
+2025-09-19T02:18:49.8075799Z       ✓ should return 400 for missing messages (3 ms)
+2025-09-19T02:18:49.8076442Z       ✓ should return 400 for empty messages array (4 ms)
+2025-09-19T02:18:49.8076884Z     CORS
+2025-09-19T02:18:49.8077388Z       ✓ should include CORS headers on preflight request (2 ms)
+2025-09-19T02:18:49.8078080Z       ✓ should include CORS headers on actual request (12995 ms)
+2025-09-19T02:18:49.8078632Z 
+2025-09-19T02:18:49.8901227Z Test Suites: 4 passed, 4 total
+2025-09-19T02:18:49.8901607Z Tests:       22 passed, 22 total
+2025-09-19T02:18:49.8901917Z Snapshots:   0 total
+2025-09-19T02:18:49.8902141Z Time:        74.175 s
+2025-09-19T02:18:49.8902452Z Ran all test suites matching /server|agent|defaults/i.
+2025-09-19T02:18:49.9071303Z ##[group]Run echo "🎭 Running E2E tests..."
+2025-09-19T02:18:49.9071688Z [36;1mecho "🎭 Running E2E tests..."[0m
+2025-09-19T02:18:49.9071969Z [36;1mnpm run test:e2e[0m
+2025-09-19T02:18:49.9102438Z shell: /usr/bin/bash -e {0}
+2025-09-19T02:18:49.9102682Z env:
+2025-09-19T02:18:49.9102856Z   NODE_ENV: test
+2025-09-19T02:18:49.9103086Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:18:49.9103358Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:18:49.9103663Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:18:49.9104139Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:18:49.9104550Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:18:49.9105355Z   OPENAI_API_KEY: ***
+2025-09-19T02:18:49.9105569Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:18:49.9106024Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:18:49.9106270Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:18:49.9106464Z ##[endgroup]
+2025-09-19T02:18:49.9159796Z 🎭 Running E2E tests...
+2025-09-19T02:18:50.0177694Z 
+2025-09-19T02:18:50.0178385Z > chef-chopsky@1.0.0 test:e2e
+2025-09-19T02:18:50.0178880Z > cd frontend && npm run test:e2e
+2025-09-19T02:18:50.0179123Z 
+2025-09-19T02:18:50.1254281Z 
+2025-09-19T02:18:50.1254879Z > chef-chopsky-frontend@1.0.0 test:e2e
+2025-09-19T02:18:50.1255506Z > playwright test
+2025-09-19T02:18:50.1255751Z 
+2025-09-19T02:18:50.9490930Z 
+2025-09-19T02:18:50.9492495Z Error: http://localhost:3000 is already used, make sure that nothing is running on the port/url or set reuseExistingServer:true in config.webServer.
+2025-09-19T02:18:50.9501261Z 
+2025-09-19T02:18:50.9506596Z 
+2025-09-19T02:18:50.9877270Z ##[error]Process completed with exit code 1.
+2025-09-19T02:18:50.9919994Z ##[group]Run echo "🛑 Stopping services..."
+2025-09-19T02:18:50.9920349Z [36;1mecho "🛑 Stopping services..."[0m
+2025-09-19T02:18:50.9920640Z [36;1mnpm run stop:services || true[0m
+2025-09-19T02:18:50.9920890Z [36;1m# Ensure cleanup[0m
+2025-09-19T02:18:50.9921118Z [36;1mpkill -f 'next dev' || true[0m
+2025-09-19T02:18:50.9921365Z [36;1mpkill -f 'tsx watch' || true[0m
+2025-09-19T02:18:50.9951466Z shell: /usr/bin/bash -e {0}
+2025-09-19T02:18:50.9951702Z env:
+2025-09-19T02:18:50.9951879Z   NODE_ENV: test
+2025-09-19T02:18:50.9952115Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:18:50.9952397Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:18:50.9952676Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:18:50.9953125Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:18:50.9953514Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:18:50.9954322Z   OPENAI_API_KEY: ***
+2025-09-19T02:18:50.9954539Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:18:50.9954806Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:18:50.9955049Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:18:50.9955241Z ##[endgroup]
+2025-09-19T02:18:51.0003443Z 🛑 Stopping services...
+2025-09-19T02:18:51.1013534Z 
+2025-09-19T02:18:51.1013939Z > chef-chopsky@1.0.0 stop:services
+2025-09-19T02:18:51.1014445Z > pkill -f 'next dev' && pkill -f 'tsx watch'
+2025-09-19T02:18:51.1014709Z 
+2025-09-19T02:18:51.1226718Z Terminated
+2025-09-19T02:18:51.1587975Z ##[group]Run actions/upload-artifact@v4
+2025-09-19T02:18:51.1588596Z with:
+2025-09-19T02:18:51.1588904Z   name: integration-e2e-results
+2025-09-19T02:18:51.1589582Z   path: frontend/test-results/
+frontend/playwright-report/
+frontend/coverage/integration/
+
+2025-09-19T02:18:51.1590274Z   retention-days: 7
+2025-09-19T02:18:51.1590602Z   if-no-files-found: warn
+2025-09-19T02:18:51.1590959Z   compression-level: 6
+2025-09-19T02:18:51.1591288Z   overwrite: false
+2025-09-19T02:18:51.1591605Z   include-hidden-files: false
+2025-09-19T02:18:51.1591959Z env:
+2025-09-19T02:18:51.1592222Z   NODE_ENV: test
+2025-09-19T02:18:51.1592572Z   FRONTEND_URL: http://localhost:3000
+2025-09-19T02:18:51.1593012Z   AGENT_URL: http://localhost:3001
+2025-09-19T02:18:51.1593466Z   AGENT_SERVICE_URL: http://localhost:3001
+2025-09-19T02:18:51.1594143Z   NEXT_PUBLIC_SUPABASE_URL: ***
+2025-09-19T02:18:51.1594776Z   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ***
+2025-09-19T02:18:51.1596160Z   OPENAI_API_KEY: ***
+2025-09-19T02:18:51.1596547Z   LANGCHAIN_TRACING_V2: true
+2025-09-19T02:18:51.1596942Z   LANGCHAIN_PROJECT: chef-chopsky-ci
+2025-09-19T02:18:51.1597343Z   LANGCHAIN_API_KEY: 
+2025-09-19T02:18:51.1597663Z ##[endgroup]
+2025-09-19T02:18:51.4449376Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2025-09-19T02:18:51.4453851Z The least common ancestor is /home/runner/work/chef-chopsky/chef-chopsky/frontend. This will be the root directory of the artifact
+2025-09-19T02:18:51.4455222Z With the provided path, there will be 1 file uploaded
+2025-09-19T02:18:51.4460523Z Artifact name is valid!
+2025-09-19T02:18:51.4462371Z Root directory input is valid!
+2025-09-19T02:18:51.6360891Z Beginning upload of artifact content to blob storage
+2025-09-19T02:18:51.9688768Z Uploaded bytes 176896
+2025-09-19T02:18:52.0177995Z Finished uploading artifact content to blob storage!
+2025-09-19T02:18:52.0181392Z SHA256 digest of uploaded artifact zip is b6d6d47250b19ffad51fa0ca8d8c19108e4808ae666c8fc3e5c224b5ab77162d
+2025-09-19T02:18:52.0183482Z Finalizing artifact upload
+2025-09-19T02:18:52.1175203Z Artifact integration-e2e-results.zip successfully finalized. Artifact ID 4051971292
+2025-09-19T02:18:52.1177218Z Artifact integration-e2e-results has been successfully uploaded! Final size is 176896 bytes. Artifact ID is 4051971292
+2025-09-19T02:18:52.1184205Z Artifact download URL: https://github.com/daviswhitehead/chef-chopsky/actions/runs/17846452281/artifacts/4051971292
+2025-09-19T02:18:52.1313679Z Post job cleanup.
+2025-09-19T02:18:52.2252764Z [command]/usr/bin/git version
+2025-09-19T02:18:52.2290505Z git version 2.51.0
+2025-09-19T02:18:52.2335332Z Temporarily overriding HOME='/home/runner/work/_temp/84b9026d-0acb-456f-aa54-6c3f2e095186' before making global git config changes
+2025-09-19T02:18:52.2336364Z Adding repository directory to the temporary git global config as a safe directory
+2025-09-19T02:18:52.2341198Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/chef-chopsky/chef-chopsky
+2025-09-19T02:18:52.2377645Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-09-19T02:18:52.2411202Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-09-19T02:18:52.2645712Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-09-19T02:18:52.2667862Z http.https://github.com/.extraheader
+2025-09-19T02:18:52.2680814Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-09-19T02:18:52.2711960Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-09-19T02:18:52.3044532Z Cleaning up orphan processes
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Looking at the CI logs, I can see the issue clearly. The E2E tests are failing because of a port conflict:
+
+## 🔍 **Root Cause Analysis**
+
+The error is:
+```
+Error: http://localhost:3000 is already used, make sure that nothing is running on the port/url or set reuseExistingServer:true in config.webServer.
+```
+
+**What's happening:**
+1. ✅ Services start successfully (`npm run start:services`)
+2. ✅ Health checks pass (both frontend and agent are running)
+3. ✅ Integration tests pass (40/40 tests)
+4. ✅ Agent integration tests pass (22/22 tests)
+5. ❌ **E2E tests fail** because Playwright tries to start its own server on port 3000, but the frontend is already running there
+
+## 🔧 **The Fix**
+
+The issue is in the Playwright configuration. We need to configure Playwright to reuse the existing server instead of trying to start its own. Let me check the current Playwright config and fix it:
+
+
+---
+
+Read file: undefined
+
+---
+
+Perfect! I can see the issue. The Playwright config has `reuseExistingServer: !process.env.CI`, which means:
+- **Locally**: `reuseExistingServer: true` (reuses existing server)
+- **In CI**: `reuseExistingServer: false` (tries to start its own server)
+
+But in CI, we're already starting the services with `npm run start:services`, so Playwright should reuse the existing server. Let me fix this:
+
+
+---
+
+<details><summary>Edit file: frontend/playwright.config.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -61,5 +61,5 @@
+        command: 'npm run dev',
+        url: 'http://localhost:3000',
+-       reuseExistingServer: !process.env.CI,
++       reuseExistingServer: true, // Always reuse existing server
+        timeout: 120 * 1000,
+      },
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -68,5 +68,5 @@
+        cwd: '../agent',
+        url: 'http://localhost:3001/health',
+-       reuseExistingServer: !process.env.CI,
++       reuseExistingServer: true, // Always reuse existing server
+        timeout: 120 * 1000,
+      },
+```
+
+</details>
+
+---
+
+Now let me test this fix locally to make sure it works:
+
+
+---
+
+```bash
+cd frontend && npm run test:e2e
+```
+
+```
+(eval):cd:1: no such file or directory: frontend
+zsh:1: command not found: dump_zsh_state
+
+```
+
+---
+
+Let me navigate to the correct directory:
+
+
+---
+
+```bash
+cd /Users/daviswhitehead/Documents/github/chef-chopsky/frontend && npm run test:e2e
+```
+
+```
+
+> chef-chopsky-frontend@1.0.0 test:e2e
+> playwright test
+
+
+[1A[2K[WebServer]  ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+[WebServer]  We detected multiple lockfiles and selected the directory of /Users/daviswhitehead/Documents/github/chef-chopsky/package-lock.json as the root directory.
+[WebServer]  To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+[WebServer]    See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+[WebServer]  Detected additional lockfiles: 
+[WebServer]    * /Users/daviswhitehead/Documents/github/chef-chopsky/frontend/package-lock.json
+[WebServer] 
+
+```
+
+---
+
+
+
+---
+
