@@ -24,7 +24,16 @@ export async function POST(request: NextRequest) {
 
     console.log(`[${requestId}] ✅ AGENT_SERVICE_URL configured: ${AGENT_SERVICE_URL}`);
 
-    body = await request.json()
+    try {
+      body = await request.json()
+    } catch (error) {
+      console.log(`[${requestId}] ❌ Failed to parse request JSON:`, error);
+      return NextResponse.json(
+        { error: 'Invalid JSON', message: 'Request body must be valid JSON' },
+        { status: 400 }
+      )
+    }
+    
     const { messages, userId, conversationId } = body
     
     console.log(`[${requestId}] 📝 Request body parsed:`, {

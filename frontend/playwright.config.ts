@@ -60,14 +60,14 @@ export default defineConfig({
     {
       command: 'npm run dev',
       url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true, // Always reuse existing server
       timeout: 120 * 1000,
     },
     {
       command: 'npm run server:dev',
       cwd: '../agent',
       url: 'http://localhost:3001/health',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true, // Always reuse existing server
       timeout: 120 * 1000,
     },
   ],

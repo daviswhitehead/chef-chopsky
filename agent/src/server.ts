@@ -7,6 +7,35 @@ import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
+ * Generate a mock response for testing purposes
+ */
+function generateMockResponse(userMessage: string): string {
+  const responses = [
+    "I'd be happy to help you with that! Based on your question, here are some suggestions...",
+    "That's a great question! Let me provide you with some helpful information about that topic.",
+    "I understand you're looking for guidance on this. Here's what I recommend...",
+    "Thanks for asking! Here's my response to help you with your request.",
+    "I can definitely help you with that. Let me share some insights and recommendations."
+  ];
+  
+  // Add some context-aware responses based on keywords
+  if (userMessage.toLowerCase().includes('cook') || userMessage.toLowerCase().includes('recipe')) {
+    return "I'd love to help you with cooking! Here are some delicious recipe suggestions and cooking tips that should work well for your needs.";
+  }
+  
+  if (userMessage.toLowerCase().includes('dinner')) {
+    return "For dinner tonight, I recommend something hearty and satisfying. Here are some great dinner ideas that are both delicious and easy to prepare.";
+  }
+  
+  if (userMessage.toLowerCase().includes('ingredients')) {
+    return "Let me help you with those ingredients! Here's what you'll need and some great ways to use them in your cooking.";
+  }
+  
+  // Return a random response for other cases
+  return responses[Math.floor(Math.random() * responses.length)];
+}
+
+/**
  * Chef Chopsky Agent Service
  * 
  * Express server that provides HTTP API for the LangChain agent.
@@ -98,6 +127,43 @@ app.post('/chat', (req, res) => {
     });
     console.log(`[${requestId}] ✅ Agent configuration created`);
 
+    // Check if we're in mock mode (for local testing with test-key)
+    const isMockMode = config.openaiApiKey === 'test-key';
+    
+    if (isMockMode) {
+      console.log(`[${requestId}] 🎭 Mock mode enabled - returning mock response`);
+      const agentStartTime = Date.now();
+      
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+      
+      const agentDuration = Date.now() - agentStartTime;
+      console.log(`[${requestId}] ✅ Mock agent completed in ${agentDuration}ms`);
+      
+      // Create mock response based on the last user message
+      const lastUserMessage = langchainMessages[langchainMessages.length - 1];
+      const mockResponse = generateMockResponse(lastUserMessage.content);
+      
+      const assistantMessage = {
+        id: messageId,
+        role: 'assistant',
+        content: mockResponse,
+        model: 'openai/gpt-5-nano',
+        usage: {
+          prompt_tokens: 100,
+          completion_tokens: 50,
+          total_tokens: 150
+        }
+      };
+      
+      const timing_ms = Date.now() - startTime;
+      console.log(`[${requestId}] 🎉 Mock request completed successfully in ${timing_ms}ms`);
+      return res.json({
+        assistant_message: assistantMessage,
+        timing_ms
+      });
+    }
+    
     // Run the agent with LangSmith tracing
     console.log(`[${requestId}] 🤖 Invoking LangChain agent graph`);
     const agentStartTime = Date.now();
