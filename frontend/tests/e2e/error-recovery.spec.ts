@@ -117,7 +117,11 @@ test.describe('Error Recovery and Retry Mechanisms', () => {
     await TestUtils.waitForLoadingToComplete(page);
 
     // Verify assistant response appears (success is indicated by the response)
-    await page.waitForSelector('[class*="bg-gray-100"]:has-text("dinner")', { timeout: 30000 });
+    await TestUtils.validateFoodResponse(
+      page, 
+      'Retry success response',
+      ['dinner', 'tonight'] // Additional specific terms from the user's message
+    );
 
     Logger.info('✅ Network timeout retry test completed successfully');
   });
