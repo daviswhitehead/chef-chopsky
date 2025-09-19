@@ -74,60 +74,31 @@ jobs:
           
           echo "FIX_BRANCH=$FIX_BRANCH" >> $GITHUB_OUTPUT
       
-      - name: Analyze CI failure
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - name: Install Cursor CLI
         run: |
-          echo "Analyzing CI failure..."
+          echo "Installing Cursor CLI..."
+          curl -fsSL https://cursor.com/install | bash
+          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+          
+          # Verify installation
+          cursor-agent --version || echo "Cursor CLI installation may need additional setup"
+      
+      - name: Analyze CI failure with Cursor CLI
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          WORKFLOW_RUN_URL: ${{ steps.context.outputs.WORKFLOW_RUN_URL }}
+          PR_NUMBER: ${{ steps.pr-info.outputs.PR_NUMBER }}
+          FIX_BRANCH: ${{ steps.fix-branch.outputs.FIX_BRANCH }}
+          HEAD_BRANCH: ${{ steps.context.outputs.HEAD_BRANCH }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "🔍 Analyzing CI failure with Cursor CLI..."
           echo "Workflow Run: ${{ steps.context.outputs.WORKFLOW_RUN_URL }}"
           echo "PR Number: ${{ steps.pr-info.outputs.PR_NUMBER }}"
           echo "Fix Branch: ${{ steps.fix-branch.outputs.FIX_BRANCH }}"
           
-          # For now, let's create a simple analysis script
-          # This will be replaced with actual Cursor CLI integration
-          cat > analyze_failure.js << 'EOF'
-          const fs = require('fs');
-          const path = require('path');
-          
-          // Simple failure analysis (placeholder for Cursor AI)
-          console.log('🔍 Analyzing CI failure...');
-          
-          // Check for common failure patterns
-          const commonFixes = [
-            'ESLint errors - run: npm run lint:fix',
-            'Prettier formatting - run: npm run format',
-            'TypeScript errors - check type definitions',
-            'Test failures - review test logic and assertions',
-            'Dependency issues - run: npm install'
-          ];
-          
-          console.log('📋 Common fix suggestions:');
-          commonFixes.forEach((fix, index) => {
-            console.log(`${index + 1}. ${fix}`);
-          });
-          
-          // Create a simple fix file
-          const fixContent = `# Auto-Fix Analysis
-          
-          ## CI Failure Analysis
-          - Workflow Run: ${{ steps.context.outputs.WORKFLOW_RUN_URL }}
-          - PR Number: ${{ steps.pr-info.outputs.PR_NUMBER }}
-          - Analysis Date: ${new Date().toISOString()}
-          
-          ## Suggested Fixes
-          ${commonFixes.map((fix, index) => `${index + 1}. ${fix}`).join('\n')}
-          
-          ## Next Steps
-          1. Review the suggested fixes above
-          2. Apply the appropriate fix to resolve the CI failure
-          3. Test the fix locally before pushing
-          `;
-          
-          fs.writeFileSync('AUTO_FIX_ANALYSIS.md', fixContent);
-          console.log('✅ Analysis complete - see AUTO_FIX_ANALYSIS.md');
-          EOF
-          
-          node analyze_failure.js
+          # Run the enhanced Cursor CLI analysis
+          node scripts/cursor-analysis.js
       
       - name: Apply basic fixes
         run: |
