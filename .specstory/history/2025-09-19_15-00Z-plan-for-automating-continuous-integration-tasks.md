@@ -2093,3 +2093,146 @@ Which solution would you prefer? The alternative workflow will work immediately,
 
 ---
 
+_**User (2025-09-19 15:02Z)**_
+
+Ok, I've merged into the main branch. Let's test again, yeah? What're the steps?
+
+---
+
+_**Assistant**_
+
+Perfect! Now that the auto-fix workflow is in the main branch, it should work with the `workflow_run` trigger. Let's test it properly.
+
+## 🧪 Testing Steps
+
+### **Step 1: Verify the Workflow is in Main**
+First, let's make sure the auto-fix workflow is now in the main branch:
+
+
+---
+
+```bash
+git checkout main && git pull origin main
+```
+
+```
+fatal: not a git repository (or any of the parent directories): .git
+zsh:1: command not found: dump_zsh_state
+
+```
+
+---
+
+Let me navigate to the correct directory:
+
+
+---
+
+```bash
+cd /Users/daviswhitehead/Documents/github/chef-chopsky && git checkout main && git pull origin main
+```
+
+```
+error: Your local changes to the following files would be overwritten by checkout:
+	.specstory/history/2025-09-19_15-00Z-plan-for-automating-continuous-integration-tasks.md
+Please commit your changes or stash them before you switch branches.
+Aborting
+zsh:1: command not found: dump_zsh_state
+
+```
+
+---
+
+Let me stash the changes and then switch:
+
+
+---
+
+```bash
+git stash && git checkout main && git pull origin main
+```
+
+---
+
+No problem! Let me give you the testing steps without needing to switch branches:
+
+## 🧪 Testing the Auto-Fix System
+
+### **Step 1: Create a New Test Failure**
+Since your existing test PR might have already triggered workflows, let's create a fresh test:
+
+```bash
+# Create a new test branch
+git checkout -b test-auto-fix-$(date +%s)
+
+# Create a simple failure
+echo "const unused = 'this will cause an error';" > frontend/test-error.js
+
+# Commit and push
+git add frontend/test-error.js
+git commit -m "Test auto-fix system"
+git push origin test-auto-fix-$(date +%s)
+```
+
+### **Step 2: Create a PR**
+- Go to GitHub and create a PR from your test branch
+- The CI should fail due to the ESLint error
+
+### **Step 3: Watch for Auto-Fix**
+**What to look for:**
+
+**In GitHub Actions tab:**
+- Look for "Auto Fix CI Failures (MVP)" workflow
+- It should trigger automatically after CI fails
+- Should show steps like "Analyze CI failure", "Apply basic fixes", etc.
+
+**In your PR:**
+- Should see a comment from "Cursor Auto-Fix Bot"
+- Comment should include fix branch info and quick-create link
+
+**In repository:**
+- Should see a new branch `ci-fix-{pr-number}` with analysis and fixes
+
+### **Step 4: Verify the Fix**
+- Click the quick-create PR link in the comment
+- Review the proposed fixes
+- Check if the ESLint error was resolved
+
+## 🔍 Expected Timeline
+
+1. **Push test branch** → CI starts running
+2. **CI fails** (1-2 minutes) → Auto-fix workflow triggers
+3. **Auto-fix runs** (2-3 minutes) → Creates fix branch and PR comment
+4. **PR comment appears** → You can review and create fix PR
+
+## �� If It Still Doesn't Work
+
+**Check these things:**
+
+1. **Workflow file location**: Make sure `.github/workflows/auto-fix-ci.yml` is in the main branch
+2. **Workflow names**: Verify the workflow names match exactly:
+   - "CI" 
+   - "Test Chef Chopsky Agent"
+3. **GitHub Actions permissions**: Ensure the repository has Actions enabled
+4. **Workflow syntax**: Check for any YAML syntax errors
+
+**Debug steps:**
+- Go to GitHub Actions tab
+- Look for any failed workflow runs
+- Check the workflow file syntax
+- Verify the trigger conditions
+
+## 🎯 Quick Test Command
+
+Here's a one-liner to create a test:
+
+```bash
+git checkout -b test-auto-fix-$(date +%s) && echo "const unused = 'error';" > frontend/test.js && git add frontend/test.js && git commit -m "Test auto-fix" && git push origin test-auto-fix-$(date +%s)
+```
+
+Then create a PR from that branch and watch the magic happen! 
+
+Let me know what you see in the GitHub Actions tab after creating the test PR.
+
+---
+
