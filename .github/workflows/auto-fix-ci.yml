@@ -77,7 +77,7 @@ jobs:
       
       - name: Install Cursor CLI
         run: |
-          curl https://cursor.com/install -fsS | bash
+          curl -fsSL https://cursor.com/install | bash
           echo "$HOME/.cursor/bin" >> $GITHUB_PATH
       
       - name: Fix CI failure with Cursor CLI
@@ -106,6 +106,15 @@ jobs:
           2) Maintain a persistent fix branch for this PR head using the Fix Branch Prefix from Context. Create it if missing, update it otherwise, and push changes to origin.
           3) Attempt to resolve the CI failure by making minimal, targeted edits consistent with the repo's style. Keep changes scoped and safe.
           4) You do NOT have permission to create PRs. Instead, post or update a single natural-language PR comment (1–2 sentences) that briefly explains the CI fix and includes an inline compare link to quick-create a PR.
+          5) Create an AUTO_FIX_ANALYSIS.md file with comprehensive context for interactive debugging sessions.
+
+          # Analysis File Requirements:
+          Create AUTO_FIX_ANALYSIS.md with:
+          - List of failed checks
+          - Relevant log excerpts for each failure
+          - Environment information (Node version, OS, etc.)
+          - Recent commits and changed files
+          The entire doc should be copy-paste ready to kick off an interactive debugging session for these issues within the Cursor App.
 
           # Inputs and conventions:
           - Use \`gh api\`, \`gh run view\`, \`gh pr view\`, \`gh pr diff\`, \`gh pr list\`, \`gh run download\`, and git commands as needed to discover the failing PR and branches.
@@ -114,6 +123,7 @@ jobs:
 
           # Deliverables when updates occur:
           - Pushed commits to the persistent fix branch for this PR head.
+          - AUTO_FIX_ANALYSIS.md file with comprehensive debugging context.
           - A single natural-language PR comment on the original PR that includes the inline compare link above.
           " --force --model "$MODEL" --output-format=text
       

@@ -35,6 +35,15 @@ links:
   - **NEW**: Always use `TestEnvironment` for proper cleanup and isolation.
   - **NEW**: Wait for data readiness before navigation (e.g., conversation creation).
   - **NEW**: Register routes BEFORE triggering user actions, cleanup in `TestEnvironment.cleanup`.
+- **CRITICAL: LLM Testing Guidelines**:
+  - **NEVER** assert on exact LLM response content - LLMs are non-deterministic.
+  - **DO** test response quality: length, structure, relevance to domain.
+  - **DO** test for domain-specific terms (food, cooking, nutrition) rather than exact words.
+  - **DO** verify response format (JSON structure, required fields, timing).
+  - **AVOID** `expect(response).toContain('specific-word')` - use broader term matching.
+  - **USE** `expect(response.length).toBeGreaterThan(minLength)` for content validation.
+  - **USE** `expect(response).toMatch(/[.!?]$/)` for proper sentence structure.
+  - **USE** arrays of related terms: `foodTerms.some(term => response.includes(term))`.
 
 Playwright snippets:
 
@@ -65,4 +74,21 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async () => { 
   await env.cleanup(); // Critical for isolation
 });
+
+// LLM Response Testing (Non-deterministic)
+// ✅ GOOD: Test response quality and structure
+expect(response.assistant_message.content).toBeTruthy();
+expect(response.assistant_message.content.length).toBeGreaterThan(20);
+expect(response.assistant_message.content).toMatch(/[.!?]$/); // Proper sentence ending
+
+// ✅ GOOD: Test domain relevance with multiple terms
+const foodTerms = ['food', 'nutrition', 'diet', 'meal', 'recipe', 'cooking', 'healthy', 'eat', 'ingredient'];
+const hasFoodTerms = foodTerms.some(term => 
+  response.assistant_message.content.toLowerCase().includes(term)
+);
+expect(hasFoodTerms).toBe(true);
+
+// ❌ BAD: Don't test exact content
+// expect(response.assistant_message.content).toContain('protein');
+// expect(response.assistant_message.content).toMatch(/vegetable|veggie/);
 ```
