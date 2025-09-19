@@ -113,21 +113,7 @@ async function runCursorAnalysis(context) {
     
     fs.writeFileSync(tempFile, prompt, 'utf8');
     
-    console.log('Testing Cursor CLI command formats...');
-    
-    // First, let's see what cursor-agent actually supports
-    try {
-      const helpResult = execSync('cursor-agent --help', { 
-        encoding: 'utf8',
-        timeout: 10000,
-        stdio: 'pipe'
-      });
-      console.log('Cursor CLI help output:', helpResult);
-    } catch (helpError) {
-      console.log('Help command failed:', helpError.message);
-    }
-    
-    // Try the main analysis command with file input
+    // Use cursor-agent with --print flag and file input (non-interactive mode)
     const command = `cursor-agent --print "$(cat ${tempFile})"`;
     console.log('Running Cursor CLI command...');
     const result = execSync(command, { 
