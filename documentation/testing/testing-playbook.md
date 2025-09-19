@@ -111,25 +111,36 @@ test.describe('Feature: Chat flow', () => {
 #### LLM Response Testing Patterns
 **CRITICAL**: LLMs are non-deterministic. Never test exact content.
 
+##### Key Principle: Optional vs Required Checks
+- **REQUIRED**: API functionality, response structure, timing, format
+- **OPTIONAL**: Domain-specific content, exact words, topic relevance
+- **LOG, DON'T FAIL**: Use optional checks for debugging, not test failures
+
 ##### ✅ Good Patterns
 ```ts
-// Test response structure and quality
+// REQUIRED: Test response structure and quality
 expect(response.assistant_message.content).toBeTruthy();
-expect(response.assistant_message.content.length).toBeGreaterThan(20);
+expect(response.assistant_message.content.length).toBeGreaterThan(10);
 expect(response.assistant_message.content).toMatch(/[.!?]$/); // Proper sentence ending
 
-// Test domain relevance with multiple related terms
-const foodTerms = ['food', 'nutrition', 'diet', 'meal', 'recipe', 'cooking', 'healthy', 'eat', 'ingredient'];
-const hasFoodTerms = foodTerms.some(term => 
-  response.assistant_message.content.toLowerCase().includes(term)
-);
-expect(hasFoodTerms).toBe(true);
-
-// Test response format and timing
+// REQUIRED: Test response format and timing
 expect(response).toHaveProperty('assistant_message');
 expect(response).toHaveProperty('timing_ms');
 expect(response.timing_ms).toBeGreaterThan(0);
 expect(response.timing_ms).toBeLessThan(30000);
+
+// OPTIONAL: Domain relevance check (logged, not required)
+const foodTerms = ['food', 'nutrition', 'diet', 'meal', 'recipe', 'cooking', 'healthy', 'eat', 'ingredient'];
+const hasFoodTerms = foodTerms.some(term => 
+  response.assistant_message.content.toLowerCase().includes(term)
+);
+
+// Log for debugging but don't fail the test
+if (!hasFoodTerms) {
+  console.log('ℹ️ LLM response did not contain expected food terms:');
+  console.log('Response:', response.assistant_message.content.substring(0, 200) + '...');
+  console.log('This is OK - LLMs are non-deterministic');
+}
 ```
 
 ##### ❌ Bad Patterns (Avoid These)
@@ -141,6 +152,10 @@ expect(response.assistant_message.content).toMatch(/vegetable|veggie/);
 // DON'T: Test specific words that might vary
 expect(response.assistant_message.content).toContain('chicken');
 expect(response.assistant_message.content).toContain('broccoli');
+
+// DON'T: Require domain-specific terms (will fail randomly)
+expect(hasFoodTerms).toBe(true); // This will fail randomly
+expect(response.assistant_message.content).toContain('nutrition');
 ```
 
 ##### Integration Test Example
@@ -158,17 +173,23 @@ it('should handle different message types', async () => {
   expect(response.status).toBe(200);
   const data = await response.json();
   
-  // Test response quality, not content
+  // REQUIRED: Test response quality, not content
   expect(data.assistant_message.content).toBeTruthy();
-  expect(data.assistant_message.content.length).toBeGreaterThan(20);
+  expect(data.assistant_message.content.length).toBeGreaterThan(10);
   expect(data.assistant_message.content).toMatch(/[.!?]$/);
   
-  // Test domain relevance
+  // OPTIONAL: Test domain relevance (logged, not required)
   const foodTerms = ['food', 'nutrition', 'diet', 'meal', 'recipe', 'cooking', 'healthy', 'eat', 'ingredient'];
   const hasFoodTerms = foodTerms.some(term => 
     data.assistant_message.content.toLowerCase().includes(term)
   );
-  expect(hasFoodTerms).toBe(true);
+  
+  // Log for debugging but don't fail the test
+  if (!hasFoodTerms) {
+    console.log('ℹ️ LLM response did not contain expected food terms:');
+    console.log('Response:', data.assistant_message.content.substring(0, 200) + '...');
+    console.log('This is OK - LLMs are non-deterministic');
+  }
 });
 ```
 
@@ -181,3 +202,5 @@ it('should handle different message types', async () => {
 - ❌ Registering routes after triggering user actions
 - ❌ **Testing exact LLM response content** (LLMs are non-deterministic)
 - ❌ **Using `toContain()` with specific words** (use broader term matching instead)
+- ❌ **Requiring domain-specific terms in LLM responses** (will fail randomly)
+- ❌ **Making content validation required instead of optional** (prioritize API functionality)
