@@ -31,6 +31,19 @@ function generateMockResponse(userMessage: string): string {
     return "Let me help you with those ingredients! Here's what you'll need and some great ways to use them in your cooking.";
   }
   
+  // Handle specific ingredient mentions for E2E tests
+  if (userMessage.toLowerCase().includes('tomato')) {
+    return "Great choice with tomatoes! Tomatoes are versatile and nutritious. You can use them in salads, sauces, soups, or roasted dishes. They pair wonderfully with onions and chicken for a healthy meal.";
+  }
+  
+  if (userMessage.toLowerCase().includes('onion')) {
+    return "Onions are a fantastic base ingredient! They add depth and flavor to so many dishes. Combined with tomatoes and chicken, you have the foundation for many delicious recipes.";
+  }
+  
+  if (userMessage.toLowerCase().includes('chicken')) {
+    return "Chicken is a great protein choice! It's lean, versatile, and pairs well with vegetables like tomatoes and onions. You can grill, roast, or sauté it for a quick and healthy meal.";
+  }
+  
   // Return a random response for other cases
   return responses[Math.floor(Math.random() * responses.length)];
 }
