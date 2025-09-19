@@ -2,7 +2,7 @@ name: Auto Fix CI Failures (MVP)
 
 on:
   workflow_run:
-    workflows: [CI, PR Validation]
+    workflows: [CI, Test Chef Chopsky Agent]
     types: [completed]
 
 jobs:
