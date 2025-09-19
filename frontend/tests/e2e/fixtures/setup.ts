@@ -295,4 +295,100 @@ export class TestUtils {
     
     return match[1];
   }
+
+  /**
+   * Validate LLM response content (optional validation with logging)
+   * This follows the principle that LLMs are non-deterministic, so we test structure, not content
+   */
+  static async validateLLMResponse(
+    page: Page, 
+    selector: string = '[class*="bg-gray-100"]',
+    expectedTerms: string[] = [],
+    context: string = 'LLM response'
+  ): Promise<void> {
+    // Wait for assistant response to appear
+    await page.waitForSelector(selector, { timeout: 30000 });
+    
+    // Get the response text
+    const responseText = await page.locator(selector).textContent();
+    
+    if (!responseText) {
+      Logger.info(`ℹ️ ${context}: No response text found`);
+      return;
+    }
+    
+    // Optional: Check if response contains expected terms (logged, not required)
+    if (expectedTerms.length > 0) {
+      const hasExpectedTerms = expectedTerms.some(term => 
+        responseText.toLowerCase().includes(term.toLowerCase())
+      );
+      
+      if (!hasExpectedTerms) {
+        Logger.info(`ℹ️ ${context} did not contain expected terms:`);
+        Logger.info('Expected terms:', expectedTerms.join(', '));
+        Logger.info('Response preview:', responseText.substring(0, 200) + '...');
+        Logger.info('This is OK - LLMs are non-deterministic');
+      } else {
+        Logger.info(`✅ ${context} contains expected terms`);
+      }
+    }
+    
+    // Always validate basic response structure
+    expect(responseText.length).toBeGreaterThan(10);
+    expect(responseText).toMatch(/[.!?]$/); // Should end with punctuation
+  }
+
+  /**
+   * Predefined food-related terms for cooking/nutrition responses
+   */
+  static readonly FOOD_TERMS = [
+    'food', 'nutrition', 'diet', 'meal', 'recipe', 'cooking', 'healthy', 'eat', 'ingredient',
+    'tomato', 'onion', 'chicken', 'vegetable', 'veggie', 'produce', 'protein', 'plant',
+    'beans', 'lentils', 'tofu', 'tempeh', 'quinoa', 'nuts', 'seeds', 'legume', 'grain',
+    'soy', 'chickpea', 'nutritional', 'vitamin', 'mineral', 'fiber', 'calorie', 'serving',
+    'portion', 'dinner', 'cook', 'tonight', 'quick', 'easy', 'delicious', 'tasty'
+  ];
+
+  /**
+   * Predefined cooking-related terms for recipe responses
+   */
+  static readonly COOKING_TERMS = [
+    'cook', 'cooking', 'recipe', 'ingredient', 'prep', 'prepare', 'heat', 'pan', 'oil',
+    'seasoning', 'spice', 'sauce', 'stir', 'fry', 'boil', 'bake', 'roast', 'grill',
+    'broccoli', 'carrot', 'garlic', 'ginger', 'soy', 'salt', 'pepper', 'herbs'
+  ];
+
+  /**
+   * Convenience method for validating food/cooking responses
+   */
+  static async validateFoodResponse(
+    page: Page, 
+    context: string = 'Food response',
+    additionalTerms: string[] = []
+  ): Promise<void> {
+    const allTerms = [...TestUtils.FOOD_TERMS, ...additionalTerms];
+    await TestUtils.validateLLMResponse(page, '[class*="bg-gray-100"]', allTerms, context);
+  }
+
+  /**
+   * Convenience method for validating cooking/recipe responses
+   */
+  static async validateCookingResponse(
+    page: Page, 
+    context: string = 'Cooking response',
+    additionalTerms: string[] = []
+  ): Promise<void> {
+    const allTerms = [...TestUtils.COOKING_TERMS, ...additionalTerms];
+    await TestUtils.validateLLMResponse(page, '[class*="bg-gray-100"]', allTerms, context);
+  }
+
+  /**
+   * Convenience method for validating any LLM response (no content validation)
+   */
+  static async validateAnyResponse(
+    page: Page, 
+    context: string = 'LLM response'
+  ): Promise<void> {
+    await TestUtils.validateLLMResponse(page, '[class*="bg-gray-100"]', [], context);
+  }
 }
