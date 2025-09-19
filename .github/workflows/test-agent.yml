@@ -24,16 +24,16 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'yarn'
-        cache-dependency-path: 'agent/yarn.lock'
+        cache: 'npm'
+        cache-dependency-path: 'agent/package-lock.json'
         
     - name: Install dependencies
       working-directory: ./agent
-      run: yarn install --frozen-lockfile
+      run: npm ci
       
     - name: Build TypeScript
       working-directory: ./agent
-      run: yarn build
+      run: npm run build
       
     - name: Setup Environment Configuration
       working-directory: ./agent
@@ -139,7 +139,7 @@ jobs:
         echo "  - PORT: ${PORT:-3001}"
         echo "  - NODE_ENV: ${NODE_ENV:-test}"
         
-        yarn test:ci
+        npm run test:ci
       env:
         LANGSMITH_TRACING: "false"  # Disable LangSmith in CI
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
