@@ -1,0 +1,15 @@
+# CI Environment Variables for Local Testing
+# Copy this file to .env.ci and fill in your actual values
+
+# Supabase Test Database Configuration
+SUPABASE_URL=https://your-test-project-ref.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your_test_publishable_key_here
+
+# OpenAI API Key (for agent tests)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# LangSmith Configuration (optional)
+LANGCHAIN_API_KEY=your_langsmith_api_key_here
+
+# Note: These are test values and should not be used in production
+# The actual CI will use GitHub Secrets for these values

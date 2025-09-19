@@ -24,16 +24,16 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'yarn'
-        cache-dependency-path: 'agent/yarn.lock'
+        cache: 'npm'
+        cache-dependency-path: 'agent/package-lock.json'
         
     - name: Install dependencies
       working-directory: ./agent
-      run: yarn install --frozen-lockfile
+      run: npm ci
       
     - name: Build TypeScript
       working-directory: ./agent
-      run: yarn build
+      run: npm run build
       
     - name: Setup Environment Configuration
       working-directory: ./agent
@@ -57,29 +57,39 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
         
-    - name: Start LangGraph dev server
+    - name: Start Express server
       working-directory: ./agent
       run: |
-        echo "Starting LangGraph dev server..."
-        npx @langchain/langgraph-cli dev > server.log 2>&1 &
+        echo "Starting Express server..."
+        echo "Environment check:"
+        echo "  - OPENAI_API_KEY: ${OPENAI_API_KEY:+SET}"
+        echo "  - PORT: ${PORT:-3001}"
+        echo "  - NODE_ENV: ${NODE_ENV:-development}"
+        
+        npm run server > server.log 2>&1 &
         SERVER_PID=$!
         echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
         
-        # Wait longer for server to start
+        # Wait for server to start
         echo "Waiting for server to start..."
-        sleep 15
+        sleep 10
         
         # Check if server is running
         if ps -p $SERVER_PID > /dev/null; then
           echo "Server process is running (PID: $SERVER_PID)"
+          echo "Server log (first 20 lines):"
+          head -20 server.log
         else
           echo "Server process failed to start"
+          echo "Full server log:"
           cat server.log
           exit 1
         fi
       env:
         LANGSMITH_TRACING: "false"  # Disable LangSmith in CI
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        PORT: 3001
+        NODE_ENV: test
         
     - name: Wait for server to be ready
       run: |
@@ -88,12 +98,19 @@ jobs:
         for i in {1..30}; do
           if ps -p $SERVER_PID > /dev/null; then
             # Try to connect to the server port using timeout
-            if timeout 5 bash -c "</dev/tcp/localhost/2024" 2>/dev/null; then
-              echo "✅ Server is ready and accepting connections!"
-              break
+            if timeout 5 bash -c "</dev/tcp/localhost/3001" 2>/dev/null; then
+              echo "✅ Server port is open, testing health endpoint..."
+              # Test the actual health endpoint
+              if curl -s http://localhost:3001/health > /dev/null; then
+                echo "✅ Server is ready and accepting connections!"
+                break
+              else
+                echo "⚠️ Port open but health endpoint not responding"
+              fi
             fi
           else
             echo "❌ Server process died"
+            echo "Server log:"
             cat agent/server.log
             exit 1
           fi
@@ -101,28 +118,39 @@ jobs:
           sleep 2
         done
         
-        # Final check - just verify the port is open
-        if timeout 5 bash -c "</dev/tcp/localhost/2024" 2>/dev/null; then
-          echo "✅ Server port is open and ready"
+        # Final check - verify the health endpoint responds
+        if curl -s http://localhost:3001/health | grep -q "ok"; then
+          echo "✅ Server health endpoint is responding correctly"
         else
-          echo "❌ Server health check failed - port not accessible"
+          echo "❌ Server health check failed - health endpoint not responding"
           echo "Server log:"
           cat agent/server.log
+          echo "Health endpoint response:"
+          curl -s http://localhost:3001/health || echo "No response"
           exit 1
         fi
         
     - name: Run agent tests
       working-directory: ./agent
-      run: yarn test:ci
+      run: |
+        echo "🧪 Running agent tests..."
+        echo "Environment check:"
+        echo "  - OPENAI_API_KEY: ${OPENAI_API_KEY:+SET}"
+        echo "  - PORT: ${PORT:-3001}"
+        echo "  - NODE_ENV: ${NODE_ENV:-test}"
+        
+        npm run test:ci
       env:
         LANGSMITH_TRACING: "false"  # Disable LangSmith in CI
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        PORT: 3001
+        NODE_ENV: test
         
-    - name: Stop LangGraph server
+    - name: Stop Express server
       if: always()
       run: |
         if [ ! -z "$SERVER_PID" ]; then
-          echo "Stopping LangGraph server (PID: $SERVER_PID)"
+          echo "Stopping Express server (PID: $SERVER_PID)"
           kill $SERVER_PID || true
         fi
         

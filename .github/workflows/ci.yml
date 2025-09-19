@@ -1,0 +1,217 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop, feat/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  # Test environment variables
+  NODE_ENV: test
+  FRONTEND_URL: http://localhost:3000
+  AGENT_URL: http://localhost:3001
+  AGENT_SERVICE_URL: http://localhost:3001
+  
+  # Supabase test configuration (using test database)
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+  
+  # OpenAI API key for agent tests
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  
+  # LangSmith configuration (optional)
+  LANGCHAIN_TRACING_V2: true
+  LANGCHAIN_PROJECT: chef-chopsky-ci
+  LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+
+jobs:
+  # Unit tests and linting (fast feedback)
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm run install:all
+      
+    - name: Lint code
+      run: npm run lint
+      
+    - name: Run unit tests
+      run: |
+        echo "🧪 Running frontend unit tests..."
+        npm run test:frontend
+        echo "🤖 Running agent unit tests..."
+        cd agent && npm run test:unit
+      
+    - name: Build applications
+      run: npm run build
+      
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.node-version }}
+        path: |
+          frontend/coverage/
+          agent/coverage/
+        retention-days: 7
+
+  # Integration and E2E tests with service orchestration
+  integration-e2e:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    env:
+      # Agent service environment variables
+      NODE_ENV: test
+      LOG_LEVEL: info
+      LANGSMITH_TRACING: false
+      LANGSMITH_PROJECT: chef-chopsky-ci
+      LANGGRAPH_PORT: 2024
+      LANGGRAPH_HOST: localhost
+      OPENAI_API_KEY: test-key
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm run install:all
+      
+    - name: Install Playwright browsers
+      run: cd frontend && npx playwright install --with-deps chromium
+      
+    - name: Build applications
+      run: npm run build
+      
+    - name: Start services
+      run: |
+        echo "🚀 Starting services for integration and E2E tests..."
+        ./scripts/start-services.sh &
+        echo "Services started in background"
+        
+    - name: Wait for services to be ready
+      run: |
+        echo "⏳ Waiting for services to be ready..."
+        timeout 120s node scripts/health-check.js
+        if [ $? -ne 0 ]; then
+          echo "❌ Services failed to start within 120 seconds"
+          echo "📋 Checking service status..."
+          ps aux | grep -E "(next|tsx)" | grep -v grep || echo "No services found"
+          exit 1
+        fi
+        echo "✅ All services are ready!"
+        
+    - name: Run integration tests
+      run: |
+        echo "🧪 Running integration tests..."
+        npm run test:integration
+        
+    - name: Run agent integration tests
+      run: |
+        echo "🤖 Running agent integration tests..."
+        cd agent && npm run test:integration
+        
+    - name: Run E2E tests
+      run: |
+        echo "🎭 Running E2E tests..."
+        npm run test:e2e
+        
+    - name: Stop services
+      if: always()
+      run: |
+        echo "🛑 Stopping services..."
+        npm run stop:services || true
+        # Ensure cleanup
+        pkill -f 'next dev' || true
+        pkill -f 'tsx watch' || true
+        
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-e2e-results
+        path: |
+          frontend/test-results/
+          frontend/playwright-report/
+          frontend/coverage/integration/
+        retention-days: 7
+
+  # High-value integration tests (service configuration and error handling)
+  integration-high-value:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm run install:all
+      
+    - name: Build applications
+      run: npm run build
+      
+    - name: Run high-value integration tests
+      run: |
+        echo "🧪 Running high-value integration tests..."
+        echo "These tests validate service configuration, error handling, and API validation"
+        cd frontend && npm run test:integration:all
+        
+    - name: Upload integration test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: high-value-integration-results
+        path: |
+          frontend/coverage/integration/
+        retention-days: 7
+
+  # Security and dependency check
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm run install:all
+      
+    - name: Run security audit
+      run: |
+        npm audit --audit-level=moderate
+        cd frontend && npm audit --audit-level=moderate
+        cd ../agent && npm audit --audit-level=moderate

@@ -7,7 +7,7 @@ import { db } from '../lib/database';
 interface CreateConversationProps {
   userId: string;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (conversationId: string) => void;
 }
 
 export default function CreateConversation({ userId, onClose, onCreated }: CreateConversationProps) {
@@ -26,8 +26,8 @@ export default function CreateConversation({ userId, onClose, onCreated }: Creat
 
     setLoading(true);
     try {
-      await db.createConversation(userId, title.trim(), metadata);
-      onCreated();
+      const conversation = await db.createConversation(userId, title.trim(), metadata);
+      onCreated(conversation.id);
     } catch (error) {
       console.error('Error creating conversation:', error);
       alert('Failed to create conversation. Please try again.');
