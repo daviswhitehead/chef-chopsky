@@ -142,7 +142,12 @@ app.post('/chat', (req, res) => {
       
       // Create mock response based on the last user message
       const lastUserMessage = langchainMessages[langchainMessages.length - 1];
-      const mockResponse = generateMockResponse(lastUserMessage.content);
+      const userContent = typeof lastUserMessage.content === 'string' 
+        ? lastUserMessage.content 
+        : Array.isArray(lastUserMessage.content) 
+          ? lastUserMessage.content.map(c => typeof c === 'string' ? c : (c as { text?: string }).text || '').join(' ')
+          : '';
+      const mockResponse = generateMockResponse(userContent);
       
       const assistantMessage = {
         id: messageId,

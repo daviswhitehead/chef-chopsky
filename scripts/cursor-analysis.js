@@ -64,6 +64,7 @@ async function checkCursorCLI() {
     console.log('✅ Cursor API key is configured');
     
   } catch (error) {
+    console.log('⚠️ Cursor CLI not available, using fallback analysis mode');
     throw new Error(`Cursor CLI not properly configured: ${error.message}`);
   }
 }
@@ -105,12 +106,12 @@ async function runCursorAnalysis(context) {
   const prompt = createAnalysisPrompt(context);
   
   try {
-    // Try different cursor-agent command formats
-    const commands = [
-      `cursor-agent "${prompt}"`,
-      `cursor-agent --help`,
-      `cursor-agent --version`
-    ];
+    // Write prompt to temporary file to avoid shell quote issues
+    const fs = require('fs');
+    const path = require('path');
+    const tempFile = path.join(process.cwd(), 'cursor-prompt.txt');
+    
+    fs.writeFileSync(tempFile, prompt, 'utf8');
     
     console.log('Testing Cursor CLI command formats...');
     
@@ -126,14 +127,21 @@ async function runCursorAnalysis(context) {
       console.log('Help command failed:', helpError.message);
     }
     
-    // Try the main analysis command
-    const command = `cursor-agent "${prompt}"`;
+    // Try the main analysis command with file input
+    const command = `cursor-agent --print "$(cat ${tempFile})"`;
     console.log('Running Cursor CLI command...');
     const result = execSync(command, { 
       encoding: 'utf8',
       timeout: CONFIG.maxAnalysisTime,
       stdio: 'pipe'
     });
+    
+    // Clean up temp file
+    try {
+      fs.unlinkSync(tempFile);
+    } catch (cleanupError) {
+      console.log('Could not clean up temp file:', cleanupError.message);
+    }
     
     return {
       success: true,
