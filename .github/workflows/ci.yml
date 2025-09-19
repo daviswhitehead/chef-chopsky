@@ -75,6 +75,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     
+    env:
+      # Agent service environment variables
+      NODE_ENV: test
+      LOG_LEVEL: info
+      LANGSMITH_TRACING: false
+      LANGSMITH_PROJECT: chef-chopsky-ci
+      LANGGRAPH_PORT: 2024
+      LANGGRAPH_HOST: localhost
+      OPENAI_API_KEY: test-key
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -97,7 +107,7 @@ jobs:
     - name: Start services
       run: |
         echo "🚀 Starting services for integration and E2E tests..."
-        npm run start:services &
+        ./scripts/start-services.sh &
         echo "Services started in background"
         
     - name: Wait for services to be ready
