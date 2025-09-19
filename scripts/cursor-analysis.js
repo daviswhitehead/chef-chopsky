@@ -104,9 +104,29 @@ async function runCursorAnalysis(context) {
   const prompt = createAnalysisPrompt(context);
   
   try {
-    // Use cursor-agent to analyze the failure
-    const command = `cursor-agent --prompt "${prompt}" --model ${CONFIG.cursorModel}`;
+    // Try different cursor-agent command formats
+    const commands = [
+      `cursor-agent "${prompt}"`,
+      `cursor-agent --help`,
+      `cursor-agent --version`
+    ];
     
+    console.log('Testing Cursor CLI command formats...');
+    
+    // First, let's see what cursor-agent actually supports
+    try {
+      const helpResult = execSync('cursor-agent --help', { 
+        encoding: 'utf8',
+        timeout: 10000,
+        stdio: 'pipe'
+      });
+      console.log('Cursor CLI help output:', helpResult);
+    } catch (helpError) {
+      console.log('Help command failed:', helpError.message);
+    }
+    
+    // Try the main analysis command
+    const command = `cursor-agent "${prompt}"`;
     console.log('Running Cursor CLI command...');
     const result = execSync(command, { 
       encoding: 'utf8',
