@@ -10,7 +10,7 @@ const https = require('https');
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const AGENT_URL = process.env.AGENT_URL || 'http://localhost:3001';
-const MAX_RETRIES = 30; // 30 seconds total
+const MAX_RETRIES = 60; // 60 seconds total
 const RETRY_INTERVAL = 1000; // 1 second between retries
 
 const colors = {
@@ -59,7 +59,7 @@ async function checkService(name, url, healthPath = '') {
       return false;
     }
   } catch (error) {
-    log(`❌ ${name} service is not responding (${fullUrl})`, 'red');
+    log(`❌ ${name} service is not responding (${fullUrl}): ${error.message}`, 'red');
     return false;
   }
 }
