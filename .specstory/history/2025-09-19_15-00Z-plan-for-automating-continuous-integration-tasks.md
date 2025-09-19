@@ -6238,3 +6238,28 @@ Would you like me to help you with anything else regarding the setup or testing?
 
 ---
 
+_**User (2025-09-19 15:02Z)**_
+
+Can you update our md docs with the most relevant details and mark whatever's done as completed?
+
+---
+
+_**Assistant**_
+
+Absolutely! Let me update our documentation to reflect the completed Cursor CLI integration and mark all the relevant tasks as completed.
+
+
+---
+
+Read file: documentation/projects/v4: frontend-agent-integration/mvp-tasks.md
+
+---
+
+
+
+---
+
+
+
+---
+
