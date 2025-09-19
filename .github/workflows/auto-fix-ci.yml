@@ -100,44 +100,51 @@ jobs:
           # Run the enhanced Cursor CLI analysis
           node scripts/cursor-analysis.js
       
-      - name: Apply basic fixes
-        run: |
-          echo "🔧 Applying basic fixes..."
-          
-          # Try common fixes with timeout protection
-          echo "Running lint fix..."
-          timeout 300 npm run lint || echo "Lint check completed"
-          
-          echo "Running type-check..."
-          timeout 300 npm run type-check || echo "Type-check completed with some issues"
-          
-          echo "Running tests..."
-          timeout 600 npm run test || echo "Tests completed with some failures"
-          
-          echo "Running build..."
-          timeout 600 npm run build || echo "Build completed with some issues"
-          
-          # Check if any files were modified
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "✅ Files modified by auto-fix"
-            git add .
-            git commit -m "Auto-fix CI failure: ${{ steps.context.outputs.WORKFLOW_RUN_ID }}"
-          else
-            echo "ℹ️ No files modified by auto-fix"
-          fi
-      
-      - name: Test the fix
-        run: |
-          echo "🧪 Testing the fix..."
-          
-          # Run basic tests to see if fix worked
-          npm run test || echo "Tests still failing"
-          npm run lint || echo "Linting still failing"
-          npm run type-check || echo "Type checking still failing"
+      # - name: Apply basic fixes
+      #   run: |
+      #     echo "🔧 Applying basic fixes..."
+      #     
+      #     # Try common fixes with timeout protection
+      #     echo "Running lint fix..."
+      #     timeout 300 npm run lint || echo "Lint check completed"
+      #     
+      #     echo "Running type-check..."
+      #     timeout 300 npm run type-check || echo "Type-check completed with some issues"
+      #     
+      #     echo "Running tests..."
+      #     timeout 600 npm run test || echo "Tests completed with some failures"
+      #     
+      #     echo "Running build..."
+      #     timeout 600 npm run build || echo "Build completed with some issues"
+      #     
+      #     # Check if any files were modified
+      #     if [ -n "$(git status --porcelain)" ]; then
+      #       echo "✅ Files modified by auto-fix"
+      #       git add .
+      #       git commit -m "Auto-fix CI failure: ${{ steps.context.outputs.WORKFLOW_RUN_ID }}"
+      #     else
+      #       echo "ℹ️ No files modified by auto-fix"
+      #     fi
+      # 
+      # - name: Test the fix
+      #   run: |
+      #     echo "🧪 Testing the fix..."
+      #     
+      #     # Run basic tests to see if fix worked
+      #     npm run test || echo "Tests still failing"
+      #     npm run lint || echo "Linting still failing"
+      #     npm run type-check || echo "Type checking still failing"
       
       - name: Push fix branch
         run: |
           FIX_BRANCH="${{ steps.fix-branch.outputs.FIX_BRANCH }}"
+          
+          # Add and commit the analysis file
+          git add AUTO_FIX_ANALYSIS.md cursor-prompt.txt || echo "No new files to add"
+          git commit -m "Add CI failure analysis: ${{ steps.context.outputs.WORKFLOW_RUN_ID }}" || echo "No changes to commit"
+          
+          # Pull any remote changes first, then push
+          git pull origin $FIX_BRANCH --rebase || echo "No remote changes to pull"
           
           # Push the fix branch
           if git push origin $FIX_BRANCH; then
@@ -155,22 +162,23 @@ jobs:
           FIX_BRANCH="${{ steps.fix-branch.outputs.FIX_BRANCH }}"
           WORKFLOW_URL="${{ steps.context.outputs.WORKFLOW_RUN_URL }}"
           
-          # Create PR comment with fix proposal
+          # Create PR comment with analysis
           gh pr comment "$PR_NUMBER" --body "
-          🤖 **Auto-Fix Attempted**
+          🤖 **CI Failure Analysis Complete**
           
-          I've analyzed the CI failure and attempted to apply some basic fixes.
+          I've analyzed the CI failure and generated a comprehensive analysis report.
           
           **Fix Branch**: \`$FIX_BRANCH\`
           **Workflow**: $WORKFLOW_URL
-          **Analysis**: See \`AUTO_FIX_ANALYSIS.md\` in the fix branch
+          **Analysis Report**: See \`AUTO_FIX_ANALYSIS.md\` in the fix branch
           
           [Create PR from fix branch →](https://github.com/${{ github.repository }}/compare/$FIX_BRANCH)
           
-          ## What was attempted:
-          - ESLint auto-fix
-          - Prettier formatting
-          - TypeScript type checking
+          ## What's included:
+          - ✅ Failed GitHub checks analysis
+          - ✅ Detailed error logs and context
+          - ✅ Environment and repository information
+          - ✅ Copy-paste ready Cursor prompt for interactive debugging
           
-          Please review the changes before merging. This is an MVP version - more sophisticated analysis will be added in future iterations.
+          **Next Step**: Use the copy-paste prompt in the analysis file to start an interactive Cursor session for fixing the issues.
           "
