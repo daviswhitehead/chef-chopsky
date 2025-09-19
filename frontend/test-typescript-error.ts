@@ -1,3 +1,3 @@
-// This will cause a TypeScript error (type mismatch)
-const numberValue: number = "this is a string";
+// Fix: Assign a number value to match the number type
+const numberValue: number = 42;
 export default numberValue;
