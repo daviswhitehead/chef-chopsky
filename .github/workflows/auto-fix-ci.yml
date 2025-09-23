@@ -90,10 +90,61 @@ jobs:
           GH_PAGER: cat
           GIT_PAGER: cat
         run: |
-          timeout 10m cursor-agent -p "You are operating in a GitHub Actions runner.
+          # Create a wrapper script to handle cursor-agent termination issues
+          cat > cursor_wrapper.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          # Start cursor-agent in background
+          cursor-agent -p "$1" --force --model "$2" --output-format=text > cursor_output.log 2>&1 &
+          CURSOR_PID=$!
+          
+          # Function to cleanup
+          cleanup() {
+            echo "Cleaning up cursor-agent process..."
+            kill $CURSOR_PID 2>/dev/null || true
+            wait $CURSOR_PID 2>/dev/null || true
+          }
+          
+          # Set trap for cleanup
+          trap cleanup EXIT INT TERM
+          
+          # Monitor for completion signal
+          while kill -0 $CURSOR_PID 2>/dev/null; do
+            # Check if "DONE" appears in output
+            if grep -q "^DONE$" cursor_output.log 2>/dev/null; then
+              echo "✅ Detected completion signal, terminating cursor-agent..."
+              cleanup
+              break
+            fi
+            sleep 1
+          done
+          
+          # Show the output
+          cat cursor_output.log
+          
+          # Check if we completed successfully
+          if grep -q "^DONE$" cursor_output.log; then
+            echo "✅ Cursor-agent completed successfully"
+            exit 0
+          else
+            echo "⚠️ Cursor-agent may not have completed properly"
+            exit 1
+          fi
+          EOF
+          
+          chmod +x cursor_wrapper.sh
+          
+          # Run with timeout and explicit termination handling
+          timeout 10m ./cursor_wrapper.sh "You are operating in a GitHub Actions runner.
 
-          The GitHub CLI is available as \`gh\` and authenticated via \`GH_TOKEN\`. Git is available. You have write access to repository contents and can comment on pull requests, but you must not create or edit PRs directly. Always run `gh` commands with `--no-pager`.
+          - Treat this as NON-INTERACTIVE. Never open editors or pagers.
+          - Always run gh commands with: --no-pager --json ... --jq ...
+          - Time budget: 5 minutes.
+          - Edit budget: ≤2 files, ≤60 lines. No dependency changes.
 
+
+          The GitHub CLI is available as \`gh\` and authenticated via \`GH_TOKEN\`. Git is available. You have write access to repository contents and can comment on pull requests, but you must not create or edit PRs directly.
 
           # Context:
           - Repo: ${{ github.repository }}
@@ -103,19 +154,22 @@ jobs:
           - Fix Branch Prefix: ${{ env.BRANCH_PREFIX }}
 
           # Goal:
-          - Implement a two-step CI fix flow: First analyze the failure thoroughly, then attempt targeted fixes.
+          - One-shot CI triage. First produce a self-contained debugging prompt; only then, if safe, make a minimal fix.
+
 
           # Step 1: Analysis Phase
           1) Identify the PR associated with the failed workflow run and determine its base and head branches.
           2) Download and analyze the failed workflow logs to understand the root cause.
           3) Examine the failing tests, build errors, or other CI issues.
-          4) Create a comprehensive copy-paste ready prompt for interactive debugging that includes:
-             - Complete error logs and stack traces
-             - Relevant code files and their current state
+          4) Create a copy-paste ready prompt for interactive debugging that includes:
+             - Error log windows and stack traces (not full logs, just what's most relevant)
+             - Relevant code files/snippets and their current state
              - Environment details (Node version, OS, dependencies)
              - Recent commits and changes that might have caused the issue
              - Specific test data and expected vs actual results
-             - All context needed for someone to debug this in a separate Cursor session
+             - The most important context needed for someone to debug this in a separate Cursor session
+          5) Produce a Repro Script (bash) that installs deps and runs the minimal failing test locally.
+
 
           # Step 2: Fix Phase (only if analysis looks good)
           5) If the analysis reveals a clear, safe fix, implement it with minimal targeted edits.
@@ -125,15 +179,20 @@ jobs:
           9) Post a PR comment explaining the fix with a quick-create PR link.
 
           # Output Requirements:
-          - Print the complete copy-paste ready debugging prompt first (this is the primary deliverable)
-          - If attempting a fix, clearly indicate when moving from analysis to fix phase
+          - Start with a concise “CI Fail Summary”.
+          - Provide structured facts (repo/pr/branches/shas, runner, node, failing jobs).
+          - Print the complete copy-paste ready debugging prompt (this is the primary deliverable).
           - Include all necessary context in the debugging prompt (logs, code, environment, etc.)
-          - Make the debugging prompt self-contained - someone should be able to copy it and debug immediately
+          - Make the debugging prompt self-contained - someone should be able to copy it and debug immediately.
+          - If attempting a fix, clearly indicate when moving from analysis to fix phase
+          - If a fix was applied: show changed files + minimal diffs, branch name, compare link, and the exact PR comment text.
+          - Finally print a single-line JSON summary:
+            RESULT_JSON: {"phase":"Analysis|Fix","pr":<n>,"head":"<ref>","base":"<ref>","fixBranch":"<ref>","commit":"<sha>","status":"success|skipped|failed","reason":"<short>"}
+
 
           # Inputs and conventions:
           - Use \`gh api\`, \`gh run view\`, \`gh pr view\`, \`gh pr diff\`, \`gh pr list\`, \`gh run download\`, and git commands as needed.
-          - Always run `gh` commands with `--no-pager` to avoid hanging.
+          - Always run \`gh\` commands with \`--no-pager\` to avoid hanging.
           - If no clear fix is possible, focus on creating the best possible debugging prompt.
 
-          When analysis is complete and debugging prompt is ready, print exactly DONE on a single line and exit immediately.
-          " --force --model "$MODEL" --output-format=text
+          When analysis is complete and debugging prompt is ready, print exactly DONE on a single line and exit immediately." "$MODEL"
