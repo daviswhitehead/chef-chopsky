@@ -96,7 +96,7 @@ jobs:
           fi
           if [ -z "$PR_NUMBER" ]; then
             echo "No PR found for branch ${{ steps.context.outputs.HEAD_BRANCH }}"
-            if [ "${{ github.event_name }}" != "workflow_dispatch" ] && [ "${{ github.event_name }}" != "push" ]; then
+            if [ "${{ github.event_name }}" != "workflow_dispatch" ] && [ "${{ github.event_name }}" != "push" ] && [ "${{ github.event_name }}" != "workflow_run" ]; then
               exit 1
             fi
             PR_NUMBER="N/A"
@@ -269,19 +269,27 @@ jobs:
           
           # Step 2: Fix Phase (only if analysis looks good)
           5) If the analysis reveals a clear, safe fix, implement it with minimal targeted edits.
+             - For timeout fixes: Only suggest if you have HIGH confidence (multiple timing logs, clear race condition evidence)
+             - Avoid timeout adjustments unless you can prove the timing mismatch is the root cause
+             - Prefer code logic fixes over timing adjustments when possible
           6) Maintain a persistent fix branch for this PR head using the Fix Branch Prefix from Context.
           7) Test the fix by running relevant commands (npm test, build, etc.).
           8) If fix is successful, commit and push to the fix branch.
           9) Post a PR comment explaining the fix with a quick-create PR link.
           
           # Output Requirements:
-          - Start with a concise “CI Fail Summary”.
+          - Start with a concise "CI Fail Summary".
           - Provide structured facts (repo/pr/branches/shas, runner, node, failing jobs).
-          - Print the complete copy-paste ready debugging prompt (this is the primary deliverable).
+          - Use clear section headers with visual separators (=== SECTION NAME ===)
+          - Print the complete copy-paste ready debugging prompt in a prominent "=== DEBUGGING PROMPT ===" section
           - Include all necessary context in the debugging prompt (logs, code, environment, etc.)
           - Make the debugging prompt self-contained - someone should be able to copy it and debug immediately.
           - If attempting a fix, clearly indicate when moving from analysis to fix phase
           - If a fix was applied: show changed files + minimal diffs, branch name, compare link, and the exact PR comment text.
+          - Include prominent navigation links:
+            * Fix branch: https://github.com/{repo}/tree/{fixBranch}
+            * Compare diff: https://github.com/{repo}/compare/{headBranch}...{fixBranch}
+            * Quick-create PR: https://github.com/{repo}/compare/{fixBranch}...{baseBranch}?quick_pull=1
           - Finally print a single-line JSON summary:
             RESULT_JSON: {"phase":"Analysis|Fix","pr":<n>,"head":"<ref>","base":"<ref>","fixBranch":"<ref>","commit":"<sha>","status":"success|skipped|failed","reason":"<short>"}
           
@@ -289,6 +297,8 @@ jobs:
           # Inputs and conventions:
           - Use `gh api`, `gh run view`, `gh pr view`, `gh pr diff`, `gh pr list`, `gh run download`, and git commands as needed.
           - Always run `gh` commands with `--no-pager` to avoid hanging.
+          - Minimize command execution verbosity - focus on results, not command details
+          - Use brief status indicators (✓, ✗, →) instead of verbose command output
           - If no clear fix is possible, focus on creating the best possible debugging prompt.
           
           When analysis is complete and debugging prompt is ready, print exactly DONE on a single line and exit immediately.

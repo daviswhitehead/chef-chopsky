@@ -12,7 +12,8 @@ const customJestConfig = {
   testMatch: [
     '<rootDir>/tests/integration/*-service.test.ts',
     '<rootDir>/tests/integration/integration-communication.test.ts',
-    '<rootDir>/tests/integration/basic-integration.test.ts'
+    '<rootDir>/tests/integration/basic-integration.test.ts',
+    '<rootDir>/tests/integration/full-flow-integration.test.ts'
   ],
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
