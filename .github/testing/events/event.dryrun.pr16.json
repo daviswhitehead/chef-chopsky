@@ -1,0 +1,11 @@
+{
+  "inputs": {
+    "mode": "real",
+    "pr_number": "16",
+    "head_branch": "test-auto-fix-1758298659",
+    "base_branch": "main",
+    "run_id": "17979799015",
+    "run_url": "https://github.com/daviswhitehead/chef-chopsky/actions/runs/17979799015"
+  }
+}
+

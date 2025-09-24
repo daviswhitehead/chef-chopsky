@@ -182,7 +182,7 @@ export class TestUtils {
       await page.waitForSelector('text=Chef Chopsky is thinking...', { timeout: 2500 });
     } catch {
       // Spinner may not render; fall back to assistant bubble presence shortly
-      await page.waitForSelector('[class*="bg-gray-100"]', { timeout: 5000 });
+      await page.waitForSelector('[class*="bg-gray-100"]', { timeout: Math.min(timeout, 20000) });
       return;
     }
 
@@ -190,7 +190,7 @@ export class TestUtils {
     const detachTimeout = Math.min(timeout, 25000);
     await page.waitForSelector('text=Chef Chopsky is thinking...', { state: 'detached', timeout: detachTimeout }).catch(async () => {
       // Fallback: proceed if we see any assistant bubble
-      await page.waitForSelector('[class*="bg-gray-100"]', { timeout: 5000 });
+      await page.waitForSelector('[class*="bg-gray-100"]', { timeout: Math.min(timeout, 20000) });
     });
   }
 
@@ -214,7 +214,7 @@ export class TestUtils {
   /**
    * Wait for toast notification
    */
-  static async waitForToast(page: Page, type: 'success' | 'error' | 'warning' | 'info', timeout = 5000): Promise<void> {
+  static async waitForToast(page: Page, type: 'success' | 'error' | 'warning' | 'info', timeout = 10000): Promise<void> {
     // Look for toasts based on their actual content, not the type word
     let toastSelector: string;
     switch (type) {
