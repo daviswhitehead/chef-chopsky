@@ -28,7 +28,9 @@
     "health:check": "node scripts/health-check.js",
     "start:services": "concurrently --kill-others --prefix-colors \"blue,green\" \"npm run dev:frontend\" \"npm run dev:agent\"",
     "stop:services": "pkill -f 'next dev' && pkill -f 'tsx watch'",
-    "dev:clean": "./scripts/start-dev.sh"
+    "dev:clean": "./scripts/start-dev.sh",
+    "setup": "./scripts/setup-environment.sh",
+    "setup:env": "./scripts/setup-environment.sh"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

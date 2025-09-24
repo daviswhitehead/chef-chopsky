@@ -44,6 +44,21 @@ function generateMockResponse(userMessage: string): string {
 
 const app = express();
 
+// Environment validation on startup
+console.log('🔧 Agent Service Startup Validation...');
+if (config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here') {
+  console.warn('⚠️  WARNING: Agent service is starting in MOCK MODE!');
+  console.warn('⚠️  You will get fake responses instead of real AI responses.');
+  console.warn('⚠️  To fix this:');
+  console.warn('⚠️  1. Copy agent/.env.example to agent/.env');
+  console.warn('⚠️  2. Edit agent/.env and set OPENAI_API_KEY=your_real_api_key');
+  console.warn('⚠️  3. Restart the agent service');
+  console.warn('⚠️  Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
+} else {
+  console.log('✅ Agent service configured with real OpenAI API key');
+}
+console.log('🔧 Environment validation complete');
+
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
@@ -127,10 +142,14 @@ app.post('/chat', (req, res) => {
     });
     console.log(`[${requestId}] ✅ Agent configuration created`);
 
-    // Check if we're in mock mode (for local testing with test-key)
-    const isMockMode = config.openaiApiKey === 'test-key';
+    // Check if we're in mock mode (for local testing with test-key or missing key)
+    const isMockMode = config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here';
     
     if (isMockMode) {
+      console.warn(`[${requestId}] ⚠️  WARNING: Agent service is running in MOCK MODE!`);
+      console.warn(`[${requestId}] ⚠️  This means you're getting fake responses instead of real AI responses.`);
+      console.warn(`[${requestId}] ⚠️  To fix this, set a valid OPENAI_API_KEY in your agent/.env file.`);
+      console.warn(`[${requestId}] ⚠️  Current API key: ${config.openaiApiKey ? 'Set but invalid' : 'Not set'}`);
       console.log(`[${requestId}] 🎭 Mock mode enabled - returning mock response`);
       const agentStartTime = Date.now();
       

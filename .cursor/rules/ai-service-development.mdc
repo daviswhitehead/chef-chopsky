@@ -1,0 +1,193 @@
+---
+description: "AI service development rules to prevent mock mode issues and ensure real AI responses"
+globs:
+  - "agent/**/*"
+  - "**/ai/**/*"
+  - "**/langchain/**/*"
+alwaysApply: true
+---
+
+# 🤖 AI Service Development Rules
+
+## 🎯 Core Principle: Real AI Responses Only
+
+### ❌ NEVER DO THIS
+- Ship AI services with mock responses in production
+- Use placeholder API keys (`'test-key'`, `'your_openai_api_key_here'`)
+- Allow services to silently fall back to mock mode
+- Deploy AI services without validating API connectivity
+- Use hardcoded responses that end with "..." or ellipsis
+
+### ✅ ALWAYS DO THIS
+- **API Key Validation**: Validate OpenAI API keys at startup
+- **Mock Mode Detection**: Detect and warn when running in mock mode
+- **Production Guards**: Prevent mock mode in production environments
+- **Real Responses**: Use actual AI models for all user-facing responses
+- **Error Handling**: Graceful degradation when AI services are unavailable
+
+## 🔧 AI Service Configuration
+
+### Environment Validation
+```typescript
+// ✅ GOOD: Validate API keys at startup
+const isMockMode = config.openaiApiKey === 'test-key' || 
+                   !config.openaiApiKey || 
+                   config.openaiApiKey === 'your_openai_api_key_here';
+
+if (isMockMode) {
+  console.warn('⚠️  WARNING: AI service running in MOCK MODE!');
+  console.warn('⚠️  You will get fake responses instead of real AI responses.');
+  console.warn('⚠️  Set valid OPENAI_API_KEY to get real AI responses.');
+  
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Cannot run AI service in mock mode in production');
+  }
+}
+```
+
+### Service Health Checks
+```typescript
+// ✅ GOOD: Health check endpoint
+app.get('/health', async (req, res) => {
+  const isHealthy = !isMockMode && await testAIConnectivity();
+  
+  res.json({
+    status: isHealthy ? 'healthy' : 'degraded',
+    mockMode: isMockMode,
+    aiProvider: 'openai',
+    timestamp: new Date().toISOString()
+  });
+});
+```
+
+## 🛡️ Prevention Patterns
+
+### Mock Response Detection
+```typescript
+// ✅ GOOD: Detect mock responses
+function isMockResponse(content: string): boolean {
+  const mockPatterns = [
+    /\.\.\.$/,  // Ends with ellipsis
+    /suggestions\.\.\./,  // Contains "suggestions..."
+    /Here are some.*\.\.\./,  // Generic mock patterns
+  ];
+  
+  return mockPatterns.some(pattern => pattern.test(content));
+}
+
+// ✅ GOOD: Warn about mock responses
+if (isMockResponse(response.content)) {
+  console.warn('⚠️  Detected mock response pattern');
+}
+```
+
+### Production Environment Guards
+```typescript
+// ✅ GOOD: Production environment validation
+if (process.env.NODE_ENV === 'production') {
+  if (isMockMode) {
+    throw new Error('Production AI service cannot run in mock mode');
+  }
+  
+  if (!config.openaiApiKey || config.openaiApiKey.startsWith('sk-') === false) {
+    throw new Error('Production requires valid OpenAI API key');
+  }
+}
+```
+
+## 🚨 Red Flags in AI Services
+
+### Code Red Flags
+- `generateMockResponse()` functions in production code
+- `isMockMode = true` without environment checks
+- Hardcoded responses ending with "..."
+- Missing API key validation
+
+### Runtime Red Flags
+- Responses that don't match user input
+- Generic responses like "Here are some suggestions..."
+- Truncated responses ending with ellipsis
+- Missing LangSmith traces
+
+### Configuration Red Flags
+- `OPENAI_API_KEY=test-key` in production
+- Missing environment validation
+- No health check endpoints
+- Silent fallbacks to mock mode
+
+## 🎯 Success Criteria
+
+- **AI services always use real models in production**
+- **Clear warnings when running in mock mode**
+- **Health checks validate AI connectivity**
+- **Production deployments fail fast if misconfigured**
+- **Real AI responses match user input context**
+- **Observability traces show real AI usage**
+
+## 🔧 Implementation Checklist
+
+### Before Development
+- [ ] Set real OpenAI API key in `.env`
+- [ ] Run `npm run setup` to validate configuration
+- [ ] Check service starts without mock mode warnings
+- [ ] Test AI connectivity with health check
+
+### Before Deployment
+- [ ] Verify no mock mode warnings in logs
+- [ ] Confirm AI responses are contextual and complete
+- [ ] Check LangSmith traces are being created
+- [ ] Validate health check endpoint works
+
+### After Deployment
+- [ ] Test end-to-end AI functionality
+- [ ] Verify responses are real and contextual
+- [ ] Check observability traces
+- [ ] Monitor for mock response patterns
+
+## 📋 AI Service Testing
+
+### Unit Tests
+```typescript
+// ✅ GOOD: Test mock mode detection
+describe('AI Service Configuration', () => {
+  it('should detect mock mode with placeholder API key', () => {
+    process.env.OPENAI_API_KEY = 'your_openai_api_key_here';
+    const config = loadConfig();
+    expect(config.isMockMode).toBe(true);
+  });
+  
+  it('should throw error in production with mock mode', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.OPENAI_API_KEY = 'test-key';
+    expect(() => loadConfig()).toThrow('Cannot run in mock mode in production');
+  });
+});
+```
+
+### Integration Tests
+```typescript
+// ✅ GOOD: Test real AI responses
+describe('AI Service Integration', () => {
+  it('should return contextual responses for cooking questions', async () => {
+    const response = await aiService.chat('What are the benefits of quinoa?');
+    
+    expect(response.content).toBeTruthy();
+    expect(response.content.length).toBeGreaterThan(50);
+    expect(response.content).toMatch(/[.!?]$/); // Proper sentence ending
+    expect(response.content).not.toMatch(/\.\.\.$/); // Not truncated
+  });
+});
+```
+
+## 🚀 Deployment Guidelines
+
+### Environment Setup
+- **Development**: Mock mode allowed with warnings
+- **Staging**: Real AI required, mock mode blocked
+- **Production**: Real AI required, comprehensive validation
+
+### Monitoring
+- **Health Checks**: Regular AI connectivity validation
+- **Response Quality**: Monitor for mock response patterns
+- **Error Rates**: Track AI service failures
+- **Performance**: Monitor response times and token usage

@@ -34,6 +34,10 @@ alwaysApply: false
   - Keep `.env.example` current.
   - Centralize config (e.g., `agent/src/config/index.ts`), validate required keys.
   - Never leak secrets; use repository secrets in CI.
+  - **🚨 CRITICAL**: Validate environment at startup; warn if running in mock mode.
+  - **🚨 CRITICAL**: Never ship services with placeholder API keys (`'test-key'`, `'your_api_key_here'`).
+  - **🚨 CRITICAL**: Provide automated environment setup scripts (`npm run setup`).
+  - **🚨 CRITICAL**: Fail fast in production if critical configuration is missing.
 - **Observability by default** (if LLMs):
   - LangSmith: set `project_name`, dynamic `run_name`, `tags`, `metadata` per run/test.
   - Minimal structured logs for key decisions/errors.
@@ -80,6 +84,9 @@ alwaysApply: false
   - CI green
   - LangSmith traces correct (if LLMs)
   - Frontend guarded if partial
+  - **🚨 Environment validation**: Services start without mock mode warnings
+  - **🚨 Configuration check**: All API keys are real, not placeholders
+  - **🚨 Setup validation**: `npm run setup` passes without errors
 
 ### Definition of Done
 - End-to-end demoable; acceptance criteria met.
