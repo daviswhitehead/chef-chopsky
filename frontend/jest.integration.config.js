@@ -14,7 +14,10 @@ const customJestConfig = {
     '<rootDir>/tests/integration/integration-communication.test.ts',
     '<rootDir>/tests/integration/basic-integration.test.ts',
     '<rootDir>/tests/integration/full-flow-integration.test.ts',
-    '<rootDir>/tests/integration/conversation-creation-validation.test.ts'
+    '<rootDir>/tests/integration/conversation-creation-validation.test.ts',
+    '<rootDir>/tests/integration/database-service-validation.test.ts',
+    '<rootDir>/tests/integration/frontend-component-integration.test.ts',
+    '<rootDir>/tests/integration/critical-issues-prevention.test.ts'
   ],
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
