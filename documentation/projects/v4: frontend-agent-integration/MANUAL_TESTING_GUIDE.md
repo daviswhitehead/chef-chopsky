@@ -12,9 +12,25 @@ This guide provides step-by-step instructions for manually testing the complete 
 ## Setup Instructions
 
 ### 1. Start Services
+
+**Option A: Start both services together (for normal development)**
 ```bash
 # Start both services
 npm run dev
+
+# Verify services are running
+npm run health:check
+```
+
+**Note**: When using `npm run dev`, the services are managed by `concurrently` with `--kill-others` flag. This means if one service stops, both will stop. For error testing, use Option B.
+
+**Option B: Start services separately (for testing error scenarios)**
+```bash
+# Start frontend service
+npm run dev:frontend
+
+# In another terminal, start agent service
+npm run dev:agent
 
 # Verify services are running
 npm run health:check
@@ -96,22 +112,33 @@ npm run health:check
 
 **Objective**: Verify loading states and error handling work correctly
 
+**Prerequisites**: Start services separately for this test
+```bash
+# Terminal 1: Start frontend
+npm run dev:frontend
+
+# Terminal 2: Start agent
+npm run dev:agent
+```
+
 **Steps**:
 1. **Normal Loading**:
    - Send a message and observe loading indicator
    - Verify loading indicator disappears when response arrives
 2. **Error Scenarios**:
-   - Stop the agent service (`npm run stop:services` or kill the agent process)
+   - Stop the agent service: `kill $(lsof -ti:3001)`
    - Send a message
-   - Verify error message appears
-   - Restart agent service
+   - Verify "Service Unavailable" error popup appears
+   - Verify error message appears in chat: "Sorry, I'm having trouble connecting right now..."
+   - Restart agent service: `npm run dev:agent`
    - Send another message
    - Verify it works again
 
 **Expected Results**:
 - ✅ Loading indicator appears during processing
 - ✅ Loading indicator disappears when response arrives
-- ✅ Error messages are user-friendly when agent is down
+- ✅ "Service Unavailable" error popup appears when agent is down
+- ✅ Error message appears in chat: "Sorry, I'm having trouble connecting right now..." (appears immediately for connection errors)
 - ✅ System recovers when agent service is restored
 - ✅ No infinite loading states
 

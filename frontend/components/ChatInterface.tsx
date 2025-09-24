@@ -93,6 +93,12 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.log('API error response:', { 
+          status: response.status, 
+          statusText: response.statusText,
+          errorData,
+          retryAttempt 
+        });
         
         // Check if it's a retryable error (5xx server errors)
         if (response.status >= 500 && retryAttempt < 2) {
@@ -129,6 +135,12 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
       }
 
       const data = await response.json();
+      console.log('API success response:', { 
+        hasContent: !!data.content, 
+        contentLength: data.content?.length,
+        hasModel: !!data.model,
+        data 
+      });
       
       // Create assistant message object
       const assistantMessage: Message = {
@@ -169,6 +181,12 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
       
       // Determine error type and show appropriate toast
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.log('Error details:', { 
+        name: error?.name, 
+        message: errorMessage, 
+        retryAttempt,
+        errorType: typeof error 
+      });
       
       // Handle specific error types
       if (error.name === 'AbortError') {
@@ -176,20 +194,73 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
           'Request Timeout', 
           'The request took too long to complete. Please try again.'
         );
+      } else if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch')) {
+        showError(
+          'Service Unavailable', 
+          'Chef Chopsky service is currently offline. Please try again in a few moments.'
+        );
+        
+        // For connection errors, try to retry automatically if it's the first attempt
+        if (retryAttempt < 2) {
+          setLastFailedMessage(userMessage);
+          setRetryCount(retryAttempt + 1);
+          console.log('Connection error - setting retryCount to:', retryAttempt + 1);
+          showWarning(
+            'Connection Issue', 
+            `Retrying... (${retryAttempt + 1}/2)`
+          );
+          
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryAttempt) * 1000));
+          
+          // Recursively retry without changing loading state
+          return sendMessage(retryAttempt + 1, content);
+        }
+        
+        // Show error message in chat only if retries failed
+        const chatErrorMessage: Message = {
+          id: `error-${Date.now()}`,
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
+          timestamp: new Date().toISOString(),
+          metadata: { error: true }
+        };
+        setMessages(prev => [...prev, chatErrorMessage]);
+        onMessageSent?.(chatErrorMessage);
+      } else if (error.message?.includes('NetworkError') || error.message?.includes('network')) {
+        showError(
+          'Network Error', 
+          'Please check your internet connection and try again.'
+        );
+        // Show error message in chat immediately for network errors
+        const chatErrorMessage: Message = {
+          id: `error-${Date.now()}`,
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
+          timestamp: new Date().toISOString(),
+          metadata: { error: true }
+        };
+        setMessages(prev => [...prev, chatErrorMessage]);
+        onMessageSent?.(chatErrorMessage);
       } else if (retryAttempt >= 2) {
         showError(
           'Failed to send message', 
           'Chef Chopsky is temporarily unavailable. Please try again in a few moments.'
         );
       } else {
-        showError(
-          'Connection Error', 
-          'Unable to connect to Chef Chopsky. Please check your internet connection.'
-        );
+        // Only show generic error on first attempt, not on retries
+        if (retryAttempt === 0) {
+          showError(
+            'Connection Error', 
+            'Unable to connect to Chef Chopsky. Please check your internet connection.'
+          );
+        }
       }
       
-      // Show user-friendly error message in chat (only on final attempt)
-      if (retryAttempt >= 2) {
+      // Show user-friendly error message in chat (only on final attempt for other errors)
+      if (retryAttempt >= 2 && !error.message?.includes('Failed to fetch') && !error.message?.includes('fetch') && !error.message?.includes('NetworkError') && !error.message?.includes('network')) {
         const chatErrorMessage: Message = {
           id: `error-${Date.now()}`,
           conversation_id: conversationId,

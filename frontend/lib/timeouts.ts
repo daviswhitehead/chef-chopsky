@@ -11,11 +11,12 @@ export const TIMEOUT_CONFIG = {
   AGENT_PROCESSING: 60 * 1000, // 60 seconds
   
   // Frontend API route timeout (how long the API route waits for agent)
-  API_ROUTE: 60 * 1000, // 60 seconds
+  // Should be slightly longer than agent processing to account for network overhead
+  API_ROUTE: 65 * 1000, // 65 seconds
   
   // Frontend component timeout (how long the UI waits for API response)
   // Should be slightly longer than API route to account for network overhead
-  FRONTEND_COMPONENT: 65 * 1000, // 65 seconds
+  FRONTEND_COMPONENT: 70 * 1000, // 70 seconds
   
   // Retry configuration
   RETRY_ATTEMPTS: 2,
@@ -65,8 +66,8 @@ export function getEnvironmentTimeouts() {
     return {
       ...baseConfig,
       AGENT_PROCESSING: baseConfig.AGENT_PROCESSING * 1.5, // 90 seconds
-      API_ROUTE: baseConfig.API_ROUTE * 1.5, // 90 seconds
-      FRONTEND_COMPONENT: baseConfig.FRONTEND_COMPONENT * 1.5, // 97.5 seconds
+      API_ROUTE: baseConfig.API_ROUTE * 1.5, // 97.5 seconds
+      FRONTEND_COMPONENT: baseConfig.FRONTEND_COMPONENT * 1.5, // 105 seconds
     };
   }
   
