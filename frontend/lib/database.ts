@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin } from './supabase'
+import { AxiosDatabaseService } from './axios-database'
 
 export interface Conversation {
   id: string
@@ -295,7 +296,7 @@ export class DatabaseService {
 
 // Use mock database for testing when Supabase is not properly configured
 // Temporarily force mock database due to network connectivity issues
-const isTestMode = true; // Force mock database for now
+const isTestMode = false; // Use real Supabase database
 
 console.log('Database: Using mock database for testing (isTestMode =', isTestMode, ')');
 
@@ -311,5 +312,5 @@ export const db = (() => {
     }
     return global.__mockDb;
   }
-  return new DatabaseService();
+  return new AxiosDatabaseService();
 })()

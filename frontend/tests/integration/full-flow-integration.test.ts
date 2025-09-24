@@ -20,17 +20,30 @@ describe('Full Flow Integration Tests', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: 'Test Full Flow Conversation',
-            description: 'Testing complete user journey'
+            user_id: 'test-user-full-flow', // Fixed: was missing user_id
+            metadata: { test: 'full_flow' }
           }),
           signal: AbortSignal.timeout(5000),
         });
 
         if (createResponse.ok) {
           Logger.warn('⚠️ Frontend service is running (unexpected in test environment)');
-          expect(createResponse.status).toBe(201);
+          expect(createResponse.status).toBe(200); // Fixed: was 201, should be 200
           const conversation = await createResponse.json();
+          
+          // Enhanced validation to catch undefined ID issue
+          expect(conversation).toBeDefined();
+          expect(conversation).not.toBe('');
           expect(conversation.id).toBeDefined();
-          Logger.info('✅ Conversation creation successful');
+          expect(conversation.id).not.toBe('');
+          expect(conversation.id).not.toBe('undefined');
+          expect(conversation.id).not.toBe('null');
+          
+          // Validate UUID format
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          expect(conversation.id).toMatch(uuidRegex);
+          
+          Logger.info(`✅ Conversation creation successful with ID: ${conversation.id}`);
         } else {
           Logger.info('✅ Conversation creation API validation (service down expected)');
         }
