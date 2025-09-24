@@ -67,7 +67,22 @@ npm run install:all
 
 ### 3. Environment Configuration
 
-#### Frontend Environment (`frontend/.env.local`)
+#### Automated Setup (Recommended)
+```bash
+# Run the automated setup script
+npm run setup
+
+# This will:
+# - Create frontend/.env.local from example
+# - Create agent/.env from example  
+# - Check for placeholder values
+# - Guide you through configuration
+# - Warn if agent will run in mock mode
+```
+
+⚠️ **CRITICAL**: The setup script will warn you if the agent will run in mock mode. You MUST set a real OpenAI API key to get real AI responses instead of fake ones!
+
+#### Manual Setup
 1. Copy `frontend/.env.example` to `frontend/.env.local`
 2. Update the environment variables:
    ```bash
