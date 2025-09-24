@@ -5,6 +5,10 @@
 		}
 	],
 	"settings": {
-		"markdown.validate.enabled": true
+		"markdown.validate.enabled": true,
+		"github-actions.workflows.pinned.workflows": [
+			".github/workflows/auto-fix-ci.yml",
+			".github/workflows/ci.yml"
+		]
 	}
 }
