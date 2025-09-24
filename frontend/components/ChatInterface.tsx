@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, RefreshCw } from 'lucide-react';
 import { db, Message } from '../lib/database';
 import { useToast } from '../hooks/useToast';
+import { getEnvironmentTimeouts } from '../lib/timeouts';
 
 interface ChatInterfaceProps {
   conversationId: string;
@@ -16,6 +17,7 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [lastFailedMessage, setLastFailedMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -44,8 +46,13 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
     }
 
     console.log('Sending message:', content);
-    setInputValue('');
-    setIsLoading(true);
+    
+    // Only clear input and set loading on first attempt
+    if (retryAttempt === 0) {
+      setInputValue('');
+      setIsLoading(true);
+      setLoadingStartTime(Date.now());
+    }
 
     try {
       // Create user message object (not persisted yet)
@@ -58,13 +65,15 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
         metadata: {}
       };
 
-      // Add user message to UI immediately
-      setMessages(prev => [...prev, userMessage]);
-      onMessageSent?.(userMessage);
+      // Only add user message to UI on first attempt to avoid duplicates
+      if (retryAttempt === 0) {
+        setMessages(prev => [...prev, userMessage]);
+        onMessageSent?.(userMessage);
+      }
 
       // Call the API route which handles both user and assistant message persistence
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35 seconds (5 seconds longer than API route timeout)
+      const timeoutId = setTimeout(() => controller.abort(), getEnvironmentTimeouts().FRONTEND_COMPONENT);
       
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
@@ -102,8 +111,8 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
           return sendMessage(retryAttempt + 1, content);
         }
         
-        // Add error message to chat if provided
-        if (errorData.errorMessage) {
+        // Add error message to chat if provided (only on final attempt)
+        if (errorData.errorMessage && retryAttempt >= 2) {
           const errorChatMessage: Message = {
             id: `error-${Date.now()}`,
             conversation_id: conversationId,
@@ -179,20 +188,23 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
         );
       }
       
-      // Show user-friendly error message in chat
-      const chatErrorMessage: Message = {
-        id: `error-${Date.now()}`,
-        conversation_id: conversationId,
-        role: 'assistant',
-        content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
-        timestamp: new Date().toISOString(),
-        metadata: { error: true }
-      };
-      
-      setMessages(prev => [...prev, chatErrorMessage]);
-      onMessageSent?.(chatErrorMessage);
+      // Show user-friendly error message in chat (only on final attempt)
+      if (retryAttempt >= 2) {
+        const chatErrorMessage: Message = {
+          id: `error-${Date.now()}`,
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
+          timestamp: new Date().toISOString(),
+          metadata: { error: true }
+        };
+        
+        setMessages(prev => [...prev, chatErrorMessage]);
+        onMessageSent?.(chatErrorMessage);
+      }
     } finally {
       setIsLoading(false);
+      setLoadingStartTime(null);
     }
   };
 
@@ -260,7 +272,16 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
             <div className="bg-gray-100 rounded-lg px-4 py-2">
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-gray-600">Chef Chopsky is thinking...</span>
+                <span className="text-gray-600">
+                  {loadingStartTime && Math.floor((Date.now() - loadingStartTime) / 1000) > 30
+                    ? "Chef Chopsky is working on a complex request... This may take up to a minute."
+                    : "Chef Chopsky is thinking..."}
+                  {loadingStartTime && (
+                    <span className="ml-2 text-xs text-gray-500">
+                      ({Math.floor((Date.now() - loadingStartTime) / 1000)}s)
+                    </span>
+                  )}
+                </span>
               </div>
             </div>
           </div>

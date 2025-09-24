@@ -79,12 +79,18 @@ npm run health:check
 - "Can you help me plan meals for a family of 4 with dietary restrictions?"
 - "I need a 30-minute dinner recipe using chicken and vegetables"
 
+#### Complex Requests (Timeout Testing)
+- "Create a comprehensive meal plan for the week with detailed recipes, shopping lists, and prep instructions."
+- "I need a detailed nutritional analysis and meal plan for a family of 4 with specific dietary restrictions including gluten-free and dairy-free options."
+
 **Expected Results**:
 - ✅ All message types are processed successfully
 - ✅ Responses are appropriate for the message type
-- ✅ Long messages don't cause timeouts
+- ✅ Long messages don't cause timeouts (should complete within 60-90 seconds)
 - ✅ Questions receive informative answers
 - ✅ Requests are fulfilled appropriately
+- ✅ Complex requests show progress indicators with elapsed time
+- ✅ Loading message changes to "working on a complex request" after 30 seconds
 
 ### Test 3: Loading States and Error Handling
 
@@ -155,7 +161,36 @@ npm run health:check
 - ✅ Both user and assistant messages are saved
 - ✅ No duplicate messages appear
 
-### Test 6: LangSmith Trace Verification
+### Test 6: Timeout Scenarios and Complex Requests
+
+**Objective**: Verify system handles complex requests and timeout scenarios gracefully
+
+**Steps**:
+1. **Complex Request Testing**:
+   - Send a comprehensive meal planning request
+   - Observe loading indicator with elapsed time
+   - Verify loading message changes after 30 seconds
+   - Confirm request completes within 60-90 seconds
+2. **Timeout Behavior**:
+   - Send multiple complex requests simultaneously
+   - Verify each request gets appropriate timeout handling
+   - Check that retry mechanisms work if needed
+3. **Progress Indicators**:
+   - Send a complex request and observe:
+     - Initial "Chef Chopsky is thinking..." message
+     - Elapsed time counter
+     - Message change to "working on a complex request" after 30 seconds
+     - Final response or timeout handling
+
+**Expected Results**:
+- ✅ Complex requests complete successfully within timeout limits
+- ✅ Progress indicators show elapsed time accurately
+- ✅ Loading messages update appropriately for long requests
+- ✅ Timeout handling is graceful with retry options
+- ✅ No duplicate messages during retries
+- ✅ System recovers from timeout scenarios
+
+### Test 7: LangSmith Trace Verification
 
 **Objective**: Verify LangSmith traces are created (if configured)
 
@@ -317,7 +352,14 @@ Test 5: Message Persistence
 - [ ] Order preserved
 - [ ] No duplicates
 
-Test 6: LangSmith Traces
+Test 6: Timeout Scenarios
+- [ ] Complex requests complete successfully
+- [ ] Progress indicators work correctly
+- [ ] Loading messages update appropriately
+- [ ] Timeout handling is graceful
+- [ ] No duplicate messages during retries
+
+Test 7: LangSmith Traces
 - [ ] Traces created
 - [ ] Metadata correct
 - [ ] Timing accurate
