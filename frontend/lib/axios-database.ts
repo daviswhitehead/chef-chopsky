@@ -111,7 +111,7 @@ export class AxiosDatabaseService {
     );
   }
 
-  async createMessage(conversationId: string, role: 'user' | 'assistant', content: string, metadata?: any): Promise<Message> {
+  async addMessage(conversationId: string, role: 'user' | 'assistant', content: string, metadata?: any): Promise<Message> {
     const response = await axiosInstance.post(
       `${supabaseUrl}/rest/v1/messages`,
       {
@@ -120,8 +120,22 @@ export class AxiosDatabaseService {
         content,
         metadata
       },
-      { headers: this.getHeaders() }
+      { 
+        headers: {
+          ...this.getHeaders(),
+          'Prefer': 'return=representation'
+        }
+      }
     );
+    
+    console.log('📊 Supabase addMessage response:', response.data);
+    
+    // Supabase returns an array, so we need to get the first element
+    if (Array.isArray(response.data) && response.data.length > 0) {
+      return response.data[0];
+    }
+    
+    // If it's not an array, return the data directly
     return response.data;
   }
 

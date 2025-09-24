@@ -36,10 +36,10 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
 
   const sendMessage = async (retryAttempt = 0, messageContent?: string) => {
     const content = messageContent || inputValue.trim();
-    console.log('sendMessage called with:', { content, isLoading, retryAttempt });
+    console.log('🚀 sendMessage called with:', { content, isLoading, retryAttempt, conversationId });
     
     if (!content || isLoading) {
-      console.log('sendMessage early return:', { hasContent: !!content, isLoading });
+      console.log('⏹️ sendMessage early return:', { hasContent: !!content, isLoading });
       return;
     }
 
@@ -142,7 +142,7 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
       // Reset retry state on success
       setRetryCount(0);
       setLastFailedMessage(null);
-      showSuccess('Message sent successfully!');
+      // Removed success toast to reduce spam - success is indicated by the response appearing
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -283,7 +283,7 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
           />
           <button
             onClick={() => {
-              console.log('Send button clicked!');
+              console.log('🔘 Send button clicked!', { inputValue: inputValue.trim(), isLoading });
               sendMessage();
             }}
             disabled={!inputValue.trim() || isLoading}
