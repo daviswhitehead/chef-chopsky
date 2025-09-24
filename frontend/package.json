@@ -25,7 +25,6 @@
     "test:all:with-services": "npm run test && npm run test:integration:with-services && npm run test:e2e:with-services"
   },
   "dependencies": {
-    "@next/swc-darwin-arm64": "^15.5.4",
     "@supabase/supabase-js": "^2.57.0",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.39",
