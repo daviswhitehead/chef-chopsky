@@ -6,6 +6,12 @@ import { ensureConfiguration } from './retrieval_graph/configuration.js';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { v4 as uuidv4 } from 'uuid';
 
+// Fix SSL certificate issues in development
+if (config.nodeEnv === 'development') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  console.log('🔧 Development mode: SSL certificate validation disabled');
+}
+
 /**
  * Generate a mock response for testing purposes
  */
@@ -188,7 +194,7 @@ app.post('/chat', (req, res) => {
       });
     }
     
-    // Run the agent with LangSmith tracing
+    // Run the agent with LangSmith tracing (disabled if API key issues)
     console.log(`[${requestId}] 🤖 Invoking LangChain agent graph`);
     const agentStartTime = Date.now();
     
@@ -196,15 +202,17 @@ app.post('/chat', (req, res) => {
       { messages: langchainMessages },
       {
         configurable: agentConfig,
-        // LangSmith tracing configuration
-        tags: ['web', 'agent', config.nodeEnv, 'openai/gpt-5-nano'],
-        metadata: {
-          conversation_id,
-          message_id: messageId,
-          user_id: conversation_id, // Anonymous for now
-          model: 'openai/gpt-5-nano',
-          latency_ms: Date.now() - startTime
-        }
+        // LangSmith tracing configuration (only if API key is valid)
+        ...(config.langsmithApiKey && config.langsmithApiKey !== 'your_langsmith_api_key_here' ? {
+          tags: ['web', 'agent', config.nodeEnv, 'openai/gpt-5-nano'],
+          metadata: {
+            conversation_id,
+            message_id: messageId,
+            user_id: conversation_id, // Anonymous for now
+            model: 'openai/gpt-5-nano',
+            latency_ms: Date.now() - startTime
+          }
+        } : {})
       }
     );
     
