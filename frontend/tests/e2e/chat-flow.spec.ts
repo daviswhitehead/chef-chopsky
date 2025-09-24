@@ -80,6 +80,10 @@ test.describe('Chat Flow - Happy Path', () => {
     const conversationId = await TestUtils.createConversation(page, conversation.title);
     expect(conversationId).toBeTruthy();
 
+    // Navigate to conversation page
+    await page.goto(`/conversations/${conversationId}`);
+    await page.waitForSelector('textarea', { timeout: 10000 });
+
     // Send complex message
     await TestUtils.sendMessage(page, TEST_SCENARIOS.COMPLEX_MESSAGE);
 

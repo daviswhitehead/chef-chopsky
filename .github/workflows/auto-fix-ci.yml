@@ -4,11 +4,28 @@ on:
   workflow_run:
     workflows: [CI, Test Chef Chopsky Agent]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to analyze (optional)"
+        required: false
+      head_branch:
+        description: "Head branch name (optional)"
+        required: false
+      base_branch:
+        description: "Base branch name (optional)"
+        required: false
+      run_id:
+        description: "Workflow run ID (optional)"
+        required: false
+      run_url:
+        description: "Workflow run URL (optional)"
+        required: false
 
 jobs:
   analyze-and-fix:
     if: >-
-      ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.name != 'Auto Fix CI Failures (MVP)' }}
+      ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.name != 'Auto Fix CI Failures (MVP)') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,6 +45,7 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
+        if: ${{ github.event_name != 'push' }}
         run: npm run install:all
       
       - name: Configure Git
@@ -35,30 +53,60 @@ jobs:
           git config user.name "Cursor Agent"
           git config user.email "cursoragent@cursor.com"
       
+      - name: Install GitHub CLI
+        run: |
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh -y
+      
       - name: Extract failure context
         id: context
         run: |
-          echo "WORKFLOW_RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
-          echo "WORKFLOW_RUN_URL=${{ github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
-          echo "HEAD_BRANCH=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
-          echo "HEAD_SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "WORKFLOW_RUN_ID=${{ inputs.run_id || 'LOCAL-TEST' }}" >> $GITHUB_OUTPUT
+            echo "WORKFLOW_RUN_URL=${{ inputs.run_url || format('https://github.com/{0}/actions', github.repository) }}" >> $GITHUB_OUTPUT
+            echo "HEAD_BRANCH=${{ inputs.head_branch || github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "WORKFLOW_RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+            echo "WORKFLOW_RUN_URL=${{ github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
+            echo "HEAD_BRANCH=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+          fi
+          echo "HEAD_SHA=${{ github.sha }}" >> $GITHUB_OUTPUT
       
       - name: Get PR information
         id: pr-info
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
         run: |
-          # Get PR number from the head branch
-          PR_NUMBER=$(gh pr list --head "${{ steps.context.outputs.HEAD_BRANCH }}" --json number --jq '.[0].number' || echo "")
+          # Debug: Check if GH_TOKEN is set
+          echo "GH_TOKEN is set: $([ -n "$GH_TOKEN" ] && echo "YES" || echo "NO")"
+          echo "GH_TOKEN length: ${#GH_TOKEN}"
+          echo "GH_TOKEN starts with: ${GH_TOKEN:0:10}..."
+          
+          # Test gh authentication
+          echo "Testing gh authentication..."
+          gh auth status || echo "gh auth status failed"
+          
+          # Prefer user-provided input when workflow_dispatch
+          PR_NUMBER="${{ inputs.pr_number }}"
+          if [ -z "$PR_NUMBER" ]; then
+            # Get PR number from the head branch
+            PR_NUMBER=$(gh pr list --head "${{ steps.context.outputs.HEAD_BRANCH }}" --json number --jq '.[0].number' || echo "")
+          fi
           if [ -z "$PR_NUMBER" ]; then
             echo "No PR found for branch ${{ steps.context.outputs.HEAD_BRANCH }}"
-            exit 1
+            if [ "${{ github.event_name }}" != "workflow_dispatch" ] && [ "${{ github.event_name }}" != "push" ]; then
+              exit 1
+            fi
+            PR_NUMBER="N/A"
           fi
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "Found PR #$PR_NUMBER"
       
       - name: Create fix branch
         id: fix-branch
+        if: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'push' }}
         run: |
           PR_NUMBER="${{ steps.pr-info.outputs.PR_NUMBER }}"
           FIX_BRANCH="ci-fix-${PR_NUMBER}"
@@ -79,12 +127,13 @@ jobs:
         run: |
           curl -fsSL https://cursor.com/install | bash
           echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
       
       - name: Fix CI failure with Cursor CLI
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           MODEL: gpt-5
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
           BRANCH_PREFIX: ci-fix
           PAGER: cat
           GH_PAGER: cat
@@ -95,68 +144,115 @@ jobs:
           #!/bin/bash
           set -e
           
-          # Start cursor-agent in background
-          cursor-agent -p "$1" --force --model "$2" --output-format=text > cursor_output.log 2>&1 &
+          PROMPT_FILE="$1"
+          MODEL_NAME="$2"
+          
+          if [ ! -f "$PROMPT_FILE" ]; then
+            echo "Prompt file not found: $PROMPT_FILE" >&2
+            exit 2
+          fi
+          
+          # Start cursor-agent in background with verbatim prompt content
+          cursor-agent -p "$(cat "$PROMPT_FILE")" --force --model "$MODEL_NAME" --output-format=text > cursor_output.log 2>&1 &
           CURSOR_PID=$!
+
+          # Start a background tail to stream logs with timestamps
+          ( while kill -0 $CURSOR_PID 2>/dev/null; do date '+[%Y-%m-%d %H:%M:%S]'; tail -n +1 -c +0 -f cursor_output.log 2>/dev/null | sed 's/^/  /'; sleep 5; done ) &
+          TAIL_PID=$!
           
           # Function to cleanup
           cleanup() {
             echo "Cleaning up cursor-agent process..."
             kill $CURSOR_PID 2>/dev/null || true
             wait $CURSOR_PID 2>/dev/null || true
+            kill $TAIL_PID 2>/dev/null || true
           }
           
           # Set trap for cleanup
           trap cleanup EXIT INT TERM
           
-          # Monitor for completion signal
+          # Monitor for completion signal with inactivity watchdog
+          idle_seconds=0
+          last_size=0
+          check_interval=5
+          idle_limit=90
+          
           while kill -0 $CURSOR_PID 2>/dev/null; do
-            # Check if "DONE" appears in output
-            if grep -q "^DONE$" cursor_output.log 2>/dev/null; then
+            # Check if a line containing only DONE (optionally wrapped in backticks/whitespace) appears
+            if grep -qE '^[[:space:]]*`{0,3}[Dd][Oo][Nn][Ee][[:space:]]*`{0,3}[[:space:]]*$' cursor_output.log 2>/dev/null; then
               echo "✅ Detected completion signal, terminating cursor-agent..."
               cleanup
               break
             fi
-            sleep 1
+            
+            # Inactivity detection
+          current_size=$(wc -c < cursor_output.log 2>/dev/null || echo 0)
+            if [ "$current_size" -gt "$last_size" ]; then
+              idle_seconds=0
+              last_size=$current_size
+            else
+              idle_seconds=$((idle_seconds + check_interval))
+              if [ "$idle_seconds" -ge "$idle_limit" ]; then
+                echo "⚠️ No log activity for $idle_seconds seconds. Sending SIGTERM to cursor-agent ($CURSOR_PID)..."
+                kill $CURSOR_PID 2>/dev/null || true
+                sleep 10
+                if kill -0 $CURSOR_PID 2>/dev/null; then
+                  echo "⚠️ cursor-agent still running. Sending SIGKILL..."
+                  kill -9 $CURSOR_PID 2>/dev/null || true
+                fi
+                wait $CURSOR_PID 2>/dev/null || true
+                break
+              fi
+            fi
+            sleep $check_interval
           done
           
           # Show the output
           cat cursor_output.log
           
           # Check if we completed successfully
-          if grep -q "^DONE$" cursor_output.log; then
+          if grep -qE '^[[:space:]]*`{0,3}[Dd][Oo][Nn][Ee][[:space:]]*`{0,3}[[:space:]]*$' cursor_output.log; then
             echo "✅ Cursor-agent completed successfully"
             exit 0
           else
             echo "⚠️ Cursor-agent may not have completed properly"
+            echo "--- DEBUG DUMP BEGIN ---"
+            echo "Last 200 lines of cursor_output.log:" && tail -n 200 cursor_output.log || true
+            echo "Process tree (ps -ef):" && ps -ef || true
+            echo "Node and OS versions:" && node -v 2>/dev/null || true; uname -a || true
+            echo "--- DEBUG DUMP END ---"
             exit 1
           fi
           EOF
           
           chmod +x cursor_wrapper.sh
           
-          # Run with timeout and explicit termination handling
-          timeout 10m ./cursor_wrapper.sh "You are operating in a GitHub Actions runner.
-
+          # Write prompt to file with single-quoted heredoc to avoid shell interpolation
+          cat > prompt.txt << 'PROMPT'
+          You are operating in a GitHub Actions runner.
+          
           - Treat this as NON-INTERACTIVE. Never open editors or pagers.
           - Always run gh commands with: --no-pager --json ... --jq ...
           - Time budget: 5 minutes.
           - Edit budget: ≤2 files, ≤60 lines. No dependency changes.
-
-
-          The GitHub CLI is available as \`gh\` and authenticated via \`GH_TOKEN\`. Git is available. You have write access to repository contents and can comment on pull requests, but you must not create or edit PRs directly.
-
+          
+          
+          The GitHub CLI is available as `gh` and authenticated via `GH_TOKEN`. Git is available. You have write access to repository contents and can comment on pull requests, but you must not create or edit PRs directly.
+          
           # Context:
           - Repo: ${{ github.repository }}
           - Owner: ${{ github.repository_owner }}
-          - Workflow Run ID: ${{ github.event.workflow_run.id }}
-          - Workflow Run URL: ${{ github.event.workflow_run.html_url }}
+          - Workflow Run ID: ${{ steps.context.outputs.WORKFLOW_RUN_ID }}
+          - Workflow Run URL: ${{ steps.context.outputs.WORKFLOW_RUN_URL }}
           - Fix Branch Prefix: ${{ env.BRANCH_PREFIX }}
-
+          - PR Number: ${{ steps.pr-info.outputs.PR_NUMBER }}
+          - Head Branch: ${{ steps.context.outputs.HEAD_BRANCH }}
+          - Base Branch: ${{ inputs.base_branch || 'N/A' }}
+          
           # Goal:
           - One-shot CI triage. First produce a self-contained debugging prompt; only then, if safe, make a minimal fix.
-
-
+          
+          
           # Step 1: Analysis Phase
           1) Identify the PR associated with the failed workflow run and determine its base and head branches.
           2) Download and analyze the failed workflow logs to understand the root cause.
@@ -169,15 +265,15 @@ jobs:
              - Specific test data and expected vs actual results
              - The most important context needed for someone to debug this in a separate Cursor session
           5) Produce a Repro Script (bash) that installs deps and runs the minimal failing test locally.
-
-
+          
+          
           # Step 2: Fix Phase (only if analysis looks good)
           5) If the analysis reveals a clear, safe fix, implement it with minimal targeted edits.
           6) Maintain a persistent fix branch for this PR head using the Fix Branch Prefix from Context.
           7) Test the fix by running relevant commands (npm test, build, etc.).
           8) If fix is successful, commit and push to the fix branch.
           9) Post a PR comment explaining the fix with a quick-create PR link.
-
+          
           # Output Requirements:
           - Start with a concise “CI Fail Summary”.
           - Provide structured facts (repo/pr/branches/shas, runner, node, failing jobs).
@@ -188,11 +284,15 @@ jobs:
           - If a fix was applied: show changed files + minimal diffs, branch name, compare link, and the exact PR comment text.
           - Finally print a single-line JSON summary:
             RESULT_JSON: {"phase":"Analysis|Fix","pr":<n>,"head":"<ref>","base":"<ref>","fixBranch":"<ref>","commit":"<sha>","status":"success|skipped|failed","reason":"<short>"}
-
-
+          
+          
           # Inputs and conventions:
-          - Use \`gh api\`, \`gh run view\`, \`gh pr view\`, \`gh pr diff\`, \`gh pr list\`, \`gh run download\`, and git commands as needed.
-          - Always run \`gh\` commands with \`--no-pager\` to avoid hanging.
+          - Use `gh api`, `gh run view`, `gh pr view`, `gh pr diff`, `gh pr list`, `gh run download`, and git commands as needed.
+          - Always run `gh` commands with `--no-pager` to avoid hanging.
           - If no clear fix is possible, focus on creating the best possible debugging prompt.
-
-          When analysis is complete and debugging prompt is ready, print exactly DONE on a single line and exit immediately." "$MODEL"
+          
+          When analysis is complete and debugging prompt is ready, print exactly DONE on a single line and exit immediately.
+          PROMPT
+          
+          # Run with timeout and explicit termination handling, passing prompt file and model
+          timeout 10m ./cursor_wrapper.sh prompt.txt "$MODEL"

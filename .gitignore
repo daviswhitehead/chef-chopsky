@@ -212,3 +212,5 @@ frontend/supabase/.temp/
 
 # LangGraph server logs
 agent/server.log
+
+.github/testing/secrets/.secrets
