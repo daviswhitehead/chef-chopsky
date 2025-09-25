@@ -53,9 +53,8 @@ test.describe('Chat Flow - Happy Path', () => {
     // Wait for any assistant message to appear (look for gray background which is assistant messages)
     await page.waitForSelector('[class*="bg-gray-100"]', { timeout: 30000 });
     
-    // Step 6: Verify success toast appears
-    Logger.info('Verifying success toast...');
-    await TestUtils.waitForToast(page, 'success');
+    // Step 6: Success is indicated by the response appearing (toast was removed to reduce spam)
+    Logger.info('Success indicated by assistant response appearing...');
 
     // Step 7: Verify message ordering (user message should be above assistant message)
     Logger.info('Verifying message ordering...');
@@ -105,8 +104,7 @@ test.describe('Chat Flow - Happy Path', () => {
       ['tomato', 'onion', 'chicken'] // Additional specific terms from the user's message
     );
 
-    // Verify success toast
-    await TestUtils.waitForToast(page, 'success');
+    // Success is indicated by the response appearing (toast was removed to reduce spam)
 
     Logger.info('✅ Complex message test completed successfully');
   });

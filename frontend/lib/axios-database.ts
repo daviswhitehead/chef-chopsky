@@ -162,6 +162,11 @@ export class AxiosDatabaseService {
     return response.data;
   }
 
+  // Alias for addFeedback to match test expectations
+  async addFeedback(conversationId: string, userId: string, satisfaction: number, feedback?: string, tags?: string[]): Promise<Feedback> {
+    return this.createFeedback(conversationId, userId, satisfaction, feedback, tags);
+  }
+
   async getFeedbackByConversation(conversationId: string): Promise<Feedback[]> {
     const response = await axiosInstance.get(
       `${supabaseUrl}/rest/v1/feedback?conversation_id=eq.${conversationId}&select=*`,

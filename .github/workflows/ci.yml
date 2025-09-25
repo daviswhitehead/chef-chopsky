@@ -53,7 +53,7 @@ jobs:
     - name: Run unit tests
       run: |
         echo "🧪 Running frontend unit tests..."
-        npm run test:frontend
+        cd frontend && npm run test:unit
         echo "🤖 Running agent unit tests..."
         cd agent && npm run test:unit
       
@@ -124,8 +124,8 @@ jobs:
         
     - name: Run integration tests
       run: |
-        echo "🧪 Running integration tests..."
-        npm run test:integration
+        echo "🧪 Running frontend integration tests..."
+        cd frontend && npm run test:integration
         
     - name: Run agent integration tests
       run: |
@@ -135,7 +135,7 @@ jobs:
     - name: Run E2E tests
       run: |
         echo "🎭 Running E2E tests..."
-        npm run test:e2e
+        cd frontend && npm run test:e2e
         
     - name: Stop services
       if: always()

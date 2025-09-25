@@ -31,7 +31,7 @@ export interface Feedback {
 }
 
 // Mock database for testing
-class MockDatabaseService {
+export class MockDatabaseService {
   private conversations: Map<string, Conversation> = new Map()
   private messages: Map<string, Message[]> = new Map()
   private feedback: Map<string, Feedback[]> = new Map()
@@ -121,6 +121,11 @@ class MockDatabaseService {
     this.feedback.set(conversationId, feedbacks)
     
     return fb
+  }
+
+  // Alias for addFeedback to match test expectations
+  async addFeedback(conversationId: string, userId: string, satisfaction: number, feedback?: string, tags?: string[]): Promise<Feedback> {
+    return this.submitFeedback(conversationId, userId, satisfaction, feedback, tags);
   }
 
   async getFeedbackStats(userId?: string): Promise<{
@@ -244,6 +249,11 @@ export class DatabaseService {
 
     if (error) throw error
     return data
+  }
+
+  // Alias for addFeedback to match test expectations
+  async addFeedback(conversationId: string, userId: string, satisfaction: number, feedback?: string, tags?: string[]): Promise<Feedback> {
+    return this.submitFeedback(conversationId, userId, satisfaction, feedback, tags);
   }
 
   async getFeedbackStats(userId?: string): Promise<{

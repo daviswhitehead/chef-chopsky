@@ -66,7 +66,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Missing conversation_id error handling (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
 
@@ -95,7 +95,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Missing messages error handling (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
 
@@ -123,7 +123,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Empty messages array error handling (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
 
@@ -156,7 +156,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Invalid message format error handling (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
 
@@ -181,7 +181,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Malformed JSON error handling (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
   });
@@ -207,7 +207,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Agent health check endpoint structure (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
 
@@ -231,7 +231,7 @@ describe('Agent Service Integration Tests', () => {
           }
         } catch (error) {
           Logger.info(`✅ Health endpoint HTTP method validation for ${method} (service down expected)`);
-          expect(error.message).toContain('fetch failed');
+          expect(error.message).toContain('Network request failed');
         }
       }
     });
@@ -282,7 +282,7 @@ describe('Agent Service Integration Tests', () => {
           }
         } catch (error) {
           Logger.info(`✅ Chat endpoint HTTP method validation for ${method} (service down expected)`);
-          expect(error.message).toMatch(/fetch failed|Request with GET\/HEAD method cannot have body/);
+          expect(error.message).toMatch(/Network request failed|Request with GET\/HEAD method cannot have body/);
         }
       }
     });

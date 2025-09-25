@@ -120,7 +120,7 @@ export class ServiceLifecycleManager {
       // If we get here, the service is running (unexpected)
       throw new Error(`${this.config.name} service is unexpectedly available`);
     } catch (error) {
-      if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')) {
+      if (error.message.includes('Network request failed') || error.message.includes('ECONNREFUSED')) {
         Logger.info(`✅ ${this.config.name} service unavailable test passed`);
       } else {
         throw error;

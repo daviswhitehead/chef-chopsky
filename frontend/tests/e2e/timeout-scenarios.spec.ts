@@ -1,9 +1,28 @@
 import { test, expect } from '@playwright/test';
+import { TestEnvironment } from './fixtures/setup';
+import { TestUtils } from './fixtures/setup';
 
 test.describe('Agent Timeout Scenarios', () => {
+  let testEnv: TestEnvironment;
+
+  test.beforeEach(async ({ page }) => {
+    testEnv = new TestEnvironment();
+    await testEnv.setup(page);
+  });
+
+  test.afterEach(async () => {
+    await testEnv.cleanup();
+  });
+
   test('should handle complex requests without timeout', async ({ page }) => {
-    // Navigate to a conversation
-    await page.goto('/conversations/test-timeout-conversation');
+    // Create a conversation first
+    const testData = testEnv.getTestDataGenerator();
+    const conversation = testData.generateConversation();
+    const conversationId = await TestUtils.createConversation(page, conversation.title);
+    expect(conversationId).toBeTruthy();
+    
+    // Navigate to the conversation
+    await page.goto(`/conversations/${conversationId}`);
     
     // Wait for chat interface to load
     await page.waitForSelector('textarea[placeholder*="Ask Chef Chopsky"]');
@@ -32,7 +51,13 @@ test.describe('Agent Timeout Scenarios', () => {
   });
 
   test('should show progress indicator for long requests', async ({ page }) => {
-    await page.goto('/conversations/test-progress-conversation');
+    // Create a conversation first
+    const testData = testEnv.getTestDataGenerator();
+    const conversation = testData.generateConversation();
+    const conversationId = await TestUtils.createConversation(page, conversation.title);
+    expect(conversationId).toBeTruthy();
+    
+    await page.goto(`/conversations/${conversationId}`);
     await page.waitForSelector('textarea[placeholder*="Ask Chef Chopsky"]');
     
     // Send a complex request
@@ -54,10 +79,13 @@ test.describe('Agent Timeout Scenarios', () => {
   });
 
   test('should handle timeout gracefully with retry option', async ({ page }) => {
-    // This test would require mocking the agent service to timeout
-    // For now, we'll test the retry UI elements exist
+    // Create a conversation first
+    const testData = testEnv.getTestDataGenerator();
+    const conversation = testData.generateConversation();
+    const conversationId = await TestUtils.createConversation(page, conversation.title);
+    expect(conversationId).toBeTruthy();
     
-    await page.goto('/conversations/test-retry-conversation');
+    await page.goto(`/conversations/${conversationId}`);
     await page.waitForSelector('textarea[placeholder*="Ask Chef Chopsky"]');
     
     // Send a message
@@ -79,7 +107,13 @@ test.describe('Agent Timeout Scenarios', () => {
   });
 
   test('should not show duplicate messages during retries', async ({ page }) => {
-    await page.goto('/conversations/test-duplicate-conversation');
+    // Create a conversation first
+    const testData = testEnv.getTestDataGenerator();
+    const conversation = testData.generateConversation();
+    const conversationId = await TestUtils.createConversation(page, conversation.title);
+    expect(conversationId).toBeTruthy();
+    
+    await page.goto(`/conversations/${conversationId}`);
     await page.waitForSelector('textarea[placeholder*="Ask Chef Chopsky"]');
     
     // Send a message
@@ -104,8 +138,25 @@ test.describe('Agent Timeout Scenarios', () => {
 });
 
 test.describe('Timeout Configuration Tests', () => {
+  let testEnv: TestEnvironment;
+
+  test.beforeEach(async ({ page }) => {
+    testEnv = new TestEnvironment();
+    await testEnv.setup(page);
+  });
+
+  test.afterEach(async () => {
+    await testEnv.cleanup();
+  });
+
   test('should use appropriate timeouts for different request types', async ({ page }) => {
-    await page.goto('/conversations/test-timeout-types');
+    // Create a conversation first
+    const testData = testEnv.getTestDataGenerator();
+    const conversation = testData.generateConversation();
+    const conversationId = await TestUtils.createConversation(page, conversation.title);
+    expect(conversationId).toBeTruthy();
+    
+    await page.goto(`/conversations/${conversationId}`);
     await page.waitForSelector('textarea[placeholder*="Ask Chef Chopsky"]');
     
     // Test short message (should be fast)
