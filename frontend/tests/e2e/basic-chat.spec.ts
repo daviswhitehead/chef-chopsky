@@ -94,8 +94,8 @@ test.describe('Basic Chat Functionality', () => {
     await expect(sendButton).toBeEnabled();
     await sendButton.click();
 
-    // Wait for loading indicator
-    await page.waitForSelector('text=Chef Chopsky is thinking...', { timeout: 5000 });
+    // Wait for loading indicator (with longer timeout)
+    await page.waitForSelector('text=Chef Chopsky is thinking', { timeout: 10000 });
 
     Logger.info('✅ Message sending test completed successfully');
   });

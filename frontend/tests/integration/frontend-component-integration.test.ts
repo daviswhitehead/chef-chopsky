@@ -4,6 +4,38 @@ import { Logger } from '../e2e/fixtures/logger';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'test-key';
 
+// Mock axios to prevent real network calls
+jest.mock('axios', () => ({
+  create: jest.fn(() => ({
+    get: jest.fn(() => Promise.resolve({ data: [] })),
+    post: jest.fn(() => Promise.resolve({ data: { id: 'test-id' } })),
+    patch: jest.fn(() => Promise.resolve({ data: {} })),
+  })),
+  default: {
+    get: jest.fn(() => Promise.resolve({ data: [] })),
+    post: jest.fn(() => Promise.resolve({ data: { id: 'test-id' } })),
+    patch: jest.fn(() => Promise.resolve({ data: {} })),
+  }
+}));
+
+// Mock supabase client
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn(() => ({
+      insert: jest.fn(() => ({
+        select: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: { id: 'test-id' }, error: null }))
+        }))
+      })),
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          order: jest.fn(() => Promise.resolve({ data: [], error: null }))
+        }))
+      }))
+    }))
+  }))
+}));
+
 describe('Frontend Component Integration Tests', () => {
   const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 

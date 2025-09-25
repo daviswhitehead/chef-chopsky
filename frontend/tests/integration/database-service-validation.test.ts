@@ -4,6 +4,102 @@ import { Logger } from '../e2e/fixtures/logger';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'test-key';
 
+// Mock axios to prevent real network calls
+jest.mock('axios', () => ({
+  create: jest.fn(() => ({
+    get: jest.fn(() => Promise.resolve({ data: [] })),
+    post: jest.fn(() => Promise.resolve({ data: { id: 'test-id' } })),
+    patch: jest.fn(() => Promise.resolve({ data: {} })),
+  })),
+  default: {
+    get: jest.fn(() => Promise.resolve({ data: [] })),
+    post: jest.fn(() => Promise.resolve({ data: { id: 'test-id' } })),
+    patch: jest.fn(() => Promise.resolve({ data: {} })),
+  }
+}));
+
+// Mock supabase client
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn(() => ({
+      insert: jest.fn(() => ({
+        select: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: { id: 'test-id' }, error: null }))
+        }))
+      })),
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          order: jest.fn(() => Promise.resolve({ data: [], error: null }))
+        }))
+      }))
+    }))
+  }))
+}));
+
+// Mock React components
+jest.mock('@/components/ChatInterface', () => ({
+  default: jest.fn()
+}));
+
+// Mock environment variables for testing
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'test-key';
+process.env.NODE_ENV = 'test';
+
+// Mock axios to prevent real network calls
+jest.mock('axios', () => ({
+  create: jest.fn(() => ({
+    get: jest.fn(() => Promise.resolve({ data: [] })),
+    post: jest.fn(() => Promise.resolve({ data: { id: 'test-id' } })),
+    patch: jest.fn(() => Promise.resolve({ data: {} })),
+  })),
+  default: {
+    get: jest.fn(() => Promise.resolve({ data: [] })),
+    post: jest.fn(() => Promise.resolve({ data: { id: 'test-id' } })),
+    patch: jest.fn(() => Promise.resolve({ data: {} })),
+  }
+}));
+
+// Mock supabase client
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: null, error: null }))
+        }))
+      })),
+      insert: jest.fn(() => ({
+        select: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: { id: 'test-id' }, error: null }))
+        }))
+      })),
+      update: jest.fn(() => ({
+        eq: jest.fn(() => Promise.resolve({ error: null }))
+      })),
+      order: jest.fn(() => Promise.resolve({ data: [], error: null }))
+    }))
+  },
+  supabaseAdmin: {
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: null, error: null }))
+        }))
+      })),
+      insert: jest.fn(() => ({
+        select: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: { id: 'test-id' }, error: null }))
+        }))
+      })),
+      update: jest.fn(() => ({
+        eq: jest.fn(() => Promise.resolve({ error: null }))
+      })),
+      order: jest.fn(() => Promise.resolve({ data: [], error: null }))
+    }))
+  }
+}));
+
 describe('Database Service Interface Validation', () => {
   const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 

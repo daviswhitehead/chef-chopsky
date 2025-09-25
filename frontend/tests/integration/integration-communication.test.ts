@@ -93,7 +93,7 @@ describe('Integration Communication Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Frontend API agent unavailable handling (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
 
@@ -121,7 +121,7 @@ describe('Integration Communication Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Frontend API timeout handling (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
 
@@ -149,7 +149,7 @@ describe('Integration Communication Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Frontend API agent error handling (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
   });
@@ -198,7 +198,7 @@ describe('Integration Communication Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Health check endpoint consistency (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
   });
@@ -258,7 +258,7 @@ describe('Integration Communication Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Frontend API request format validation (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
 
       // Test agent API (with converted format)
@@ -284,8 +284,8 @@ describe('Integration Communication Tests', () => {
       } catch (error) {
         Logger.info('✅ Agent API request format validation (service down expected)');
         // In CI, services are running, so we might get different error messages
-        // Both "fetch failed" and "The operation was aborted due to timeout" are valid
-        expect(error.message).toMatch(/fetch failed|The operation was aborted due to timeout/);
+        // Both "Network request failed" and "The operation was aborted due to timeout" are valid
+        expect(error.message).toMatch(/Network request failed|The operation was aborted due to timeout/);
       }
     });
   });

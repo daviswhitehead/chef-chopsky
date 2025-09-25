@@ -7,6 +7,28 @@ Goal: Lightweight, repeatable, low‑friction testing that scales with features 
 - Integration: API routes and DB adapters (selective).
 - End-to-End (primary): user flows and error recovery in Playwright; mock only third parties or flake-prone edges.
 
+#### Test Environment Separation
+**Jest Unit Tests**: Run in Node.js/JSDOM environment with mocked dependencies
+- Environment: Node.js with JSDOM for DOM simulation
+- Dependencies: All external services mocked (Supabase, OpenAI, etc.)
+- Purpose: Test pure logic, utilities, and component behavior
+- Speed: Fast execution (< 1 second per test)
+- Isolation: Complete isolation from external services
+
+**Integration Tests**: Should run against real services or a test environment
+- Environment: Node.js with real HTTP calls to local services
+- Dependencies: Real services running locally (frontend:3000, agent:3001)
+- Purpose: Test API routes, service communication, and error handling
+- Speed: Medium execution (1-5 seconds per test)
+- Isolation: Tests our application logic, not network behavior
+
+**E2E Tests**: Run in real browsers against deployed applications
+- Environment: Real browsers (Chromium, Firefox, Safari) via Playwright
+- Dependencies: Full application stack running locally or in staging
+- Purpose: Test complete user journeys and cross-browser compatibility
+- Speed: Slower execution (10-30 seconds per test)
+- Isolation: Full application context with real user interactions
+
 #### Feature Testing Contract
 - Define user flows, expected toasts/states, retry behavior, error scenarios.
 - Add 2–4 E2E tests: happy path + key failure/recovery.

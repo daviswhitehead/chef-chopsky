@@ -1,11 +1,27 @@
 import { test, expect } from '@playwright/test';
+import { TestEnvironment } from './fixtures/setup';
+import { TestUtils } from './fixtures/setup';
 
 test.describe('Timeout Integration Tests', () => {
+  let testEnv: TestEnvironment;
+
+  test.beforeEach(async ({ page }) => {
+    testEnv = new TestEnvironment();
+    await testEnv.setup(page);
+  });
+
+  test.afterEach(async () => {
+    await testEnv.cleanup();
+  });
+
   test('should handle agent service timeout gracefully', async ({ page }) => {
-    // This test simulates what happens when the agent service takes too long
-    // We'll test the frontend timeout handling
+    // Create a conversation first
+    const testData = testEnv.getTestDataGenerator();
+    const conversation = testData.generateConversation();
+    const conversationId = await TestUtils.createConversation(page, conversation.title);
+    expect(conversationId).toBeTruthy();
     
-    await page.goto('/conversations/test-agent-timeout');
+    await page.goto(`/conversations/${conversationId}`);
     await page.waitForSelector('textarea[placeholder*="Ask Chef Chopsky"]');
     
     // Send a message that might cause timeout
@@ -28,7 +44,13 @@ test.describe('Timeout Integration Tests', () => {
   });
 
   test('should show appropriate loading messages for different durations', async ({ page }) => {
-    await page.goto('/conversations/test-loading-messages');
+    // Create a conversation first
+    const testData = testEnv.getTestDataGenerator();
+    const conversation = testData.generateConversation();
+    const conversationId = await TestUtils.createConversation(page, conversation.title);
+    expect(conversationId).toBeTruthy();
+    
+    await page.goto(`/conversations/${conversationId}`);
     await page.waitForSelector('textarea[placeholder*="Ask Chef Chopsky"]');
     
     // Send a complex request
@@ -50,7 +72,13 @@ test.describe('Timeout Integration Tests', () => {
   });
 
   test('should handle network errors during long requests', async ({ page }) => {
-    await page.goto('/conversations/test-network-error');
+    // Create a conversation first
+    const testData = testEnv.getTestDataGenerator();
+    const conversation = testData.generateConversation();
+    const conversationId = await TestUtils.createConversation(page, conversation.title);
+    expect(conversationId).toBeTruthy();
+    
+    await page.goto(`/conversations/${conversationId}`);
     await page.waitForSelector('textarea[placeholder*="Ask Chef Chopsky"]');
     
     // Send a message

@@ -49,7 +49,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Conversation creation API validation (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
 
       // Step 2: Test message sending via frontend API
@@ -79,7 +79,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Message sending API validation (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
 
       // Step 3: Test message persistence retrieval
@@ -108,7 +108,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Message persistence API validation (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
 
       Logger.info('✅ Complete user journey integration test completed');
@@ -156,7 +156,7 @@ describe('Full Flow Integration Tests', () => {
           }
         } catch (error) {
           Logger.info(`✅ ${testCase.type} message API validation (service down expected)`);
-          expect(error.message).toContain('fetch failed');
+          expect(error.message).toContain('Network request failed');
         }
       }
 
@@ -192,7 +192,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Agent service down API validation (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
 
@@ -230,7 +230,7 @@ describe('Full Flow Integration Tests', () => {
           }
         } catch (error) {
           Logger.info('✅ Invalid data API validation (service down expected)');
-          expect(error.message).toContain('fetch failed');
+          expect(error.message).toContain('Network request failed');
         }
       }
     });
@@ -260,7 +260,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Network issues API validation (service down expected)');
-        expect(error.message).toMatch(/fetch failed|The operation was aborted due to timeout/);
+        expect(error.message).toMatch(/Network request failed|The operation was aborted due to timeout/);
       }
     });
   });
@@ -359,7 +359,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Message persistence API validation (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
 
@@ -416,7 +416,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Message ordering API validation (service down expected)');
-        expect(error.message).toContain('fetch failed');
+        expect(error.message).toContain('Network request failed');
       }
     });
   });

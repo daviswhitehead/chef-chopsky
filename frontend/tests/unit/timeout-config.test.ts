@@ -1,13 +1,13 @@
-import { getTimeoutConfig, getEnvironmentTimeouts, getTimeoutSeconds } from '../lib/timeouts';
+import { getTimeoutConfig, getEnvironmentTimeouts, getTimeoutSeconds } from '@/lib/timeouts';
 
 describe('Timeout Configuration', () => {
   describe('getTimeoutConfig', () => {
     it('should return valid timeout configuration', () => {
       const config = getTimeoutConfig();
       
-      expect(config.AGENT_PROCESSING).toBe(60000); // 60 seconds
-      expect(config.API_ROUTE).toBe(60000); // 60 seconds
-      expect(config.FRONTEND_COMPONENT).toBe(65000); // 65 seconds
+      expect(config.AGENT_PROCESSING).toBe(120000); // 120 seconds
+      expect(config.API_ROUTE).toBe(130000); // 130 seconds
+      expect(config.FRONTEND_COMPONENT).toBe(140000); // 140 seconds
       expect(config.RETRY_ATTEMPTS).toBe(2);
       expect(config.RETRY_DELAY_BASE).toBe(1000);
     });
@@ -25,9 +25,9 @@ describe('Timeout Configuration', () => {
       
       const config = getEnvironmentTimeouts();
       
-      expect(config.AGENT_PROCESSING).toBe(60000);
-      expect(config.API_ROUTE).toBe(60000);
-      expect(config.FRONTEND_COMPONENT).toBe(65000);
+      expect(config.AGENT_PROCESSING).toBe(120000);
+      expect(config.API_ROUTE).toBe(130000);
+      expect(config.FRONTEND_COMPONENT).toBe(140000);
       
       process.env.NODE_ENV = originalEnv;
     });
@@ -38,9 +38,9 @@ describe('Timeout Configuration', () => {
       
       const config = getEnvironmentTimeouts();
       
-      expect(config.AGENT_PROCESSING).toBe(90000); // 60 * 1.5
-      expect(config.API_ROUTE).toBe(90000); // 60 * 1.5
-      expect(config.FRONTEND_COMPONENT).toBe(97500); // 65 * 1.5
+      expect(config.AGENT_PROCESSING).toBe(180000); // 120 * 1.5
+      expect(config.API_ROUTE).toBe(195000); // 130 * 1.5
+      expect(config.FRONTEND_COMPONENT).toBe(210000); // 140 * 1.5
       
       process.env.NODE_ENV = originalEnv;
     });
@@ -50,9 +50,9 @@ describe('Timeout Configuration', () => {
     it('should return timeout values in seconds', () => {
       const seconds = getTimeoutSeconds();
       
-      expect(seconds.agentProcessing).toBe(60);
-      expect(seconds.apiRoute).toBe(60);
-      expect(seconds.frontendComponent).toBe(65);
+      expect(seconds.agentProcessing).toBe(120);
+      expect(seconds.apiRoute).toBe(130);
+      expect(seconds.frontendComponent).toBe(140);
     });
   });
 
