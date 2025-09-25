@@ -28636,7 +28636,7 @@ cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.
 ```
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_PROJECT=chef chopsky
-LANGCHAIN_API_KEY=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
+LANGCHAIN_API_KEY=lsv2_pt_***REDACTED***
 
 ```
 
@@ -28672,13 +28672,15 @@ Perfect! The environment variables are loading correctly. Now let me test the La
 Tool use: **run_terminal_cmd**
 
 ```bash
-cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My\ Drive/github/chef-chopsky/agent && curl -H "Authorization: Bearer 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" https://api.smith.langchain.com/projects
+cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My\ Drive/github/chef-chopsky/agent && curl -H "Authorization: Bearer lsv2_pt_***REDACTED***" https://api.smith.langchain.com/projects
 ```
 
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0{"detail":"Not Found"}100    22  100    22    0     0     99      0 --:--:-- --:--:-- --:--:--    99
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0{"detail":"Not Found"}
+100    22  100    22    0     0     99      0 --:--:-- --:--:-- --:--:--    99
 
 ```
 
@@ -30900,7 +30902,7 @@ cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.
 ```
 🔍 LangSmith /runs Endpoint Test
 =================================
-API Key: lsv2_pt_0cd4e35...
+API Key: lsv2_pt_***REDACTED***
 
 🧪 Testing /runs endpoint with different methods...
 (node:73960) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
@@ -31116,7 +31118,7 @@ cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.
 ```
 🔑 Testing New LangSmith API Key
 =================================
-API Key: lsv2_pt_b125245...
+API Key: lsv2_pt_***REDACTED***
 Key length: 51
 
 🧪 Testing /runs endpoint...
@@ -31180,7 +31182,7 @@ cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.
 ```
 🔑 Testing New LangSmith API Key
 =================================
-API Key: lsv2_pt_b125245...
+API Key: lsv2_pt_***REDACTED***
 Key length: 51
 
 🧪 Testing /runs endpoint...
@@ -31209,7 +31211,7 @@ cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.
 ```
 
 ```
-LANGCHAIN_API_KEY=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
+LANGCHAIN_API_KEY=lsv2_pt_***REDACTED***
 
 ```
 
@@ -31227,7 +31229,7 @@ cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.
 ```
 
 ```
-API Key from .env: lsv2_pt_b125245...
+API Key from .env: lsv2_pt_***REDACTED***
 
 ```
 
