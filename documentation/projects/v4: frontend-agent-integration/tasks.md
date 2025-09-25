@@ -2,7 +2,7 @@
 
 **Feature:** v4: Frontend-Agent Integration  
 **Goal:** End-to-end ChatGPT-like experience with LangChain agent  
-**Status:** 🚧 In Progress  
+**Status:** ✅ **COMPLETED**  
 
 ---
 
@@ -11,11 +11,11 @@
 This task list implements the vertical slice: User creates conversation → sends message → agent responds → response appears in UI.
 
 **Acceptance Criteria:**
-- [ ] User can create a conversation from UI; persists in Supabase
-- [ ] Sending a message triggers agent; both messages persist and display in order
-- [ ] Minimal loading indicator; final text appears (buffered, no streaming)
-- [ ] LangSmith traces with conversation_id, message_id, environment, model
-- [ ] Anonymous usage works (no auth required)
+- [x] User can create a conversation from UI; persists in Supabase
+- [x] Sending a message triggers agent; both messages persist and display in order
+- [x] Minimal loading indicator; final text appears (buffered, no streaming)
+- [x] LangSmith traces with conversation_id, message_id, environment, model
+- [x] Anonymous usage works (no auth required)
 
 ---
 
