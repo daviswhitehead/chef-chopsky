@@ -15,10 +15,10 @@ export const config = {
   // Required environment variables
   openaiApiKey: process.env.OPENAI_API_KEY!,
   
-  // Optional LangSmith configuration
-  langsmithApiKey: process.env.LANGSMITH_API_KEY,
-  langsmithTracing: process.env.LANGSMITH_TRACING === 'true',
-  langsmithProject: process.env.LANGSMITH_PROJECT || 'chef chopsky',
+  // Optional LangSmith configuration (using LangChain standard env vars)
+  langsmithApiKey: process.env.LANGCHAIN_API_KEY,
+  langsmithTracing: process.env.LANGCHAIN_TRACING_V2 === 'true',
+  langsmithProject: process.env.LANGCHAIN_PROJECT || 'chef chopsky',
   
   // Environment settings
   nodeEnv: process.env.NODE_ENV || 'development',

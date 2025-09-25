@@ -1,52 +1,28 @@
-const nextJest = require('next/jest')
-
-const createJestConfig = nextJest({
-  // Provide the path to your Next.js app to load next.config.js and .env files
-  dir: './',
-})
-
-// Add any custom config to be passed to Jest
-const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/tests/integration/setup.ts'],
-  testEnvironment: 'node',
-  testMatch: [
-    '<rootDir>/tests/integration/*-service.test.ts',
-    '<rootDir>/tests/integration/integration-communication.test.ts',
-    '<rootDir>/tests/integration/basic-integration.test.ts'
-  ],
-  testPathIgnorePatterns: [
-    '<rootDir>/.next/',
-    '<rootDir>/node_modules/',
-    '<rootDir>/tests/e2e/',
-    '<rootDir>/tests/api/'
-  ],
-  collectCoverageFrom: [
-    'app/**/*.{js,jsx,ts,tsx}',
-    'components/**/*.{js,jsx,ts,tsx}',
-    'lib/**/*.{js,jsx,ts,tsx}',
-    '!**/*.d.ts',
-    '!**/node_modules/**'
-  ],
-  coverageDirectory: 'coverage/integration',
-  coverageReporters: ['text', 'lcov', 'html'],
-  verbose: true,
-      testTimeout: 15000, // 15 seconds for integration tests
-  maxWorkers: 1, // Run integration tests sequentially to avoid conflicts
+module.exports = {
+  preset: "ts-jest",
+  testEnvironment: "jsdom", // Changed from "node" to "jsdom" for React components
+  roots: ["<rootDir>"],
+  moduleDirectories: ["node_modules", "<rootDir>"],
+  testMatch: ["**/tests/integration/**/*.test.ts", "**/tests/integration/**/*.test.tsx"],
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: 'tsconfig.json'
+    "^.+\\.tsx?$": ["ts-jest", { 
+      tsconfig: "tsconfig.json",
+      jsx: "react-jsx"
     }]
   },
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/$1'
+  moduleNameMapper: {
+    // Handle module aliases - match tsconfig.json paths
+    "^@/(.*)$": "<rootDir>/$1"
   },
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
-  globals: {
-    'ts-jest': {
-      useESM: true
-    }
-  }
-}
-
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig)
+  testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/.next/"],
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  // Integration tests need longer timeouts for HTTP calls
+  testTimeout: 60000, // Increased from 30s to 60s
+  // Don't clear mocks between tests - integration tests may need persistent state
+  clearMocks: false,
+  restoreMocks: false,
+  // Less verbose for integration tests (they make real HTTP calls)
+  verbose: false,
+  // Integration tests should fail fast if services aren't available
+  bail: false
+};

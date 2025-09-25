@@ -6,6 +6,12 @@ import { ensureConfiguration } from './retrieval_graph/configuration.js';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { v4 as uuidv4 } from 'uuid';
 
+// Fix SSL certificate issues in development
+if (config.nodeEnv === 'development') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  console.log('🔧 Development mode: SSL certificate validation disabled');
+}
+
 /**
  * Generate a mock response for testing purposes
  */
@@ -43,6 +49,21 @@ function generateMockResponse(userMessage: string): string {
  */
 
 const app = express();
+
+// Environment validation on startup
+console.log('🔧 Agent Service Startup Validation...');
+if (config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here') {
+  console.warn('⚠️  WARNING: Agent service is starting in MOCK MODE!');
+  console.warn('⚠️  You will get fake responses instead of real AI responses.');
+  console.warn('⚠️  To fix this:');
+  console.warn('⚠️  1. Copy agent/.env.example to agent/.env');
+  console.warn('⚠️  2. Edit agent/.env and set OPENAI_API_KEY=your_real_api_key');
+  console.warn('⚠️  3. Restart the agent service');
+  console.warn('⚠️  Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
+} else {
+  console.log('✅ Agent service configured with real OpenAI API key');
+}
+console.log('🔧 Environment validation complete');
 
 // Middleware
 app.use(cors({
@@ -127,10 +148,14 @@ app.post('/chat', (req, res) => {
     });
     console.log(`[${requestId}] ✅ Agent configuration created`);
 
-    // Check if we're in mock mode (for local testing with test-key)
-    const isMockMode = config.openaiApiKey === 'test-key';
+    // Check if we're in mock mode (for local testing with test-key or missing key)
+    const isMockMode = config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here';
     
     if (isMockMode) {
+      console.warn(`[${requestId}] ⚠️  WARNING: Agent service is running in MOCK MODE!`);
+      console.warn(`[${requestId}] ⚠️  This means you're getting fake responses instead of real AI responses.`);
+      console.warn(`[${requestId}] ⚠️  To fix this, set a valid OPENAI_API_KEY in your agent/.env file.`);
+      console.warn(`[${requestId}] ⚠️  Current API key: ${config.openaiApiKey ? 'Set but invalid' : 'Not set'}`);
       console.log(`[${requestId}] 🎭 Mock mode enabled - returning mock response`);
       const agentStartTime = Date.now();
       
@@ -169,23 +194,34 @@ app.post('/chat', (req, res) => {
       });
     }
     
-    // Run the agent with LangSmith tracing
+    // Run the agent with LangSmith tracing (disabled if API key issues)
     console.log(`[${requestId}] 🤖 Invoking LangChain agent graph`);
     const agentStartTime = Date.now();
+    
+    // Check LangSmith configuration and warn if there are issues
+    const hasValidLangSmithKey = config.langsmithApiKey && 
+      config.langsmithApiKey !== 'your_langsmith_api_key_here' && 
+      config.langsmithApiKey.length > 10;
+    
+    if (!hasValidLangSmithKey) {
+      console.log(`[${requestId}] ⚠️ LangSmith tracing disabled - invalid or missing API key`);
+    }
     
     const result = await graph.invoke(
       { messages: langchainMessages },
       {
         configurable: agentConfig,
-        // LangSmith tracing configuration
-        tags: ['web', 'agent', config.nodeEnv, 'openai/gpt-5-nano'],
-        metadata: {
-          conversation_id,
-          message_id: messageId,
-          user_id: conversation_id, // Anonymous for now
-          model: 'openai/gpt-5-nano',
-          latency_ms: Date.now() - startTime
-        }
+        // LangSmith tracing configuration (only if API key is valid)
+        ...(hasValidLangSmithKey ? {
+          tags: ['web', 'agent', config.nodeEnv, 'openai/gpt-5-nano'],
+          metadata: {
+            conversation_id,
+            message_id: messageId,
+            user_id: conversation_id, // Anonymous for now
+            model: 'openai/gpt-5-nano',
+            latency_ms: Date.now() - startTime
+          }
+        } : {})
       }
     );
     

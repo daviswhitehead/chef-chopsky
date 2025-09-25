@@ -8,6 +8,14 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Chef Chopsky - AI Sous Chef',
   description: 'Your personalized food prep assistant for CSA-based meal planning',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.png',
+  },
 }
 
 export default function RootLayout({

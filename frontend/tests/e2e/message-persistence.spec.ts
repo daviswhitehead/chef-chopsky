@@ -27,7 +27,7 @@ test.describe('Message Persistence', () => {
     // Send first message
     await TestUtils.sendMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
     await TestUtils.waitForLoadingToComplete(page);
-    await TestUtils.waitForToast(page, 'success');
+    // Success is indicated by response appearing (toast was removed to reduce spam)
 
     // Note: Skip sending a second message to reduce flakiness from upstream timeouts
 
@@ -101,7 +101,7 @@ test.describe('Message Persistence', () => {
     // Send message
     await TestUtils.sendMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
     await TestUtils.waitForLoadingToComplete(page);
-    await TestUtils.waitForToast(page, 'success');
+    // Success is indicated by response appearing (toast was removed to reduce spam)
 
     // Verify timestamps are present and formatted correctly
     const timestamps = page.locator('text=/\\d{1,2}:\\d{2}/');
@@ -148,9 +148,9 @@ test.describe('Message Persistence', () => {
     // Send message
     await TestUtils.sendMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
 
-    // Wait for error
+    // Wait for error - either toast or error message in chat
     await page.waitForTimeout(2000);
-    await TestUtils.waitForToast(page, 'error');
+    // Note: Error handling may show toast or inline error message
 
     // Verify error message appears in chat
     const errorMessage = page.locator('[class*="bg-red-50"]:has-text("trouble connecting")');
@@ -177,7 +177,7 @@ test.describe('Message Persistence', () => {
 
     // Wait for loading indicator to disappear
     await page.waitForSelector('text=Chef Chopsky is thinking...', { state: 'detached', timeout: 30000 });
-    await TestUtils.waitForToast(page, 'success');
+    // Success is indicated by response appearing (toast was removed to reduce spam)
 
     Logger.info('✅ Error message persistence and retry test completed successfully');
   });

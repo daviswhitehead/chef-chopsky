@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --kill-others --prefix-colors \"blue,green\" \"npm run dev:frontend\" \"npm run dev:agent\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:agent": "cd agent && npm run server:dev",
+    "dev:frontend": "cd frontend && PORT=3000 npm run dev",
+    "dev:agent": "cd agent && PORT=3001 npm run server:dev",
     "build": "npm run build:frontend && npm run build:agent",
     "build:frontend": "cd frontend && npm run build",
     "build:agent": "cd agent && npm run build",
@@ -27,7 +27,11 @@
     "clean": "rm -rf node_modules frontend/node_modules agent/node_modules frontend/.next agent/dist",
     "health:check": "node scripts/health-check.js",
     "start:services": "concurrently --kill-others --prefix-colors \"blue,green\" \"npm run dev:frontend\" \"npm run dev:agent\"",
-    "stop:services": "pkill -f 'next dev' && pkill -f 'tsx watch'"
+    "stop:services": "pkill -f 'next dev' && pkill -f 'tsx watch'",
+    "dev:clean": "./scripts/start-dev.sh",
+    "setup": "./scripts/setup-environment.sh",
+    "setup:env": "./scripts/setup-environment.sh",
+    "mcp:browser-tools-server": "npx @agentdeskai/browsertools-mcp@latest"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

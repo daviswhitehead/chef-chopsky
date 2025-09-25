@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, RefreshCw } from 'lucide-react';
 import { db, Message } from '../lib/database';
 import { useToast } from '../hooks/useToast';
+import { getEnvironmentTimeouts } from '../lib/timeouts';
 
 interface ChatInterfaceProps {
   conversationId: string;
@@ -16,6 +17,7 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [lastFailedMessage, setLastFailedMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -36,16 +38,21 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
 
   const sendMessage = async (retryAttempt = 0, messageContent?: string) => {
     const content = messageContent || inputValue.trim();
-    console.log('sendMessage called with:', { content, isLoading, retryAttempt });
+    console.log('🚀 sendMessage called with:', { content, isLoading, retryAttempt, conversationId });
     
     if (!content || isLoading) {
-      console.log('sendMessage early return:', { hasContent: !!content, isLoading });
+      console.log('⏹️ sendMessage early return:', { hasContent: !!content, isLoading });
       return;
     }
 
     console.log('Sending message:', content);
-    setInputValue('');
-    setIsLoading(true);
+    
+    // Only clear input and set loading on first attempt
+    if (retryAttempt === 0) {
+      setInputValue('');
+      setIsLoading(true);
+      setLoadingStartTime(Date.now());
+    }
 
     try {
       // Create user message object (not persisted yet)
@@ -58,13 +65,15 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
         metadata: {}
       };
 
-      // Add user message to UI immediately
-      setMessages(prev => [...prev, userMessage]);
-      onMessageSent?.(userMessage);
+      // Only add user message to UI on first attempt to avoid duplicates
+      if (retryAttempt === 0) {
+        setMessages(prev => [...prev, userMessage]);
+        onMessageSent?.(userMessage);
+      }
 
       // Call the API route which handles both user and assistant message persistence
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35 seconds (5 seconds longer than API route timeout)
+      const timeoutId = setTimeout(() => controller.abort(), getEnvironmentTimeouts().FRONTEND_COMPONENT);
       
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
@@ -84,6 +93,12 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.log('API error response:', { 
+          status: response.status, 
+          statusText: response.statusText,
+          errorData,
+          retryAttempt 
+        });
         
         // Check if it's a retryable error (5xx server errors)
         if (response.status >= 500 && retryAttempt < 2) {
@@ -102,8 +117,8 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
           return sendMessage(retryAttempt + 1, content);
         }
         
-        // Add error message to chat if provided
-        if (errorData.errorMessage) {
+        // Add error message to chat if provided (only on final attempt)
+        if (errorData.errorMessage && retryAttempt >= 2) {
           const errorChatMessage: Message = {
             id: `error-${Date.now()}`,
             conversation_id: conversationId,
@@ -120,6 +135,12 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
       }
 
       const data = await response.json();
+      console.log('API success response:', { 
+        hasContent: !!data.content, 
+        contentLength: data.content?.length,
+        hasModel: !!data.model,
+        data 
+      });
       
       // Create assistant message object
       const assistantMessage: Message = {
@@ -142,7 +163,7 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
       // Reset retry state on success
       setRetryCount(0);
       setLastFailedMessage(null);
-      showSuccess('Message sent successfully!');
+      // Removed success toast to reduce spam - success is indicated by the response appearing
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -160,39 +181,117 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
       
       // Determine error type and show appropriate toast
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.log('Error details:', { 
+        name: error?.name, 
+        message: errorMessage, 
+        retryAttempt,
+        errorType: typeof error 
+      });
       
       // Handle specific error types
       if (error.name === 'AbortError') {
         showError(
           'Request Timeout', 
-          'The request took too long to complete. Please try again.'
+          'The request took too long to complete. Complex requests may take up to 3 minutes. Please try again.'
         );
+      } else if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch')) {
+        showError(
+          'Service Unavailable', 
+          'Chef Chopsky service is currently offline. Please try again in a few moments.'
+        );
+        
+        // For connection errors, try to retry automatically if it's the first attempt
+        if (retryAttempt < 2) {
+          setLastFailedMessage(userMessage);
+          setRetryCount(retryAttempt + 1);
+          console.log('Connection error - setting retryCount to:', retryAttempt + 1);
+          showWarning(
+            'Connection Issue', 
+            `Retrying... (${retryAttempt + 1}/2)`
+          );
+          
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryAttempt) * 1000));
+          
+          // Recursively retry without changing loading state
+          return sendMessage(retryAttempt + 1, content);
+        }
+        
+        // Show error message in chat only if retries failed
+        const chatErrorMessage: Message = {
+          id: `error-${Date.now()}`,
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
+          timestamp: new Date().toISOString(),
+          metadata: { error: true }
+        };
+        setMessages(prev => [...prev, chatErrorMessage]);
+        onMessageSent?.(chatErrorMessage);
+      } else if (error.message?.includes('NetworkError') || error.message?.includes('network')) {
+        showError(
+          'Network Error', 
+          'Please check your internet connection and try again.'
+        );
+        // Show error message in chat immediately for network errors
+        const chatErrorMessage: Message = {
+          id: `error-${Date.now()}`,
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
+          timestamp: new Date().toISOString(),
+          metadata: { error: true }
+        };
+        setMessages(prev => [...prev, chatErrorMessage]);
+        onMessageSent?.(chatErrorMessage);
+      } else if (error.message?.includes('503') || error.message?.includes('server_error')) {
+        showError(
+          'OpenAI API Overload', 
+          'OpenAI servers are experiencing high load. Please wait a moment and try again.'
+        );
+        // Show error message in chat for API overload
+        const chatErrorMessage: Message = {
+          id: `error-${Date.now()}`,
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: 'Sorry, OpenAI servers are currently experiencing high load. Please wait a moment and try again. This is a temporary issue.',
+          timestamp: new Date().toISOString(),
+          metadata: { error: true, error_type: 'api_overload' }
+        };
+        setMessages(prev => [...prev, chatErrorMessage]);
+        onMessageSent?.(chatErrorMessage);
       } else if (retryAttempt >= 2) {
         showError(
           'Failed to send message', 
           'Chef Chopsky is temporarily unavailable. Please try again in a few moments.'
         );
       } else {
-        showError(
-          'Connection Error', 
-          'Unable to connect to Chef Chopsky. Please check your internet connection.'
-        );
+        // Only show generic error on first attempt, not on retries
+        if (retryAttempt === 0) {
+          showError(
+            'Connection Error', 
+            'Unable to connect to Chef Chopsky. Please check your internet connection.'
+          );
+        }
       }
       
-      // Show user-friendly error message in chat
-      const chatErrorMessage: Message = {
-        id: `error-${Date.now()}`,
-        conversation_id: conversationId,
-        role: 'assistant',
-        content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
-        timestamp: new Date().toISOString(),
-        metadata: { error: true }
-      };
-      
-      setMessages(prev => [...prev, chatErrorMessage]);
-      onMessageSent?.(chatErrorMessage);
+      // Show user-friendly error message in chat (only on final attempt for other errors)
+      if (retryAttempt >= 2 && !error.message?.includes('Failed to fetch') && !error.message?.includes('fetch') && !error.message?.includes('NetworkError') && !error.message?.includes('network')) {
+        const chatErrorMessage: Message = {
+          id: `error-${Date.now()}`,
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
+          timestamp: new Date().toISOString(),
+          metadata: { error: true }
+        };
+        
+        setMessages(prev => [...prev, chatErrorMessage]);
+        onMessageSent?.(chatErrorMessage);
+      }
     } finally {
       setIsLoading(false);
+      setLoadingStartTime(null);
     }
   };
 
@@ -260,7 +359,18 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
             <div className="bg-gray-100 rounded-lg px-4 py-2">
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-gray-600">Chef Chopsky is thinking...</span>
+                <span className="text-gray-600">
+                  {loadingStartTime && Math.floor((Date.now() - loadingStartTime) / 1000) > 60
+                    ? "Chef Chopsky is working on a very complex request... This may take up to 3 minutes."
+                    : loadingStartTime && Math.floor((Date.now() - loadingStartTime) / 1000) > 30
+                    ? "Chef Chopsky is working on a complex request... This may take up to 2 minutes."
+                    : "Chef Chopsky is thinking..."}
+                  {loadingStartTime && (
+                    <span className="ml-2 text-xs text-gray-500">
+                      ({Math.floor((Date.now() - loadingStartTime) / 1000)}s)
+                    </span>
+                  )}
+                </span>
               </div>
             </div>
           </div>
@@ -283,7 +393,7 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
           />
           <button
             onClick={() => {
-              console.log('Send button clicked!');
+              console.log('🔘 Send button clicked!', { inputValue: inputValue.trim(), isLoading });
               sendMessage();
             }}
             disabled={!inputValue.trim() || isLoading}

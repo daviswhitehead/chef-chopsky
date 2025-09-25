@@ -109,7 +109,8 @@ export default function ConversationPage() {
   }, [conversationId, mounted]);
 
   const handleMessageSent = async (newMessage: Message) => {
-    setMessages(prev => [...prev, newMessage]);
+    // Don't duplicate message handling - ChatInterface manages its own state
+    console.log('Message sent:', newMessage.id);
   };
 
   const handleConversationComplete = () => {

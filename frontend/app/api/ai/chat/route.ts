@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
+import { getEnvironmentTimeouts } from '@/lib/timeouts'
 
 const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL
 
@@ -135,8 +136,8 @@ export async function POST(request: NextRequest) {
                  user_agent: request.headers.get('user-agent') || 'unknown'
                }
              }),
-             // Increase timeout to match agent service response time
-             signal: AbortSignal.timeout(30000) // 30 seconds
+             // Use centralized timeout configuration
+             signal: AbortSignal.timeout(getEnvironmentTimeouts().API_ROUTE)
            })
     
     const agentDuration = Date.now() - agentStartTime;

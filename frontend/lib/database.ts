@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin } from './supabase'
+import { AxiosDatabaseService } from './axios-database'
 
 export interface Conversation {
   id: string
@@ -30,7 +31,7 @@ export interface Feedback {
 }
 
 // Mock database for testing
-class MockDatabaseService {
+export class MockDatabaseService {
   private conversations: Map<string, Conversation> = new Map()
   private messages: Map<string, Message[]> = new Map()
   private feedback: Map<string, Feedback[]> = new Map()
@@ -120,6 +121,11 @@ class MockDatabaseService {
     this.feedback.set(conversationId, feedbacks)
     
     return fb
+  }
+
+  // Alias for addFeedback to match test expectations
+  async addFeedback(conversationId: string, userId: string, satisfaction: number, feedback?: string, tags?: string[]): Promise<Feedback> {
+    return this.submitFeedback(conversationId, userId, satisfaction, feedback, tags);
   }
 
   async getFeedbackStats(userId?: string): Promise<{
@@ -245,6 +251,11 @@ export class DatabaseService {
     return data
   }
 
+  // Alias for addFeedback to match test expectations
+  async addFeedback(conversationId: string, userId: string, satisfaction: number, feedback?: string, tags?: string[]): Promise<Feedback> {
+    return this.submitFeedback(conversationId, userId, satisfaction, feedback, tags);
+  }
+
   async getFeedbackStats(userId?: string): Promise<{
     averageSatisfaction: number
     totalConversations: number
@@ -295,7 +306,7 @@ export class DatabaseService {
 
 // Use mock database for testing when Supabase is not properly configured
 // Temporarily force mock database due to network connectivity issues
-const isTestMode = true; // Force mock database for now
+const isTestMode = false; // Use real Supabase database
 
 console.log('Database: Using mock database for testing (isTestMode =', isTestMode, ')');
 
@@ -311,5 +322,5 @@ export const db = (() => {
     }
     return global.__mockDb;
   }
-  return new DatabaseService();
+  return new AxiosDatabaseService();
 })()
