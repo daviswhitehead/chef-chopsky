@@ -192,7 +192,7 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
       if (error.name === 'AbortError') {
         showError(
           'Request Timeout', 
-          'The request took too long to complete. Please try again.'
+          'The request took too long to complete. Complex requests may take up to 3 minutes. Please try again.'
         );
       } else if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch')) {
         showError(
@@ -241,6 +241,22 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
           content: 'Sorry, I\'m having trouble connecting right now. This might be due to API limits or a temporary issue. Please try again later or check your OpenAI billing status.',
           timestamp: new Date().toISOString(),
           metadata: { error: true }
+        };
+        setMessages(prev => [...prev, chatErrorMessage]);
+        onMessageSent?.(chatErrorMessage);
+      } else if (error.message?.includes('503') || error.message?.includes('server_error')) {
+        showError(
+          'OpenAI API Overload', 
+          'OpenAI servers are experiencing high load. Please wait a moment and try again.'
+        );
+        // Show error message in chat for API overload
+        const chatErrorMessage: Message = {
+          id: `error-${Date.now()}`,
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: 'Sorry, OpenAI servers are currently experiencing high load. Please wait a moment and try again. This is a temporary issue.',
+          timestamp: new Date().toISOString(),
+          metadata: { error: true, error_type: 'api_overload' }
         };
         setMessages(prev => [...prev, chatErrorMessage]);
         onMessageSent?.(chatErrorMessage);
@@ -344,8 +360,10 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-gray-600">
-                  {loadingStartTime && Math.floor((Date.now() - loadingStartTime) / 1000) > 30
-                    ? "Chef Chopsky is working on a complex request... This may take up to a minute."
+                  {loadingStartTime && Math.floor((Date.now() - loadingStartTime) / 1000) > 60
+                    ? "Chef Chopsky is working on a very complex request... This may take up to 3 minutes."
+                    : loadingStartTime && Math.floor((Date.now() - loadingStartTime) / 1000) > 30
+                    ? "Chef Chopsky is working on a complex request... This may take up to 2 minutes."
                     : "Chef Chopsky is thinking..."}
                   {loadingStartTime && (
                     <span className="ml-2 text-xs text-gray-500">

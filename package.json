@@ -30,7 +30,8 @@
     "stop:services": "pkill -f 'next dev' && pkill -f 'tsx watch'",
     "dev:clean": "./scripts/start-dev.sh",
     "setup": "./scripts/setup-environment.sh",
-    "setup:env": "./scripts/setup-environment.sh"
+    "setup:env": "./scripts/setup-environment.sh",
+    "mcp:browser-tools-server": "npx @agentdeskai/browsertools-mcp@latest"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

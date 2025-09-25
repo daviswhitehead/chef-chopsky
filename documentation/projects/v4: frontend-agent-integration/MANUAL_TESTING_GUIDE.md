@@ -146,7 +146,13 @@ npm run dev:agent
 
 **Objective**: Verify proper API calls are made
 
-**Steps**:
+**Automated Testing**: ✅ **NOW AVAILABLE**
+- Use `npm run test:e2e:network` to run automated network verification
+- Captures all network requests automatically during E2E tests
+- Validates API calls, status codes, and payloads
+- Provides detailed logging of all network activity
+
+**Manual Testing** (fallback):
 1. **Open Developer Tools**: Press F12 or right-click → Inspect
 2. **Go to Network Tab**: Click on "Network" tab
 3. **Send a Message**: Send a message in the chat
