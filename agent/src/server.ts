@@ -198,12 +198,21 @@ app.post('/chat', (req, res) => {
     console.log(`[${requestId}] 🤖 Invoking LangChain agent graph`);
     const agentStartTime = Date.now();
     
+    // Check LangSmith configuration and warn if there are issues
+    const hasValidLangSmithKey = config.langsmithApiKey && 
+      config.langsmithApiKey !== 'your_langsmith_api_key_here' && 
+      config.langsmithApiKey.length > 10;
+    
+    if (!hasValidLangSmithKey) {
+      console.log(`[${requestId}] ⚠️ LangSmith tracing disabled - invalid or missing API key`);
+    }
+    
     const result = await graph.invoke(
       { messages: langchainMessages },
       {
         configurable: agentConfig,
         // LangSmith tracing configuration (only if API key is valid)
-        ...(config.langsmithApiKey && config.langsmithApiKey !== 'your_langsmith_api_key_here' ? {
+        ...(hasValidLangSmithKey ? {
           tags: ['web', 'agent', config.nodeEnv, 'openai/gpt-5-nano'],
           metadata: {
             conversation_id,

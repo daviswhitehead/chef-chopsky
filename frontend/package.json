@@ -21,8 +21,12 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:with-services": "node ../scripts/health-check.js && npm run test:e2e",
+    "test:e2e:network": "playwright test tests/e2e/network-verification.spec.ts",
+    "test:e2e:network:headed": "playwright test tests/e2e/network-verification.spec.ts --headed",
+    "test:e2e:network:debug": "playwright test tests/e2e/network-verification.spec.ts --debug",
     "test:all": "npm run test && npm run test:integration && npm run test:e2e",
-    "test:all:with-services": "npm run test && npm run test:integration:with-services && npm run test:e2e:with-services"
+    "test:all:with-services": "npm run test && npm run test:integration:with-services && npm run test:e2e:with-services",
+    "test:all:with-network": "npm run test && npm run test:integration && npm run test:e2e && npm run test:e2e:network"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
