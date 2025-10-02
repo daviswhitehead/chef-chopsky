@@ -68,31 +68,52 @@ jobs:
             echo "WORKFLOW_RUN_URL=${{ inputs.run_url || format('https://github.com/{0}/actions', github.repository) }}" >> $GITHUB_OUTPUT
             echo "HEAD_BRANCH=${{ inputs.head_branch || github.ref_name }}" >> $GITHUB_OUTPUT
           else
-            echo "WORKFLOW_RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
-            echo "WORKFLOW_RUN_URL=${{ github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
-            echo "HEAD_BRANCH=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+            # Safely extract workflow run info with fallbacks
+            WORKFLOW_RUN_ID="${{ github.event.workflow_run.id }}"
+            WORKFLOW_RUN_URL="${{ github.event.workflow_run.html_url }}"
+            HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+            
+            # If any are empty, provide safe defaults
+            WORKFLOW_RUN_ID="${WORKFLOW_RUN_ID:-LOCAL-TEST}"
+            WORKFLOW_RUN_URL="${WORKFLOW_RUN_URL:-https://github.com/${{ github.repository }}/actions}"
+            HEAD_BRANCH="${HEAD_BRANCH:-main}"
+            
+            echo "WORKFLOW_RUN_ID=$WORKFLOW_RUN_ID" >> $GITHUB_OUTPUT
+            echo "WORKFLOW_RUN_URL=$WORKFLOW_RUN_URL" >> $GITHUB_OUTPUT  
+            echo "HEAD_BRANCH=$HEAD_BRANCH" >> $GITHUB_OUTPUT
           fi
           echo "HEAD_SHA=${{ github.sha }}" >> $GITHUB_OUTPUT
       
       - name: Get PR information
         id: pr-info
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
         run: |
           # Debug: Check if GH_TOKEN is set
           echo "GH_TOKEN is set: $([ -n "$GH_TOKEN" ] && echo "YES" || echo "NO")"
           echo "GH_TOKEN length: ${#GH_TOKEN}"
           echo "GH_TOKEN starts with: ${GH_TOKEN:0:10}..."
           
-          # Test gh authentication
+          # Test gh authentication with better error handling
           echo "Testing gh authentication..."
-          gh auth status || echo "gh auth status failed"
+          if gh auth status 2>/dev/null; then
+            echo "✅ GitHub CLI authenticated successfully"
+          else
+            echo "❌ GitHub CLI authentication failed, but continuing..."
+            echo "Note: Some workflow analysis features may be limited"
+          fi
           
           # Prefer user-provided input when workflow_dispatch
           PR_NUMBER="${{ inputs.pr_number }}"
           if [ -z "$PR_NUMBER" ]; then
-            # Get PR number from the head branch
-            PR_NUMBER=$(gh pr list --head "${{ steps.context.outputs.HEAD_BRANCH }}" --json number --jq '.[0].number' || echo "")
+            # Get PR number from the head branch with error handling
+            echo "Attempting to find PR for branch: ${{ steps.context.outputs.HEAD_BRANCH }}"
+            if PR_NUMBER=$(gh pr list --head "${{ steps.context.outputs.HEAD_BRANCH }}" --json number --jq '.[0].number' 2>/dev/null); then
+              echo "✅ Found PR #$PR_NUMBER"
+            else
+              echo "⚠️ Could not find PR for branch ${{ steps.context.outputs.HEAD_BRANCH }}"
+              PR_NUMBER=""
+            fi
           fi
           if [ -z "$PR_NUMBER" ]; then
             echo "No PR found for branch ${{ steps.context.outputs.HEAD_BRANCH }}"
@@ -133,7 +154,10 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           MODEL: gpt-5
-          GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_ACTOR: ${{ github.actor }}
           BRANCH_PREFIX: ci-fix
           PAGER: cat
           GH_PAGER: cat
@@ -186,7 +210,7 @@ jobs:
             fi
             
             # Inactivity detection
-          current_size=$(wc -c < cursor_output.log 2>/dev/null || echo 0)
+            current_size=$(wc -c < cursor_output.log 2>/dev/null || echo 0)
             if [ "$current_size" -gt "$last_size" ]; then
               idle_seconds=0
               last_size=$current_size
@@ -297,6 +321,8 @@ jobs:
           # Inputs and conventions:
           - Use `gh api`, `gh run view`, `gh pr view`, `gh pr diff`, `gh pr list`, `gh run download`, and git commands as needed.
           - Always run `gh` commands with `--no-pager` to avoid hanging.
+          - GitHub CLI commands may fail - handle gracefully and continue analysis with available context.
+          - If GitHub CLI fails, proceed with available information and focus on code-level issues.
           - Minimize command execution verbosity - focus on results, not command details
           - Use brief status indicators (✓, ✗, →) instead of verbose command output
           - If no clear fix is possible, focus on creating the best possible debugging prompt.

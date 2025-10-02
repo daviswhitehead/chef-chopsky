@@ -206,6 +206,93 @@ Creating the new documentation project and drafting the initial plan now, then I
 
 Tool use: **apply_patch**
 
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/documentation/projects/v5: agent-parallelization/plan.md</summary>
+      
+
+````diff
+*** Begin Patch
+*** Add File: documentation/projects/v5: agent-parallelization/plan.md
++## Chef Chopsky — Parallel Agent Operations Plan (v5)
++
++### Purpose
++Create a lightweight, repeatable system to delegate many small, parallelizable tasks to background agents (Cursor + others), review quickly, and ship vertical slices across frontend, agent graph, tests, and CI.
++
++### Scope and Principles
++- **Tech baseline**: TypeScript; React Native + React Native Web + Next.js; styling via gluestack UI + NativeWind; Supabase; Playwright E2E; LangChain/LangGraph for the agent.
++- **Small tasks, big throughput**: Tasks sized for 1–3 hours, batched 4–8/night in parallel.
++- **Definition of Done (DoD)**: Code + tests + docs, lint/types clean, E2E headless passing, small PR with clear description.
++- **Guardrails**: No DOM-only APIs in shared RN components; a11y basics; stick to repo conventions and CI gates.
++
++### Operating Cadence
++- **Nightly**: Dispatch a batch of parallel tasks with briefs and acceptance tests.
++- **Morning**: Review in 30–60 minutes; merge good PRs; one feedback cycle max; archive the rest.
++- **Weekly**: Inspect metrics (merged-per-day, rework rate, test flake rate), refine briefs and batch sizing.
++
++### Roles
++- **You (Editor-in-Chief)**: Curate backlog, approve briefs, review diffs, request one revision, merge or archive.
++- **Agents**: Implement tightly scoped briefs, add/update tests, keep CI green, document changes.
++
++### Workstreams
++1) Frontend UI: Shared RN/RNW components, pages, accessibility, error/empty states.
++2) Agent Graph: LangGraph nodes, tools, retries/backoff, structured errors, LangSmith traces/evals.
++3) Testing: Playwright E2E-first; fast, headless, resilient selectors; minimal fixtures.
++4) CI/DevEx: GitHub Actions stability, caching, fail-fast checks, auto-fix flows.
++5) Docs/Enablement: Keep docs current in `/documentation` and in-repo READMEs.
++
++### Task Brief Template
++Copy/paste and fill per task:
++
++```md
++Task: [verb-led title]
++Context: [links to files/dirs, product doc, screenshots]
++Goal: [user outcome + measurable acceptance]
++Constraints:
++- TypeScript everywhere; RN + RNW shared components; gluestack + NativeWind
++- Supabase DB; Playwright E2E; avoid web-only libs in shared code
++Definition of Done:
++- Code + tests + docs updated
++- Lint/types clean; Playwright passing headless; CI stable
++- Small PR with description and screenshots/recording if UI
++Artifacts:
++- PR title/description
++- Test names/paths changed
++- Before/after screenshots if UI
++Timebox: [e.g., 90 minutes]
++```
++
++### Review Checklist (fast)
++- Lint/types: zero errors.
++- Tests: new/updated Playwright for changes; stable role-based selectors; headless.
++- Cross-platform: no DOM-only APIs in shared components.
++- Accessibility: labels/roles on interactive elements.
++- PR size and clarity: ≤ ~300 changed lines, good description, assets attached when UI changes.
++
++### Evaluation and Telemetry
++- **Tracing**: Enable LangSmith tracing for key agent nodes and happy-path flows.
++- **Evals**: Maintain a minimal eval suite on core prompt/tool behaviors (dietary defaults, pantry utilization, refusal guardrails).
++- **Signals**: track merged-per-day, rework rate, test stability; improve plan and batch sizes accordingly.
++
++### Starter Batch (first week)
++- Frontend: `TypingIndicator`, `MessageBubble`, `Toast` components using gluestack + NativeWind.
++- E2E: Stable tests for conversation start/send/feedback flows.
++- Agent Graph: Add retry/backoff with structured errors to one node; add refusal guardrail.
++- Observability: Add LangSmith tracing on happy path in server.
++- CI: Improve caching and fail-fast in auto-fix workflows.
++
++### Risks and Mitigations
++- PR conflicts from parallelization → split by seam (UI vs tests vs agent vs CI); cap batch size.
++- Flaky E2E → role-based selectors, smaller fixtures, shorter timeouts.
++- Over-scoping → timebox per brief, prefer follow-up tasks.
++
++### Next Steps
++- Seed backlog with 8–12 briefs across workstreams.
++- Run one nightly batch; measure review time; adjust.
++- Establish weekly retro to promote best prompts and patterns.
++
+*** End Patch
+````
+
 ---
 
 Tool use: **todo_write**
@@ -220,6 +307,69 @@ Tool use: **todo_write**
 ---
 
 Tool use: **apply_patch**
+
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/documentation/projects/v5: agent-parallelization/tasks.md</summary>
+      
+
+```diff
+*** Begin Patch
+*** Add File: documentation/projects/v5: agent-parallelization/tasks.md
++## Starter Agent Task Briefs (Batch 1)
++
++### 1) UI: TypingIndicator component (shared RN/RNW)
++Task: Implement a cross-platform `TypingIndicator` using gluestack + NativeWind.
++Context: `frontend/components/`; used by `frontend/components/ChatInterface.tsx`.
++Goal: Show animated three-dot typing indicator; accessible; themable.
++DoD:
++- New `TypingIndicator.tsx` (shared) with a11y props, keyboard focus handling.
++- Story/usage snippet added to PR description.
++- Unit or lightweight integration test where feasible; covered by E2E.
++- Lint/types clean.
++Tests:
++- Update/add Playwright to assert presence while message streaming.
++Artifacts: screenshots or short gif.
++
++### 2) UI: MessageBubble component (shared RN/RNW)
++Task: Create `MessageBubble` supporting user/assistant variants, error state, and copy button.
++Context: `frontend/components/MessageBubble.tsx`.
++Goal: Consistent layout, selectable text, accessible buttons.
++DoD:
++- Component + styles; props for role, isError, isStreaming.
++- a11y labels/roles; keyboard navigation.
++- Update `ChatInterface.tsx` to use component.
++Tests:
++- Playwright checks: render variants, copy-to-clipboard works (web), mobile-safe.
++Artifacts: screenshots before/after.
++
++### 3) E2E: Core chat flows
++Task: Stabilize and extend E2E tests for conversation start/send/feedback.
++Context: `frontend/tests/e2e/` and `frontend/app/api/conversations/route.ts`.
++Goal: Headless, fast, stable tests with role-based selectors and minimal fixtures.
++DoD:
++- Add/repair tests named `chat.core.spec.ts` with resilient selectors.
++- Ensure test data setup/teardown in `fixtures/setup.ts` is minimal and idempotent.
++- Update CI to run these in the existing workflow only if needed.
++
++### 4) Agent Graph: Retry/backoff with structured errors
++Task: Add exponential backoff and structured error typing to one LangGraph node.
++Context: `agent/src/retrieval_graph/` choose a node with external calls.
++Goal: Improve robustness; keep signatures stable; add unit-level tests if meaningful.
++DoD:
++- Implement retry policy (jittered exponential) and error shape `{ kind, cause, advice }`.
++- Log to LangSmith traces.
++- Tests or E2E coverage demonstrating behavior.
++
++### 5) Observability: LangSmith tracing for happy path
++Task: Enable tracing around request/response in server path.
++Context: `agent/dist/server-langchain.js` source equiv `agent/src/server.ts`.
++Goal: Trace primary user request path and one tool invocation.
++DoD:
++- Minimal instrumentation; env-guarded to avoid noise in dev.
++- Link to trace or screenshot in PR.
++
+*** End Patch
+```
 
 ---
 

@@ -1001,6 +1001,24 @@ Now let me find and fix other tests that expect success toasts:
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "waitForToast.*success" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/tests/e2e" • 6 matches</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `await TestUtils.waitForToast(page, 'success');` | L108 |
+| `static async waitForToast(page: Page, type: 'success' \| 'error' \| 'warning' \| 'info', timeout = 10000): Promise<void> \{` | L217 |
+| `await TestUtils.waitForToast(page, 'success');` | L192 |
+| `await TestUtils.waitForToast(page, 'success');` | L30 |
+| `await TestUtils.waitForToast(page, 'success');` | L104 |
+| `await TestUtils.waitForToast(page, 'success');` | L180 |
+
+
+</details>
+
 ---
 
 I need to fix all these tests. Let me update them one by one:

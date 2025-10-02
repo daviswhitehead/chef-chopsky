@@ -55,7 +55,7 @@ jobs:
         echo "🧪 Running frontend unit tests..."
         cd frontend && npm run test:unit
         echo "🤖 Running agent unit tests..."
-        cd agent && npm run test:unit
+        cd .. && cd agent && npm run test:unit
       
     - name: Build applications
       run: npm run build

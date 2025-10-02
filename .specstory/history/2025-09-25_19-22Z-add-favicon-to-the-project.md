@@ -179,6 +179,19 @@ Perfect! Let me also check for any linting errors in the updated layout file:
 
 Tool use: **read_lints**
 
+<details>
+          <summary>Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/app/layout.tsx`
+
+Lint results
+
+
+**No lint errors found**
+</details>
+
 ---
 
 Excellent! I've successfully added the favicon to your project. Here's what I did:

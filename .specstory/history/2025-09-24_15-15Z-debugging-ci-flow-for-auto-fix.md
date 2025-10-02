@@ -255,9 +255,270 @@ I wrote down what I’m about to change and will now update the workflow file to
 
 Tool use: **apply_patch**
 
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml
+@@
+       - name: Fix CI failure with Cursor CLI
+         env:
+           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+           MODEL: gpt-5
+           GH_TOKEN: ${{ github.token }}
+           BRANCH_PREFIX: ci-fix
+           PAGER: cat
+           GH_PAGER: cat
+           GIT_PAGER: cat
+         run: |
+           # Create a wrapper script to handle cursor-agent termination issues
+-          cat > cursor_wrapper.sh << 'EOF'
++          cat > cursor_wrapper.sh << 'EOF'
+           #!/bin/bash
+-          set -e
++          set -e
+           
+-          # Start cursor-agent in background
+-          cursor-agent -p "$1" --force --model "$2" --output-format=text > cursor_output.log 2>&1 &
+-          CURSOR_PID=$!
++          PROMPT_FILE="$1"
++          MODEL_NAME="$2"
++          
++          if [ ! -f "$PROMPT_FILE" ]; then
++            echo "Prompt file not found: $PROMPT_FILE" >&2
++            exit 2
++          fi
++          
++          # Start cursor-agent in background with verbatim prompt content
++          cursor-agent -p "$(cat "$PROMPT_FILE")" --force --model "$MODEL_NAME" --output-format=text > cursor_output.log 2>&1 &
++          CURSOR_PID=$!
+           
+           # Function to cleanup
+           cleanup() {
+             echo "Cleaning up cursor-agent process..."
+             kill $CURSOR_PID 2>/dev/null || true
+             wait $CURSOR_PID 2>/dev/null || true
+           }
+           
+           # Set trap for cleanup
+           trap cleanup EXIT INT TERM
+           
+-          # Monitor for completion signal
+-          while kill -0 $CURSOR_PID 2>/dev/null; do
+-            # Check if "DONE" appears in output
+-            if grep -q "^DONE$" cursor_output.log 2>/dev/null; then
+-              echo "✅ Detected completion signal, terminating cursor-agent..."
+-              cleanup
+-              break
+-            fi
+-            sleep 1
+-          done
++          # Monitor for completion signal with inactivity watchdog
++          idle_seconds=0
++          last_size=0
++          check_interval=5
++          idle_limit=90
++          
++          while kill -0 $CURSOR_PID 2>/dev/null; do
++            # Check if a line containing only DONE (optionally wrapped in backticks/whitespace) appears
++            if grep -qE '^[[:space:]]*`{0,3}[Dd][Oo][Nn][Ee][[:space:]]*`{0,3}[[:space:]]*$' cursor_output.log 2>/dev/null; then
++              echo "✅ Detected completion signal, terminating cursor-agent..."
++              cleanup
++              break
++            fi
++            
++            # Inactivity detection
++            current_size=$(wc -c < cursor_output.log 2>/dev/null || echo 0)
++            if [ "$current_size" -gt "$last_size" ];n+            then
++              idle_seconds=0
++              last_size=$current_size
++            else
++              idle_seconds=$((idle_seconds + check_interval))
++              if [ "$idle_seconds" -ge "$idle_limit" ]; then
++                echo "⚠️ No log activity for $idle_seconds seconds. Sending SIGTERM to cursor-agent ($CURSOR_PID)..."
++                kill $CURSOR_PID 2>/dev/null || true
++                sleep 10
++                if kill -0 $CURSOR_PID 2>/dev/null; then
++                  echo "⚠️ cursor-agent still running. Sending SIGKILL..."
++                  kill -9 $CURSOR_PID 2>/dev/null || true
++                fi
++                wait $CURSOR_PID 2>/dev/null || true
++                break
++              fi
++            fi
++            sleep $check_interval
++          done
+           
+           # Show the output
+           cat cursor_output.log
+           
+           # Check if we completed successfully
+-          if grep -q "^DONE$" cursor_output.log; then
++          if grep -qE '^[[:space:]]*`{0,3}[Dd][Oo][Nn][Ee][[:space:]]*`{0,3}[[:space:]]*$' cursor_output.log; then
+             echo "✅ Cursor-agent completed successfully"
+             exit 0
+           else
+             echo "⚠️ Cursor-agent may not have completed properly"
+             exit 1
+           fi
+           EOF
+           
+           chmod +x cursor_wrapper.sh
+           
+-          # Run with timeout and explicit termination handling
+-          timeout 10m ./cursor_wrapper.sh "You are operating in a GitHub Actions runner.
+-          
+-          - Treat this as NON-INTERACTIVE. Never open editors or pagers.
+-          - Always run gh commands with: --no-pager --json ... --jq ...
+-          - Time budget: 5 minutes.
+-          - Edit budget: ≤2 files, ≤60 lines. No dependency changes.
+-          
+-          
+-          The GitHub CLI is available as \`gh\` and authenticated via \`GH_TOKEN\`. Git is available. You have write access to repository contents and can comment on pull requests, but you must not create or edit PRs directly.
+-          
+-          # Context:
+-          - Repo: ${{ github.repository }}
+-          - Owner: ${{ github.repository_owner }}
+-          - Workflow Run ID: ${{ github.event.workflow_run.id }}
+-          - Workflow Run URL: ${{ github.event.workflow_run.html_url }}
+-          - Fix Branch Prefix: ${{ env.BRANCH_PREFIX }}
+-          
+-          # Goal:
+-          - One-shot CI triage. First produce a self-contained debugging prompt; only then, if safe, make a minimal fix.
+-          
+-          
+-          # Step 1: Analysis Phase
+-          1) Identify the PR associated with the failed workflow run and determine its base and head branches.
+-          2) Download and analyze the failed workflow logs to understand the root cause.
+-          3) Examine the failing tests, build errors, or other CI issues.
+-          4) Create a copy-paste ready prompt for interactive debugging that includes:
+-             - Error log windows and stack traces (not full logs, just what's most relevant)
+-             - Relevant code files/snippets and their current state
+-             - Environment details (Node version, OS, dependencies)
+-             - Recent commits and changes that might have caused the issue
+-             - Specific test data and expected vs actual results
+-             - The most important context needed for someone to debug this in a separate Cursor session
+-          5) Produce a Repro Script (bash) that installs deps and runs the minimal failing test locally.
+-          
+-          
+-          # Step 2: Fix Phase (only if analysis looks good)
+-          5) If the analysis reveals a clear, safe fix, implement it with minimal targeted edits.
+-          6) Maintain a persistent fix branch for this PR head using the Fix Branch Prefix from Context.
+-          7) Test the fix by running relevant commands (npm test, build, etc.).
+-          8) If fix is successful, commit and push to the fix branch.
+-          9) Post a PR comment explaining the fix with a quick-create PR link.
+-          
+-          # Output Requirements:
+-          - Start with a concise “CI Fail Summary”.
+-          - Provide structured facts (repo/pr/branches/shas, runner, node, failing jobs).
+-          - Print the complete copy-paste ready debugging prompt (this is the primary deliverable).
+-          - Include all necessary context in the debugging prompt (logs, code, environment, etc.)
+-          - Make the debugging prompt self-contained - someone should be able to copy it and debug immediately.
+-          - If attempting a fix, clearly indicate when moving from analysis to fix phase
+-          - If a fix was applied: show changed files + minimal diffs, branch name, compare link, and the exact PR comment text.
+-          - Finally print a single-line JSON summary:
+-          RESULT_JSON: {"phase":"Analysis|Fix","pr":<n>,"head":"<ref>","base":"<ref>","fixBranch":"<ref>","commit":"<sha>","status":"success|skipped|failed","reason":"<short>"}
+-          
+-          
+-          # Inputs and conventions:
+-          - Use \`gh api\`, \`gh run view\`, \`gh pr view\`, \`gh pr diff\`, \`gh pr list\`, \`gh run download\`, and git commands as needed.
+-          - Always run \`gh\` commands with \`--no-pager\` to avoid hanging.
+-          - If no clear fix is possible, focus on creating the best possible debugging prompt.
+-          
+-          When analysis is complete and debugging prompt is ready, print exactly DONE on a single line and exit immediately." "$MODEL"
++          # Write prompt to file with single-quoted heredoc to avoid shell interpolation
++          cat > prompt.txt << 'PROMPT'
++          You are operating in a GitHub Actions runner.
++          
++          - Treat this as NON-INTERACTIVE. Never open editors or pagers.
++          - Always run gh commands with: --no-pager --json ... --jq ...
++          - Time budget: 5 minutes.
++          - Edit budget: ≤2 files, ≤60 lines. No dependency changes.
++          
++          
++          The GitHub CLI is available as `gh` and authenticated via `GH_TOKEN`. Git is available. You have write access to repository contents and can comment on pull requests, but you must not create or edit PRs directly.
++          
++          # Context:
++          - Repo: ${{ github.repository }}
++          - Owner: ${{ github.repository_owner }}
++          - Workflow Run ID: ${{ github.event.workflow_run.id }}
++          - Workflow Run URL: ${{ github.event.workflow_run.html_url }}
++          - Fix Branch Prefix: ${{ env.BRANCH_PREFIX }}
++          
++          # Goal:
++          - One-shot CI triage. First produce a self-contained debugging prompt; only then, if safe, make a minimal fix.
++          
++          
++          # Step 1: Analysis Phase
++          1) Identify the PR associated with the failed workflow run and determine its base and head branches.
++          2) Download and analyze the failed workflow logs to understand the root cause.
++          3) Examine the failing tests, build errors, or other CI issues.
++          4) Create a copy-paste ready prompt for interactive debugging that includes:
++             - Error log windows and stack traces (not full logs, just what's most relevant)
++             - Relevant code files/snippets and their current state
++             - Environment details (Node version, OS, dependencies)
++             - Recent commits and changes that might have caused the issue
++             - Specific test data and expected vs actual results
++             - The most important context needed for someone to debug this in a separate Cursor session
++          5) Produce a Repro Script (bash) that installs deps and runs the minimal failing test locally.
++          
++          
++          # Step 2: Fix Phase (only if analysis looks good)
++          5) If the analysis reveals a clear, safe fix, implement it with minimal targeted edits.
++          6) Maintain a persistent fix branch for this PR head using the Fix Branch Prefix from Context.
++          7) Test the fix by running relevant commands (npm test, build, etc.).
++          8) If fix is successful, commit and push to the fix branch.
++          9) Post a PR comment explaining the fix with a quick-create PR link.
++          
++          # Output Requirements:
++          - Start with a concise “CI Fail Summary”.
++          - Provide structured facts (repo/pr/branches/shas, runner, node, failing jobs).
++          - Print the complete copy-paste ready debugging prompt (this is the primary deliverable).
++          - Include all necessary context in the debugging prompt (logs, code, environment, etc.)
++          - Make the debugging prompt self-contained - someone should be able to copy it and debug immediately.
++          - If attempting a fix, clearly indicate when moving from analysis to fix phase
++          - If a fix was applied: show changed files + minimal diffs, branch name, compare link, and the exact PR comment text.
++          - Finally print a single-line JSON summary:
++            RESULT_JSON: {"phase":"Analysis|Fix","pr":<n>,"head":"<ref>","base":"<ref>","fixBranch":"<ref>","commit":"<sha>","status":"success|skipped|failed","reason":"<short>"}
++          
++          
++          # Inputs and conventions:
++          - Use `gh api`, `gh run view`, `gh pr view`, `gh pr diff`, `gh pr list`, `gh run download`, and git commands as needed.
++          - Always run `gh` commands with `--no-pager` to avoid hanging.
++          - If no clear fix is possible, focus on creating the best possible debugging prompt.
++          
++          When analysis is complete and debugging prompt is ready, print exactly DONE on a single line and exit immediately.
++          PROMPT
++          
++          # Run with timeout and explicit termination handling, passing prompt file and model
++          timeout 10m ./cursor_wrapper.sh prompt.txt "$MODEL"
+*** End Patch
+```
+
 ---
 
 Tool use: **read_lints**
+
+<details>
+          <summary>Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml`
+
+Lint results
+
+Lint errors for `.github/workflows/auto-fix-ci.yml`
+
+
+| Message | Range | Severity |
+|-------|-------|----------|
+| Context access might be invalid: CURSOR_API_KEY | 85:27-85:56 | DIAGNOSTIC_SEVERITY_WARNING |
+
+
+</details>
 
 ---
 
@@ -569,9 +830,174 @@ I'll create a new manual dry-run workflow that mirrors the wrapper/prompt steps,
 
 Tool use: **apply_patch**
 
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Add File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml
++name: Auto Fix Dry Run
++
++on:
++  workflow_dispatch:
++    inputs:
++      scenario:
++        description: "Which scenario to run (success|hang|both)"
++        default: "both"
++        required: false
++
++jobs:
++  dry-run:
++    runs-on: ubuntu-latest
++    env:
++      MODEL: gpt-5
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Create stub cursor-agent (success)
++        run: |
++          mkdir -p stubs/success stubs/hang
++          cat > stubs/success/cursor-agent << 'EOF'
++          #!/usr/bin/env bash
++          echo "Starting analysis..."
++          sleep 1
++          echo "DONE"
++          exit 0
++          EOF
++          chmod +x stubs/success/cursor-agent
++
++      - name: Create stub cursor-agent (hang)
++        run: |
++          cat > stubs/hang/cursor-agent << 'EOF'
++          #!/usr/bin/env bash
++          echo "Starting analysis..."
++          # Intentionally do not print DONE; simulate stall
++          sleep 600
++          EOF
++          chmod +x stubs/hang/cursor-agent
++
++      - name: Create wrapper script (same logic as production)
++        run: |
++          cat > cursor_wrapper.sh << 'EOF'
++          #!/bin/bash
++          set -e
++          
++          PROMPT_FILE="$1"
++          MODEL_NAME="$2"
++          
++          if [ ! -f "$PROMPT_FILE" ]; then
++            echo "Prompt file not found: $PROMPT_FILE" >&2
++            exit 2
++          fi
++          
++          cursor-agent -p "$(cat "$PROMPT_FILE")" --force --model "$MODEL_NAME" --output-format=text > cursor_output.log 2>&1 &
++          CURSOR_PID=$!
++          
++          cleanup() {
++            echo "Cleaning up cursor-agent process..."
++            kill $CURSOR_PID 2>/dev/null || true
++            wait $CURSOR_PID 2>/dev/null || true
++          }
++          trap cleanup EXIT INT TERM
++          
++          idle_seconds=0
++          last_size=0
++          check_interval=${WATCHDOG_CHECK_INTERVAL:-5}
++          idle_limit=${WATCHDOG_IDLE_LIMIT:-90}
++          
++          while kill -0 $CURSOR_PID 2>/dev/null; do
++            if grep -qE '^[[:space:]]*`{0,3}[Dd][Oo][Nn][Ee][[:space:]]*`{0,3}[[:space:]]*$' cursor_output.log 2>/dev/null; then
++              echo "✅ Detected completion signal, terminating cursor-agent..."
++              cleanup
++              break
++            fi
++            current_size=$(wc -c < cursor_output.log 2>/dev/null || echo 0)
++            if [ "$current_size" -gt "$last_size" ]; then
++              idle_seconds=0
++              last_size=$current_size
++            else
++              idle_seconds=$((idle_seconds + check_interval))
++              if [ "$idle_seconds" -ge "$idle_limit" ]; then
++                echo "⚠️ No log activity for $idle_seconds seconds. Sending SIGTERM to cursor-agent ($CURSOR_PID)..."
++                kill $CURSOR_PID 2>/dev/null || true
++                sleep 2
++                if kill -0 $CURSOR_PID 2>/dev/null; then
++                  echo "⚠️ cursor-agent still running. Sending SIGKILL..."
++                  kill -9 $CURSOR_PID 2>/dev/null || true
++                fi
++                wait $CURSOR_PID 2>/dev/null || true
++                break
++              fi
++            fi
++            sleep $check_interval
++          done
++          
++          cat cursor_output.log
++          
++          if grep -qE '^[[:space:]]*`{0,3}[Dd][Oo][Nn][Ee][[:space:]]*`{0,3}[[:space:]]*$' cursor_output.log; then
++            echo "✅ Cursor-agent completed successfully"
++            exit 0
++          else
++            echo "⚠️ Cursor-agent may not have completed properly"
++            exit 1
++          fi
++          EOF
++          chmod +x cursor_wrapper.sh
++
++      - name: Write prompt to file
++        run: |
++          cat > prompt.txt << 'PROMPT'
++          Minimal test prompt.
++          When analysis is complete, print DONE on its own line.
++          PROMPT
++
++      - name: Success scenario (DONE detected)
++        if: ${{ inputs.scenario == 'success' || inputs.scenario == 'both' }}
++        env:
++          WATCHDOG_CHECK_INTERVAL: '1'
++          WATCHDOG_IDLE_LIMIT: '10'
++        run: |
++          export PATH="$(pwd)/stubs/success:$PATH"
++          timeout 60s ./cursor_wrapper.sh prompt.txt "$MODEL"
++
++      - name: Hang scenario (watchdog terminates)
++        if: ${{ inputs.scenario == 'hang' || inputs.scenario == 'both' }}
++        env:
++          WATCHDOG_CHECK_INTERVAL: '1'
++          WATCHDOG_IDLE_LIMIT: '5'
++        run: |
++          set +e
++          export PATH="$(pwd)/stubs/hang:$PATH"
++          timeout 20s ./cursor_wrapper.sh prompt.txt "$MODEL"
++          CODE=$?
++          echo "Wrapper exit code: $CODE"
++          # Expect non-zero due to missing DONE; treat as success in this dry run
++          if [ "$CODE" -eq 0 ]; then
++            echo "Expected non-zero exit for hang scenario, but got 0" >&2
++            exit 1
++          fi
++          exit 0
+*** End Patch
+```
+
 ---
 
 Tool use: **read_lints**
+
+<details>
+          <summary>Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml`
+
+Lint results
+
+
+**No lint errors found**
+</details>
 
 ---
 
@@ -882,9 +1308,45 @@ I'll fix a small bug in the production workflow's wrapper (a stray token in the 
 
 Tool use: **apply_patch**
 
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml
+@@
+-          current_size=$(wc -c < cursor_output.log 2>/dev/null || echo 0)
+-            if [ "$current_size" -gt "$last_size" ];n+            then
++          current_size=$(wc -c < cursor_output.log 2>/dev/null || echo 0)
++            if [ "$current_size" -gt "$last_size" ]; then
+               idle_seconds=0
+               last_size=$current_size
+*** End Patch
+```
+
 ---
 
 Tool use: **read_lints**
+
+<details>
+          <summary>Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml`
+
+Lint results
+
+Lint errors for `.github/workflows/auto-fix-ci.yml`
+
+
+| Message | Range | Severity |
+|-------|-------|----------|
+| Context access might be invalid: CURSOR_API_KEY | 85:27-85:56 | DIAGNOSTIC_SEVERITY_WARNING |
+
+
+</details>
 
 ---
 
@@ -941,9 +1403,206 @@ I need to make some adjustments to the dryrun file. First, I'll add the `inputs.
 
 Tool use: **apply_patch**
 
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml
+@@
+ on:
+   workflow_dispatch:
+     inputs:
+       scenario:
+         description: "Which scenario to run (success|hang|both)"
+         default: "both"
+         required: false
++      mode:
++        description: "Execution mode (stub|real). 'real' installs Cursor CLI and (optionally) gh."
++        default: "real"
++        required: false
+@@
+   dry-run:
+     runs-on: ubuntu-latest
+     env:
+       MODEL: gpt-5
+     steps:
+       - name: Checkout
+         uses: actions/checkout@v4
+ 
+-      - name: Create stub cursor-agent (success)
++      - name: Create stub cursor-agent (success)
++        if: ${{ inputs.mode == 'stub' }}
+         run: |
+           mkdir -p stubs/success stubs/hang
+           cat > stubs/success/cursor-agent << 'EOF'
+           #!/usr/bin/env bash
+           echo "Starting analysis..."
+           sleep 1
+           echo "DONE"
+           exit 0
+           EOF
+           chmod +x stubs/success/cursor-agent
+ 
+-      - name: Create stub cursor-agent (hang)
++      - name: Create stub cursor-agent (hang)
++        if: ${{ inputs.mode == 'stub' }}
+         run: |
+           cat > stubs/hang/cursor-agent << 'EOF'
+           #!/usr/bin/env bash
+           echo "Starting analysis..."
+           # Intentionally do not print DONE; simulate stall
+           sleep 600
+           EOF
+           chmod +x stubs/hang/cursor-agent
+ 
+       - name: Create wrapper script (same logic as production)
+         run: |
+           cat > cursor_wrapper.sh << 'EOF'
+           #!/bin/bash
+           set -e
+@@
+           chmod +x cursor_wrapper.sh
+ 
+-      - name: Write prompt to file
++      - name: Write prompt to file (real mode)
++        if: ${{ inputs.mode == 'real' }}
++        run: |
++          cat > prompt.txt << 'PROMPT'
++          You are operating in a GitHub Actions-like Linux runner.
++          
++          - Treat this as NON-INTERACTIVE. Never open editors or pagers.
++          - Always run gh commands with: --no-pager --json ... --jq ...
++          - Time budget: 5 minutes.
++          - Edit budget: ≤2 files, ≤60 lines. No dependency changes.
++          
++          # Context:
++          - Repo: ${{ github.repository }}
++          - Owner: ${{ github.repository_owner }}
++          - Workflow Run ID: DRYRUN-LOCAL
++          - Workflow Run URL: https://github.com/${{ github.repository }}/actions
++          - Fix Branch Prefix: ci-fix
++          
++          # Goal:
++          - One-shot CI triage. First produce a self-contained debugging prompt; only then, if safe, make a minimal fix.
++          
++          # Step 1: Analysis Phase
++          1) Demonstrate fetching PR context (head/base) and downloading latest failed run logs (mock or real if available).
++          2) Summarize likely root causes based on logs.
++          3) Produce a copy-paste ready debugging prompt with:
++             - Trimmed error excerpts
++             - Relevant code paths
++             - Env details (Node, OS)
++             - Recent commits that may be relevant
++             - A minimal repro script
++          
++          # Step 2: Fix Phase (optional)
++          4) If a safe fix is clear, outline the exact edits (do not apply them in DRY RUN).
++          
++          # Output Requirements:
++          - Print a concise “CI Fail Summary”.
++          - Print a complete copy-paste ready debugging prompt block.
++          - Print a single-line JSON summary as RESULT_JSON.
++          
++          When analysis is complete and debugging prompt is ready, print exactly DONE on a single line and exit immediately.
++          PROMPT
++
++      - name: Install prerequisites (gh/jq) [real mode]
++        if: ${{ inputs.mode == 'real' }}
++        run: |
++          sudo apt-get update
++          sudo apt-get install -y git curl jq gh
++
++      - name: Install Cursor CLI [real mode]
++        if: ${{ inputs.mode == 'real' }}
++        env:
++          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
++        run: |
++          if [ -z "${CURSOR_API_KEY:-}" ]; then
++            echo "CURSOR_API_KEY not set. Add it as a repository secret to use real mode." >&2
++            exit 1
++          fi
++          curl -fsSL https://cursor.com/install | bash
++          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
++          export PATH="$HOME/.cursor/bin:$PATH"
++          cursor-agent --version || true
++
++      - name: Run wrapper with real Cursor CLI
++        if: ${{ inputs.mode == 'real' }}
++        env:
++          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
++          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
++          WATCHDOG_CHECK_INTERVAL: '2'
++          WATCHDOG_IDLE_LIMIT: '60'
++        run: |
++          export PATH="$HOME/.cursor/bin:$PATH"
++          timeout 6m ./cursor_wrapper.sh prompt.txt "$MODEL"
++
++      - name: Write prompt to file (stub mode)
++        if: ${{ inputs.mode == 'stub' }}
+         run: |
+           cat > prompt.txt << 'PROMPT'
+           Minimal test prompt.
+           When analysis is complete, print DONE on its own line.
+           PROMPT
+ 
+-      - name: Success scenario (DONE detected)
+-        if: ${{ inputs.scenario == 'success' || inputs.scenario == 'both' }}
++      - name: Success scenario (DONE detected) [stub mode]
++        if: ${{ inputs.mode == 'stub' && (inputs.scenario == 'success' || inputs.scenario == 'both') }}
+         env:
+           WATCHDOG_CHECK_INTERVAL: '1'
+           WATCHDOG_IDLE_LIMIT: '10'
+         run: |
+           export PATH="$(pwd)/stubs/success:$PATH"
+           timeout 60s ./cursor_wrapper.sh prompt.txt "$MODEL"
+ 
+-      - name: Hang scenario (watchdog terminates)
+-        if: ${{ inputs.scenario == 'hang' || inputs.scenario == 'both' }}
++      - name: Hang scenario (watchdog terminates) [stub mode]
++        if: ${{ inputs.mode == 'stub' && (inputs.scenario == 'hang' || inputs.scenario == 'both') }}
+         env:
+           WATCHDOG_CHECK_INTERVAL: '1'
+           WATCHDOG_IDLE_LIMIT: '5'
+         run: |
+           set +e
+           export PATH="$(pwd)/stubs/hang:$PATH"
+           timeout 20s ./cursor_wrapper.sh prompt.txt "$MODEL"
+           CODE=$?
+           echo "Wrapper exit code: $CODE"
+           # Expect non-zero due to missing DONE; treat as success in this dry run
+           if [ "$CODE" -eq 0 ]; then
+             echo "Expected non-zero exit for hang scenario, but got 0" >&2
+             exit 1
+           fi
+           exit 0
+*** End Patch
+```
+
 ---
 
 Tool use: **read_lints**
+
+<details>
+          <summary>Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml`
+
+Lint results
+
+Lint errors for `.github/workflows/auto-fix-dryrun.yml`
+
+
+| Message | Range | Severity |
+|-------|-------|----------|
+| Context access might be invalid: CURSOR_API_KEY | 167:27-167:56 | DIAGNOSTIC_SEVERITY_WARNING |
+| Context access might be invalid: CURSOR_API_KEY | 181:27-181:56 | DIAGNOSTIC_SEVERITY_WARNING |
+
+
+</details>
 
 ---
 
@@ -1009,6 +1668,27 @@ I'll add a .secrets.example at the repo root with placeholders for CURSOR_API_KE
 ---
 
 Tool use: **apply_patch**
+
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.secrets.example</summary>
+      
+
+```diff
+*** Begin Patch
+*** Add File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.secrets.example
++# Example secrets file for `act` local runs
++# Copy to `.secrets` (do not commit `.secrets`), then run:
++#   act -j dry-run -W .github/workflows/auto-fix-dryrun.yml --input mode=real --secret-file .secrets \
++#       -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-22.04 --container-architecture linux/arm64
++
++# Required for real Cursor CLI mode
++CURSOR_API_KEY=your_cursor_api_key_here
++
++# Optional: GitHub token for gh commands (can be a classic token or a fine-grained PAT)
++# If omitted, gh operations in real mode may be limited.
++GITHUB_TOKEN=ghp_your_github_token_here
+*** End Patch
+```
 
 ---
 
@@ -1118,9 +1798,70 @@ I'll update both workflows to ensure the correct Cursor CLI binary path is used 
 
 Tool use: **apply_patch**
 
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml
+@@
+       - name: Install Cursor CLI [real mode]
+         if: ${{ inputs.mode == 'real' }}
+         env:
+           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+         run: |
+           if [ -z "${CURSOR_API_KEY:-}" ]; then
+             echo "CURSOR_API_KEY not set. Add it as a repository secret to use real mode." >&2
+             exit 1
+           fi
+           curl -fsSL https://cursor.com/install | bash
+-          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+-          export PATH="$HOME/.cursor/bin:$PATH"
+-          cursor-agent --version || true
++          # Add both potential install locations to PATH for this and subsequent steps
++          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
++          echo "$HOME/.local/bin" >> $GITHUB_PATH
++          export PATH="$HOME/.cursor/bin:$HOME/.local/bin:$PATH"
++          hash -r
++          which cursor-agent || ls -la "$HOME/.cursor/bin" "$HOME/.local/bin" || true
++          cursor-agent --version || true
+@@
+       - name: Run wrapper with real Cursor CLI
+         if: ${{ inputs.mode == 'real' }}
+         env:
+           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+           WATCHDOG_CHECK_INTERVAL: '2'
+           WATCHDOG_IDLE_LIMIT: '60'
+         run: |
+-          export PATH="$HOME/.cursor/bin:$PATH"
++          export PATH="$HOME/.cursor/bin:$HOME/.local/bin:$PATH"
++          which cursor-agent || { echo "cursor-agent not found on PATH" >&2; exit 1; }
+           timeout 6m ./cursor_wrapper.sh prompt.txt "$MODEL"
+*** End Patch
+```
+
 ---
 
 Tool use: **apply_patch**
+
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml
+@@
+       - name: Install Cursor CLI
+         run: |
+           curl -fsSL https://cursor.com/install | bash
+-          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
++          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
++          echo "$HOME/.local/bin" >> $GITHUB_PATH
+*** End Patch
+```
 
 ---
 
@@ -1492,9 +2233,93 @@ I'll add inputs to the dry-run workflow for PR number, branches, and run details
 
 Tool use: **apply_patch**
 
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml
+@@
+ on:
+   workflow_dispatch:
+     inputs:
+       scenario:
+         description: "Which scenario to run (success|hang|both)"
+         default: "both"
+         required: false
+       mode:
+         description: "Execution mode (stub|real). 'real' installs Cursor CLI and (optionally) gh."
+         default: "real"
+         required: false
++      pr_number:
++        description: "PR number to analyze (optional; improves parity)"
++        required: false
++      head_branch:
++        description: "Head branch name (optional)"
++        required: false
++      base_branch:
++        description: "Base branch name (optional)"
++        required: false
++      run_id:
++        description: "Workflow run ID (optional)"
++        required: false
++      run_url:
++        description: "Workflow run URL (optional)"
++        required: false
+@@
+       - name: Write prompt to file (real mode)
+         if: ${{ inputs.mode == 'real' }}
+         run: |
+           cat > prompt.txt << 'PROMPT'
+           You are operating in a GitHub Actions-like Linux runner.
+           
+           - Treat this as NON-INTERACTIVE. Never open editors or pagers.
+           - Always run gh commands with: --no-pager --json ... --jq ...
+           - Time budget: 5 minutes.
+           - Edit budget: ≤2 files, ≤60 lines. No dependency changes.
+           
+           # Context:
+           - Repo: ${{ github.repository }}
+           - Owner: ${{ github.repository_owner }}
+-          - Workflow Run ID: DRYRUN-LOCAL
+-          - Workflow Run URL: https://github.com/${{ github.repository }}/actions
++          - PR Number: ${{ inputs.pr_number }}
++          - Head Branch: ${{ inputs.head_branch }}
++          - Base Branch: ${{ inputs.base_branch }}
++          - Workflow Run ID: ${{ inputs.run_id }}
++          - Workflow Run URL: ${{ inputs.run_url }}
+           - Fix Branch Prefix: ci-fix
+           
+           # Goal:
+           - One-shot CI triage. First produce a self-contained debugging prompt; only then, if safe, make a minimal fix.
+           
+*** End Patch
+```
+
 ---
 
 Tool use: **apply_patch**
+
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/event.dryrun.pr16.json</summary>
+      
+
+```diff
+*** Begin Patch
+*** Add File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/event.dryrun.pr16.json
++{
++  "inputs": {
++    "mode": "real",
++    "pr_number": "16",
++    "head_branch": "test-auto-fix-1758298659",
++    "base_branch": "main",
++    "run_id": "17979799015",
++    "run_url": "https://github.com/daviswhitehead/chef-chopsky/actions/runs/17979799015"
++  }
++}
+*** End Patch
+```
 
 ---
 
@@ -1554,9 +2379,94 @@ Tool use: **todo_write**
 
 Tool use: **apply_patch**
 
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-ci.yml
+@@
+           # Start cursor-agent in background with verbatim prompt content
+-          cursor-agent -p "$(cat "$PROMPT_FILE")" --force --model "$MODEL_NAME" --output-format=text > cursor_output.log 2>&1 &
++          cursor-agent -p "$(cat "$PROMPT_FILE")" --force --model "$MODEL_NAME" --output-format=text > cursor_output.log 2>&1 &
+           CURSOR_PID=$!
++
++          # Start a background tail to stream logs with timestamps
++          ( while kill -0 $CURSOR_PID 2>/dev/null; do date '+[%Y-%m-%d %H:%M:%S]'; tail -n +1 -c +0 -f cursor_output.log 2>/dev/null | sed 's/^/  /'; sleep 5; done ) &
++          TAIL_PID=$!
+@@
+           cleanup() {
+             echo "Cleaning up cursor-agent process..."
+             kill $CURSOR_PID 2>/dev/null || true
+             wait $CURSOR_PID 2>/dev/null || true
++            kill $TAIL_PID 2>/dev/null || true
+           }
+@@
+           # Show the output
+           cat cursor_output.log
+           
+           # Check if we completed successfully
+           if grep -qE '^[[:space:]]*`{0,3}[Dd][Oo][Nn][Ee][[:space:]]*`{0,3}[[:space:]]*$' cursor_output.log; then
+             echo "✅ Cursor-agent completed successfully"
+             exit 0
+           else
+-            echo "⚠️ Cursor-agent may not have completed properly"
++            echo "⚠️ Cursor-agent may not have completed properly"
++            echo "--- DEBUG DUMP BEGIN ---"
++            echo "Last 200 lines of cursor_output.log:" && tail -n 200 cursor_output.log || true
++            echo "Process tree (ps -ef):" && ps -ef || true
++            echo "Node and OS versions:" && node -v 2>/dev/null || true; uname -a || true
++            echo "--- DEBUG DUMP END ---"
+             exit 1
+           fi
+*** End Patch
+```
+
 ---
 
 Tool use: **apply_patch**
+
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml
+@@
+-          cursor-agent -p "$(cat "$PROMPT_FILE")" --force --model "$MODEL_NAME" --output-format=text > cursor_output.log 2>&1 &
+-          CURSOR_PID=$!
++          cursor-agent -p "$(cat "$PROMPT_FILE")" --force --model "$MODEL_NAME" --output-format=text > cursor_output.log 2>&1 &
++          CURSOR_PID=$!
++          # Stream logs with timestamps for local visibility
++          ( while kill -0 $CURSOR_PID 2>/dev/null; do date '+[%Y-%m-%d %H:%M:%S]'; tail -n +1 -c +0 -f cursor_output.log 2>/dev/null | sed 's/^/  /'; sleep 5; done ) &
++          TAIL_PID=$!
+@@
+-          cleanup() {
++          cleanup() {
+             echo "Cleaning up cursor-agent process..."
+             kill $CURSOR_PID 2>/dev/null || true
+             wait $CURSOR_PID 2>/dev/null || true
++            kill $TAIL_PID 2>/dev/null || true
+           }
+@@
+-          if grep -qE '^[[:space:]]*`{0,3}[Dd][Oo][Nn][Ee][[:space:]]*`{0,3}[[:space:]]*$' cursor_output.log; then
++          if grep -qE '^[[:space:]]*`{0,3}[Dd][Oo][Nn][Ee][[:space:]]*`{0,3}[[:space:]]*$' cursor_output.log; then
+             echo "✅ Cursor-agent completed successfully"
+             exit 0
+           else
+-            echo "⚠️ Cursor-agent may not have completed properly"
++            echo "⚠️ Cursor-agent may not have completed properly"
++            echo "--- DEBUG DUMP BEGIN ---"
++            echo "Last 200 lines of cursor_output.log:" && tail -n 200 cursor_output.log || true
++            echo "Process tree (ps -ef):" && ps -ef || true
++            echo "Node and OS versions:" && node -v 2>/dev/null || true; uname -a || true
++            echo "--- DEBUG DUMP END ---"
+             exit 1
+           fi
+*** End Patch
+```
 
 ---
 
@@ -1603,6 +2513,44 @@ I need to make sure that the `.secrets` file has `GITHUB_TOKEN` defined. I’ll 
 ---
 
 Tool use: **apply_patch**
+
+<details>
+        <summary>Apply patch for /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/.github/workflows/auto-fix-dryrun.yml
+@@
+       - name: Write prompt to file (real mode)
+         if: ${{ inputs.mode == 'real' }}
+         run: |
+           cat > prompt.txt << 'PROMPT'
+           You are operating in a GitHub Actions-like Linux runner.
+           
+           - Treat this as NON-INTERACTIVE. Never open editors or pagers.
+           - Always run gh commands with: --no-pager --json ... --jq ...
+           - Time budget: 5 minutes.
+           - Edit budget: ≤2 files, ≤60 lines. No dependency changes.
++          - If any gh command fails (exit!=0), log the failure and CONTINUE. Errors are NON-FATAL for analysis.
++          - By T+9 minutes from start, STOP fetching and FINALIZE output.
++          - ALWAYS produce these sections even on partial data: CI Fail Summary; Copy-Paste Debug Prompt (fenced); Repro Script (fenced bash); RESULT_JSON line; then print a single line with ONLY: DONE
+           
+           # Context:
+           - Repo: ${{ github.repository }}
+           - Owner: ${{ github.repository_owner }}
+           - PR Number: ${{ inputs.pr_number }}
+           - Head Branch: ${{ inputs.head_branch }}
+           - Base Branch: ${{ inputs.base_branch }}
+           - Workflow Run ID: ${{ inputs.run_id }}
+           - Workflow Run URL: ${{ inputs.run_url }}
+           - Fix Branch Prefix: ci-fix
+           
+           # Goal:
+           - One-shot CI triage. First produce a self-contained debugging prompt; only then, if safe, make a minimal fix.
+           
+*** End Patch
+```
 
 ---
 
@@ -1845,6 +2793,19 @@ Let me check the current content around that section:
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "GITHUB_TOKEN" in ".github/workflows/auto-fix-dryrun.yml" • 1 match</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `GH_TOKEN: $\{{ secrets.GITHUB_TOKEN \}}` | L216 |
+
+
+</details>
+
 ---
 
 I see the issue - it's using `secrets.GITHUB_TOKEN` but setting it to `GH_TOKEN`. Let me fix that:
@@ -1880,6 +2841,21 @@ Now let me check the production workflow to see if it needs any updates:
 ---
 
 Tool use: **grep**
+
+<details>
+<summary>Grep for "GITHUB_TOKEN|GH_TOKEN" in ".github/workflows/auto-fix-ci.yml" • 3 matches</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `GH_TOKEN: $\{{ github.token \}}` | L49 |
+| `GH_TOKEN: $\{{ github.token \}}` | L88 |
+| `The GitHub CLI is available as `gh` and authenticated via `GH_TOKEN`. Git is available. You have write access to repository contents and can comment on pull requests, but you must not create or edit PRs directly.` | L192 |
+
+
+</details>
 
 ---
 
@@ -2069,6 +3045,19 @@ Let me check the current `.gitignore` content:
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "secrets" in ".gitignore" • 1 match</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `.secrets` | L216 |
+
+
+</details>
+
 ---
 
 Tool use: **search_replace**
@@ -2116,6 +3105,21 @@ Let me check if there are any `act` commands or scripts that might reference the
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "--secret-file|--input.*event" in "." • 3 matches</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `act -j quick-checks --secret-file .env.ci 2>/dev/null \|\| \{` | L32 |
+| `echo "   2. Run: act -j integration-tests --secret-file .env.ci"` | L46 |
+| `echo "   3. Run: act -j e2e-tests --secret-file .env.ci"` | L47 |
+
+
+</details>
+
 ---
 
 Let me also check for any references to the specific files in scripts or documentation:
@@ -2124,6 +3128,25 @@ Let me also check for any references to the specific files in scripts or documen
 ---
 
 Tool use: **grep**
+
+<details>
+<summary>Grep for "secrets|event" in "scripts" • 7 matches</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `throw new Error('CURSOR_API_KEY environment variable is not set. Please add it to your GitHub repository secrets.');` | L56 |
+| `echo "Please set your Cursor API key in GitHub repository secrets"` | L42 |
+| `echo "1. Ensure CURSOR_API_KEY is set in GitHub repository secrets"` | L57 |
+| `echo "1. Add CURSOR_API_KEY to GitHub repository secrets"` | L159 |
+| `echo "⚠️  act failed, but this is expected if secrets are not set"` | L33 |
+| `echo "💡 To test with real secrets, create .env.ci file with:"` | L34 |
+| `echo "   1. Set up secrets in .env.ci"` | L45 |
+
+
+</details>
 
 ---
 
@@ -2508,6 +3531,133 @@ I'll fold local testing into the production workflow by adding a workflow_dispat
 
 Tool use: **apply_patch**
 
+<details>
+        <summary>Apply patch for .github/workflows/auto-fix-ci.yml</summary>
+      
+
+```diff
+*** Begin Patch
+*** Update File: .github/workflows/auto-fix-ci.yml
+@@
+-on:
+-  workflow_run:
+-    workflows: [CI, Test Chef Chopsky Agent]
+-    types: [completed]
++on:
++  workflow_run:
++    workflows: [CI, Test Chef Chopsky Agent]
++    types: [completed]
++  workflow_dispatch:
++    inputs:
++      pr_number:
++        description: "PR number to analyze (optional)"
++        required: false
++      head_branch:
++        description: "Head branch name (optional)"
++        required: false
++      base_branch:
++        description: "Base branch name (optional)"
++        required: false
++      run_id:
++        description: "Workflow run ID (optional)"
++        required: false
++      run_url:
++        description: "Workflow run URL (optional)"
++        required: false
+@@
+-jobs:
+-  analyze-and-fix:
+-    if: >-
+-      ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.name != 'Auto Fix CI Failures (MVP)' }}
++jobs:
++  analyze-and-fix:
++    if: >-
++      ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.name != 'Auto Fix CI Failures (MVP)') }}
+@@
+       - name: Extract failure context
+         id: context
+         run: |
+-          echo "WORKFLOW_RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+-          echo "WORKFLOW_RUN_URL=${{ github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
+-          echo "HEAD_BRANCH=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+-          echo "HEAD_SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
++          echo "WORKFLOW_RUN_ID=${{ github.event_name == 'workflow_dispatch' && inputs.run_id || github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
++          echo "WORKFLOW_RUN_URL=${{ github.event_name == 'workflow_dispatch' && inputs.run_url || github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
++          echo "HEAD_BRANCH=${{ github.event_name == 'workflow_dispatch' && inputs.head_branch || github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
++          echo "HEAD_SHA=${{ github.sha }}" >> $GITHUB_OUTPUT
+@@
+       - name: Get PR information
+         id: pr-info
+         env:
+           GH_TOKEN: ${{ github.token }}
+         run: |
+-          # Get PR number from the head branch
+-          PR_NUMBER=$(gh pr list --head "${{ steps.context.outputs.HEAD_BRANCH }}" --json number --jq '.[0].number' || echo "")
++          # Prefer user-provided input when workflow_dispatch
++          PR_NUMBER="${{ inputs.pr_number }}"
++          if [ -z "$PR_NUMBER" ]; then
++            # Get PR number from the head branch
++            PR_NUMBER=$(gh pr list --head "${{ steps.context.outputs.HEAD_BRANCH }}" --json number --jq '.[0].number' || echo "")
++          fi
+           if [ -z "$PR_NUMBER" ]; then
+             echo "No PR found for branch ${{ steps.context.outputs.HEAD_BRANCH }}"
+-            exit 1
++            if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
++              exit 1
++            fi
+           fi
+           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_OUTPUT
+           echo "Found PR #$PR_NUMBER"
+@@
+       - name: Create fix branch
+         id: fix-branch
++        if: ${{ github.event_name != 'workflow_dispatch' }}
+         run: |
+           PR_NUMBER="${{ steps.pr-info.outputs.PR_NUMBER }}"
+           FIX_BRANCH="ci-fix-${PR_NUMBER}"
+@@
+       - name: Fix CI failure with Cursor CLI
+         env:
+           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+           MODEL: gpt-5
+           GH_TOKEN: ${{ github.token }}
+           BRANCH_PREFIX: ci-fix
+           PAGER: cat
+           GH_PAGER: cat
+           GIT_PAGER: cat
+         run: |
+@@
+           # Write prompt to file with single-quoted heredoc to avoid shell interpolation
+           cat > prompt.txt << 'PROMPT'
+           You are operating in a GitHub Actions runner.
+           
+           - Treat this as NON-INTERACTIVE. Never open editors or pagers.
+           - Always run gh commands with: --no-pager --json ... --jq ...
+           - Time budget: 5 minutes.
+           - Edit budget: ≤2 files, ≤60 lines. No dependency changes.
+           
+           
+           The GitHub CLI is available as `gh` and authenticated via `GH_TOKEN`. Git is available. You have write access to repository contents and can comment on pull requests, but you must not create or edit PRs directly.
+           
+           # Context:
+           - Repo: ${{ github.repository }}
+           - Owner: ${{ github.repository_owner }}
+-          - Workflow Run ID: ${{ github.event.workflow_run.id }}
+-          - Workflow Run URL: ${{ github.event.workflow_run.html_url }}
++          - Workflow Run ID: ${{ github.event_name == 'workflow_dispatch' && inputs.run_id || github.event.workflow_run.id }}
++          - Workflow Run URL: ${{ github.event_name == 'workflow_dispatch' && inputs.run_url || github.event.workflow_run.html_url }}
+           - Fix Branch Prefix: ${{ env.BRANCH_PREFIX }}
++          - PR Number: ${{ inputs.pr_number || steps.pr-info.outputs.PR_NUMBER || 'N/A' }}
++          - Head Branch: ${{ inputs.head_branch || steps.context.outputs.HEAD_BRANCH || 'N/A' }}
++          - Base Branch: ${{ inputs.base_branch || 'N/A' }}
+           
+           # Goal:
+           - One-shot CI triage. First produce a self-contained debugging prompt; only then, if safe, make a minimal fix.
+           
+           
+*** End Patch
+```
+
 ---
 
 <think><details><summary>Thought Process</summary>**Updating workflow files**
@@ -2662,6 +3812,19 @@ Let me find the prompt context section:
 ---
 
 Tool use: **grep**
+
+<details>
+<summary>Grep for "Context:" in ".github/workflows/auto-fix-ci.yml" • 1 match</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `# Context:` | L225 |
+
+
+</details>
 
 ---
 

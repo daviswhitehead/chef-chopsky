@@ -1225,6 +1225,27 @@ Let me check for any linting issues:
 
 Tool use: **read_lints**
 
+<details>
+          <summary>Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `.github/workflows/auto-fix-ci.yml`
+
+Lint results
+
+Lint errors for `.github/workflows/auto-fix-ci.yml`
+
+
+| Message | Range | Severity |
+|-------|-------|----------|
+| Context access might be invalid: GH_TOKEN | 80:21-80:60 | DIAGNOSTIC_SEVERITY_WARNING |
+| Context access might be invalid: CURSOR_API_KEY | 134:27-134:56 | DIAGNOSTIC_SEVERITY_WARNING |
+| Context access might be invalid: GH_TOKEN | 136:21-136:60 | DIAGNOSTIC_SEVERITY_WARNING |
+
+
+</details>
+
 ---
 
 These are just warnings about context access, which are expected in GitHub Actions workflows. The changes I made are syntactically correct.

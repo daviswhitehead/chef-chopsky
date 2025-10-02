@@ -1348,6 +1348,19 @@ Let me find the specific test that's timing out:
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "should validate message sending API uses addMessage method" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/tests/integration/database-service-validation.test.ts" • 1 match</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `it('should validate message sending API uses addMessage method', async () => \{` | L148 |
+
+
+</details>
+
 ---
 
 I see the issue. This test is trying to make real HTTP requests. Let me add a timeout and modify it to use mocked responses:
@@ -3288,6 +3301,19 @@ Let me check what patterns exist in the agent service test:
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "fetch failed" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/tests/integration/agent-service.test.ts" • 1 match</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `expect(error.message).toMatch(/fetch failed\|Request with GET\/HEAD method cannot have body/);` | L285 |
+
+
+</details>
+
 ---
 
 I need to update this regex pattern as well:
@@ -3466,6 +3492,19 @@ Let me fix the regex patterns manually. Let me check what patterns exist:
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "fetch failed" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/tests/integration" • 1 match</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `if (error.message.includes('fetch failed') \|\| error.message.includes('ECONNREFUSED')) \{` | L123 |
+
+
+</details>
+
 ---
 
 Let me fix this remaining one:
@@ -3519,6 +3558,21 @@ Good! Now let me also fix the timeout-related error patterns. Let me check for t
 ---
 
 Tool use: **grep**
+
+<details>
+<summary>Grep for "The operation was aborted due to timeout" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/tests/integration" • 3 matches</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `// Both "Network request failed" and "The operation was aborted due to timeout" are valid` | L287 |
+| `expect(error.message).toMatch(/Network request failed\|The operation was aborted due to timeout/);` | L288 |
+| `expect(error.message).toMatch(/Network request failed\|The operation was aborted due to timeout/);` | L263 |
+
+
+</details>
 
 ---
 
@@ -5315,6 +5369,20 @@ Tool grep_search not found.
 ---
 
 Tool use: **grep**
+
+<details>
+<summary>Grep for "Test Environment|Jest Unit Tests|Integration Tests|E2E Tests" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/documentation" • 2 matches</summary>
+
+Output mode: files_with_matches
+
+
+| File |
+|------|
+| `documentation/projects/v4: frontend-agent-integration/tasks.md` |
+| `documentation/projects/v4: frontend-agent-integration/e2e-testing/e2e-improvements-plan.md` |
+
+
+</details>
 
 ---
 
@@ -7678,6 +7746,19 @@ Let me find the specific test that's timing out:
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "should validate message state management prevents duplicates" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/tests/integration/critical-issues-prevention.test.ts" • 1 match</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `it('should validate message state management prevents duplicates', async () => \{` | L177 |
+
+
+</details>
+
 ---
 
 Now I can see the exact content. Let me fix this test by simplifying it and adding proper mocking:
@@ -9576,6 +9657,22 @@ Let me check the TestUtils to see how sendMessage works:
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "sendMessage" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/tests/e2e" • 4 matches</summary>
+
+Output mode: files_with_matches
+
+
+| File |
+|------|
+| `frontend/tests/e2e/error-recovery.spec.ts` |
+| `frontend/tests/e2e/fixtures/setup.ts` |
+| `frontend/tests/e2e/message-persistence.spec.ts` |
+| `frontend/tests/e2e/chat-flow.spec.ts` |
+
+
+</details>
+
 ---
 
 Tool use: **read_file**
@@ -9591,6 +9688,19 @@ Let me search for the sendMessage function:
 
 Tool use: **grep**
 
+<details>
+<summary>Grep for "sendMessage" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/tests/e2e/fixtures/setup.ts" • 1 match</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `static async sendMessage(page: Page, message: string): Promise<void> \{` | L200 |
+
+
+</details>
+
 ---
 
 I can see that `sendMessage` doesn't wait for the response - it just sends the message. The test is expecting 2 timestamps but only getting 1 because the assistant response isn't appearing. Let me check if there's a `waitForLoadingToComplete` function:
@@ -9599,6 +9709,19 @@ I can see that `sendMessage` doesn't wait for the response - it just sends the m
 ---
 
 Tool use: **grep**
+
+<details>
+<summary>Grep for "waitForLoadingToComplete" in "/Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My Drive/github/chef-chopsky/frontend/tests/e2e/fixtures/setup.ts" • 1 match</summary>
+
+Output mode: content
+
+
+| Content | Line |
+|------|------|
+| `static async waitForLoadingToComplete(page: Page, timeout = 30000): Promise<void> \{` | L179 |
+
+
+</details>
 
 ---
 
