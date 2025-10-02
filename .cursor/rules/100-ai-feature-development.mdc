@@ -1,14 +1,18 @@
 ---
-description: "Generalized AI-first feature development process for shipping new features consistently (agnostic to domain)."
+description: "Generalized AI-first feature development process for shipping new features consistently (agnostic to domain)"
 globs:
   - "**/*"
 alwaysApply: false
 ---
 
-## 🧭 AI Feature Development: End-to-End Workflow (Plan → Tasks → Delivery → Validation)
+# 🧭 AI Feature Development: End-to-End Workflow (Integration Rules)
 
-- **Purpose**: A zoomed-out, repeatable workflow that organizes AI-assisted development from idea to shipped feature, while preserving concrete best practices.
-- **Applies to**: Any feature (UI, agent/graph, retrieval, API, infra), across web/mobile/backends.
+## 🎯 Purpose
+A zoomed-out, repeatable workflow that organizes AI-assisted development from idea to shipped feature, while preserving concrete best practices.
+
+**Applies to**: Any feature (UI, agent/graph, retrieval, API, infra), across web/mobile/backends.
+
+## 📋 The 5-Phase Process
 
 ### 1) PLAN (Research → Feature Plan)
 - **Discovery**: Use AI chat to explore problem/market, constraints, risks. Save key notes in `documentation/projects/<vN: feature-name>/`.
@@ -18,12 +22,14 @@ alwaysApply: false
   - Constraints (performance, platform, data, a11y, privacy)
   - Telemetry plan (LangSmith, analytics, logs)
   - Out-of-scope/not-now
+- **🗂️ Template**: Use `docs/playbook/templates/intent-template.md` for structured intent capture with AI facilitation.
 - **Review**: sanity-check with AI; clarify unknowns; confirm the vertical slice to ship first.
 
 ### 2) TASKS (Project Breakdown → Story-Organized Todo List)
 - **Branch**: `feat/<short-name>`; use conventional commits.
 - **Work plan (must-have)**: Story-oriented task list with subtasks mapping to acceptance criteria.
   - Mark dependencies, mocks vs real integrations, and risks.
+- **🗂️ Templates**: Use `docs/playbook/templates/roadmap-template.md` and `docs/playbook/templates/task-breakdown-template.md` for structured planning with AI collaboration.
 - **Scaffolding**: Prefer templates and stubs to get to runnable fast.
 - After major task(s), prove to me that the task(s) is complete.
 
@@ -71,25 +77,41 @@ alwaysApply: false
   - Announce change and update docs.
 
 ### 5) CONTINUOUS IMPROVEMENT
+- **Reflection & Templates**:
+  - Use `docs/playbook/templates/phase-execution-template.md` to track improvements and lessons learned.
+  - Document what worked well and what didn't in each phase.
+  - Update templates based on experience and findings.
 - **Cursor Rules**:
-  - Reflect on feature development and update cursor rules in ways that generalize to and streamline future feature development
+  - Reflect on feature development and update cursor rules in ways that generalize to and streamline future feature development.
+  - Apply lessons learned to phase-specific rules (101-105) and core rules (004).
 - **Documentation**:
-  - Reflect on feature development and update general or feature-specific docs with the most accurate and up-to-date information
+  - Reflect on feature development and update general or feature-specific docs with the most accurate and up-to-date information.
+  - Share improvements with team and broader community.
+- **Process Enhancement**:
+  - Identify bottlenecks and inefficiencies in the current workflow.
+  - Propose and test improvements to templates, checklists, and quality gates.
 
-### Templates & Checklists
-- **Templates** (recommended): scaffold for feature/agent with code + test + docs.
-- **PR checklist**:
-  - Feature plan and `.env.example` updated
-  - Tests added and passing locally
-  - CI green
-  - LangSmith traces correct (if LLMs)
-  - Frontend guarded if partial
-  - **🚨 Environment validation**: Services start without mock mode warnings
-  - **🚨 Configuration check**: All API keys are real, not placeholders
-  - **🚨 Setup validation**: `npm run setup` passes without errors
+## 📋 Templates & Checklists
 
-### Definition of Done
+### Templates (recommended)
+- Scaffold for feature/agent with code + test + docs.
+
+### PR Checklist
+- [ ] Feature plan and `.env.example` updated
+- [ ] Tests added and passing locally
+- [ ] CI green
+- [ ] LangSmith traces correct (if LLMs)
+- [ ] Frontend guarded if partial
+- [ ] **🚨 Environment validation**: Services start without mock mode warnings
+- [ ] **🚨 Configuration check**: All API keys are real, not placeholders
+- [ ] **🚨 Setup validation**: `npm run setup` passes without errors
+
+## 🎯 Definition of Done
 - End-to-end demoable; acceptance criteria met.
 - Tests pass locally and in CI.
 - Env documented; secrets configured.
 - Telemetry visible; rollback noted.
+
+---
+
+*This rule provides a structured approach to AI-assisted feature development.*

@@ -1,0 +1,226 @@
+---
+description: "AI role and instructions for Roadmap Creation phase of AI Development Playbook"
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# 🗺️ Roadmap Creation Phase - AI Role & Instructions
+
+## 🎯 Phase Objective
+Break down project into manageable phases with clear milestones
+
+## 👥 Human Roles in This Phase
+**Primary Roles:**
+- **Product Manager**: Prioritization, sequencing, dependencies, user value
+- **Engineering Manager**: Resource allocation, timeline, capacity, skill matching
+- **Software Architect**: Technical dependencies, risks, architectural approach
+- **Business Stakeholder**: Budget, timeline, business priorities, ROI
+
+**Supporting Roles:**
+- **DevOps/Platform Engineer**: Infrastructure dependencies, deployment considerations
+- **QA Manager**: Testing strategy, quality gates, validation approach
+- **Design Lead**: Design system dependencies, UX considerations
+
+## 🤖 AI's Role in This Phase
+
+### Primary Responsibilities
+1. **Suggest optimal sequencing of phases** - Recommend logical phase order and dependencies
+2. **Highlight potential risks and dependencies** - Identify critical path items and blockers
+3. **Recommend resource allocation strategies** - Suggest efficient use of human and AI resources
+4. **Generate detailed phase descriptions** - Create comprehensive phase breakdowns
+
+### Specific AI Tasks
+
+#### 1. Phase Sequencing
+- **Analyze user stories** to identify logical groupings
+- **Map dependencies** between different work items
+- **Suggest phase order** based on value delivery and dependencies
+- **Identify parallel work opportunities** for efficiency
+
+#### 2. Risk and Dependency Analysis
+- **Identify critical path items** that could block progress
+- **Surface external dependencies** and third-party requirements
+- **Highlight technical risks** and mitigation strategies
+- **Map resource constraints** and availability
+
+#### 3. Resource Allocation
+- **Suggest human vs AI task assignments** based on complexity and creativity
+- **Recommend skill requirements** for each phase
+- **Identify training needs** for team members
+- **Propose timeline estimates** based on resource availability
+
+#### 4. Phase Description Generation
+- **Create detailed phase descriptions** with clear objectives
+- **Define phase deliverables** and acceptance criteria
+- **Specify phase duration** and resource requirements
+- **Outline phase success metrics** and quality gates
+
+## 📋 AI Facilitation Process
+
+### Step 1: Phase Analysis
+```
+1. Review user stories and acceptance criteria
+2. Identify logical groupings and dependencies
+3. Analyze complexity and resource requirements
+4. Suggest optimal phase sequencing
+5. Identify parallel work opportunities
+```
+
+### Step 2: Risk Assessment
+```
+1. Map critical path dependencies
+2. Identify potential blockers and risks
+3. Assess external dependencies
+4. Evaluate resource constraints
+5. Propose mitigation strategies
+```
+
+### Step 3: Resource Planning
+```
+1. Analyze task complexity and requirements
+2. Suggest human vs AI assignments
+3. Estimate time and resource needs
+4. Identify skill gaps and training needs
+5. Propose timeline and milestones
+```
+
+### Step 4: Phase Documentation
+```
+1. Create detailed phase descriptions
+2. Define clear objectives and deliverables
+3. Specify acceptance criteria and quality gates
+4. Outline success metrics and validation
+5. Document assumptions and constraints
+```
+
+## 🎯 Success Criteria for This Phase
+
+### Phase Structure Quality
+- [ ] Phases are logically sequenced and well-defined
+- [ ] Dependencies are clearly mapped and understood
+- [ ] Critical path items are identified and prioritized
+- [ ] Parallel work opportunities are maximized
+- [ ] Phase boundaries are clear and well-defined
+
+### Risk Management
+- [ ] Technical risks are identified and mitigated
+- [ ] External dependencies are mapped and planned
+- [ ] Resource constraints are acknowledged and addressed
+- [ ] Contingency plans are developed for critical items
+- [ ] Quality gates are defined for each phase
+
+### Resource Allocation
+- [ ] Human vs AI tasks are appropriately assigned
+- [ ] Skill requirements are identified and planned
+- [ ] Timeline estimates are realistic and achievable
+- [ ] Resource availability is considered and planned
+- [ ] Training needs are identified and scheduled
+
+## 🚀 Role-Specific AI Facilitation Prompts
+
+### Product Manager Context
+```
+"As a Product Manager, help me prioritize these user stories and create a logical phase sequence. What dependencies should I consider, and how should I balance user value with technical complexity? How do I ensure each phase delivers measurable value?"
+```
+
+### Engineering Manager Context
+```
+"As an Engineering Manager, help me assess resource requirements and timeline estimates. What are the critical path items, and how should I allocate human vs AI tasks? What skills do I need to consider for each phase?"
+```
+
+### Software Architect Context
+```
+"As a Software Architect, help me identify technical dependencies and risks. What architectural decisions should I make now, and what can be deferred? How do I ensure the technical foundation supports future phases?"
+```
+
+### Business Stakeholder Context
+```
+"As a Business Stakeholder, help me evaluate the business impact and ROI of each phase. What are the key milestones for stakeholder communication? How do I balance speed to market with quality and risk?"
+```
+
+### DevOps/Platform Engineer Context
+```
+"As a DevOps Engineer, help me identify infrastructure dependencies and deployment considerations. What environments do I need, and when? How do I ensure smooth deployments and rollbacks?"
+```
+
+### General Facilitation Prompts
+
+### When Starting Roadmap Creation
+```
+"I'm starting the Roadmap Creation phase. Let me analyze your user stories and help you create a logical phase breakdown with clear dependencies, risks, and resource allocation. What's your target timeline and available resources?"
+```
+
+### When Analyzing Dependencies
+```
+"Let me map the dependencies between your user stories. I can see [X] critical dependencies that will affect your phase sequencing. Here's how I recommend organizing the phases to minimize blockers and maximize parallel work."
+```
+
+### When Planning Resources
+```
+"Based on the complexity analysis, I recommend assigning [X] tasks to AI and [Y] tasks to human developers. Here's my reasoning and the specific assignments I suggest for each phase."
+```
+
+### When Creating Phase Descriptions
+```
+"Let me create detailed descriptions for each phase, including objectives, deliverables, acceptance criteria, and success metrics. I'll also identify the quality gates and validation points for each phase."
+```
+
+## 📊 Deliverables Checklist
+
+### Phase Breakdown
+- [ ] Phase 1: [Name] - [Objective] - [Duration]
+- [ ] Phase 2: [Name] - [Objective] - [Duration]
+- [ ] Phase 3: [Name] - [Objective] - [Duration]
+- [ ] Phase 4: [Name] - [Objective] - [Duration]
+- [ ] Phase 5: [Name] - [Objective] - [Duration]
+
+### Dependency Mapping
+- [ ] Critical path items identified
+- [ ] External dependencies mapped
+- [ ] Internal dependencies documented
+- [ ] Parallel work opportunities identified
+- [ ] Blocker risks assessed
+
+### Resource Allocation
+- [ ] Human vs AI task assignments
+- [ ] Skill requirements identified
+- [ ] Timeline estimates provided
+- [ ] Resource availability considered
+- [ ] Training needs planned
+
+### Risk Assessment
+- [ ] Technical risks identified
+- [ ] Business risks assessed
+- [ ] Mitigation strategies proposed
+- [ ] Contingency plans developed
+- [ ] Quality gates defined
+
+## 🎯 Phase Completion Criteria
+
+The Roadmap Creation phase is complete when:
+- [ ] All phases are clearly defined with objectives and deliverables
+- [ ] Dependencies are mapped and understood
+- [ ] Resource allocation is planned and documented
+- [ ] Risks are identified with mitigation strategies
+- [ ] Timeline and milestones are established
+- [ ] Quality gates are defined for each phase
+- [ ] Ready to proceed to Task Decomposition phase
+
+## 📈 Phase Success Metrics
+
+### Planning Quality
+- **Phase Clarity**: Each phase has clear objectives and deliverables
+- **Dependency Accuracy**: Dependencies are correctly identified and mapped
+- **Resource Efficiency**: Optimal use of human and AI resources
+- **Risk Mitigation**: Comprehensive risk assessment and mitigation
+
+### Timeline Realism
+- **Estimate Accuracy**: Timeline estimates are realistic and achievable
+- **Buffer Planning**: Appropriate buffers for uncertainty and risk
+- **Milestone Clarity**: Clear milestones and checkpoints
+- **Flexibility**: Ability to adapt to changing requirements
+
+---
+
+*This rule provides specific AI instructions for facilitating the Roadmap Creation phase effectively.*

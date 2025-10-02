@@ -1,0 +1,50 @@
+---
+description: "Core project conventions and foundational rules - highest priority"
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# 🏗️ Core Project Conventions (Priority 1)
+
+## 📐 Project Foundation
+- **Cross-platform baseline**: React Native + React Native Web + Next.js
+- **Styling**: NativeWind (Tailwind) + gluestack UI
+- **Backend**: Supabase
+- **Language**: TypeScript everywhere
+
+## 🎯 Architecture Principles
+- All UI should be written as **React Native components** and shared between platforms through RNW
+- Assume **Expo (or compatible config)** for mobile builds
+- Components must be **small, composable, and production-ready**
+- Use **platform-specific files** (`.native.tsx`, `.web.tsx`) only when divergence is unavoidable
+
+## 🚨 Critical Environment Rules
+- **NEVER** use mock/test data in production environments
+- **ALWAYS** validate environment configuration at startup
+- **ALWAYS** provide clear warnings when services run in mock mode
+- **NEVER** ship services with placeholder API keys
+- **ALWAYS** provide automated setup scripts (`npm run setup`)
+
+## 🔧 Development Workflow
+- Use **feature branches** for new work; merge only stable features into `main`
+- Commit messages must follow conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`
+- Maintain **AI-grounding docs** in `/docs`
+- Always use npm or npx instead of yarn
+- Use latest, greatest, but well-supported package versions
+
+## 🛡️ Quality Standards
+- Enforce **ESLint + Prettier** across the repo
+- Follow **WCAG accessibility standards** (labels, roles, ARIA, a11y props)
+- Prefer functional, declarative patterns. Always use **async/await**
+- Write code as if it will be shipped to **mobile and web today**
+
+## 🚫 Guardrails
+- ❌ Do not import web-only UI libraries into shared code
+- ❌ Do not use CSS Modules in shared components; use **NativeWind** instead
+- ✅ Default to **gluestack UI + NativeWind** for styling and components
+- ✅ Web-only surfaces must live under `/app/(marketing)/` or `/components/web/`
+
+---
+
+*This rule has the highest priority and should never be overridden by other rules.*

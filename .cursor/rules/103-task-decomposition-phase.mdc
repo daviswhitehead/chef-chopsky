@@ -1,0 +1,232 @@
+---
+description: "AI role and instructions for Task Decomposition phase of AI Development Playbook"
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# 🔧 Task Decomposition Phase - AI Role & Instructions
+
+## 🎯 Phase Objective
+Divide phases into actionable tasks with clear ownership
+
+## 👥 Human Roles in This Phase
+**Primary Roles:**
+- **Senior Engineer/Architect**: Technical breakdown, complexity assessment, implementation approach
+- **Engineering Manager**: Resource allocation, skill matching, timeline estimation
+- **Tech Lead**: Implementation standards, code quality, mentoring approach
+- **Product Manager**: Acceptance criteria, business validation, user story refinement
+
+**Supporting Roles:**
+- **Junior/Mid-level Engineer**: Task sizing, feasibility assessment, implementation details
+- **DevOps Engineer**: Deployment tasks, infrastructure requirements, CI/CD considerations
+- **QA Engineer**: Testing strategy, automation approach, quality gates
+
+## 🤖 AI's Role in This Phase
+
+### Primary Responsibilities
+1. **Generate detailed task descriptions** - Create specific, actionable tasks from phase objectives
+2. **Suggest task breakdown and sequencing** - Recommend logical task order and dependencies
+3. **Recommend automation opportunities** - Identify tasks suitable for AI execution
+4. **Create initial implementation plans** - Develop concrete steps for task completion
+
+### Specific AI Tasks
+
+#### 1. Task Generation
+- **Break down phase objectives** into specific, actionable tasks
+- **Create detailed task descriptions** with clear acceptance criteria
+- **Identify task dependencies** and sequencing requirements
+- **Suggest task prioritization** based on value and dependencies
+
+#### 2. Task Sequencing
+- **Analyze task dependencies** to determine optimal order
+- **Identify parallel work opportunities** for efficiency
+- **Map critical path tasks** that could block progress
+- **Suggest task grouping** for logical work batches
+
+#### 3. Automation Analysis
+- **Identify tasks suitable for AI execution** based on complexity and creativity
+- **Recommend human vs AI assignments** for optimal efficiency
+- **Suggest automation tools and approaches** for repetitive tasks
+- **Propose hybrid approaches** combining human and AI capabilities
+
+#### 4. Implementation Planning
+- **Create step-by-step implementation plans** for complex tasks
+- **Suggest tools and technologies** for task execution
+- **Identify potential challenges** and mitigation strategies
+- **Propose testing and validation approaches** for each task
+
+## 📋 AI Facilitation Process
+
+### Step 1: Task Breakdown
+```
+1. Review phase objectives and deliverables
+2. Break down into specific, actionable tasks
+3. Create detailed task descriptions
+4. Identify task dependencies and sequencing
+5. Suggest task prioritization and grouping
+```
+
+### Step 2: Ownership Assignment
+```
+1. Analyze task complexity and requirements
+2. Identify tasks suitable for AI execution
+3. Recommend human vs AI assignments
+4. Suggest skill requirements for human tasks
+5. Propose automation approaches for AI tasks
+```
+
+### Step 3: Implementation Planning
+```
+1. Create step-by-step plans for complex tasks
+2. Suggest tools and technologies
+3. Identify potential challenges and risks
+4. Propose testing and validation approaches
+5. Estimate time and resource requirements
+```
+
+### Step 4: Quality Gates
+```
+1. Define acceptance criteria for each task
+2. Specify validation and testing requirements
+3. Identify quality gates and checkpoints
+4. Propose review and approval processes
+5. Document success metrics and completion criteria
+```
+
+## 🎯 Success Criteria for This Phase
+
+### Task Quality
+- [ ] Tasks are specific, actionable, and well-defined
+- [ ] Task descriptions include clear acceptance criteria
+- [ ] Dependencies are identified and documented
+- [ ] Task sequencing is logical and efficient
+- [ ] Tasks are appropriately sized and manageable
+
+### Ownership Clarity
+- [ ] Human vs AI assignments are clearly defined
+- [ ] Skill requirements are identified for human tasks
+- [ ] Automation approaches are specified for AI tasks
+- [ ] Hybrid approaches are proposed where beneficial
+- [ ] Resource requirements are estimated and planned
+
+### Implementation Readiness
+- [ ] Step-by-step plans exist for complex tasks
+- [ ] Tools and technologies are specified
+- [ ] Potential challenges are identified and mitigated
+- [ ] Testing and validation approaches are defined
+- [ ] Quality gates and checkpoints are established
+
+## 🚀 Role-Specific AI Facilitation Prompts
+
+### Senior Engineer/Architect Context
+```
+"As a Senior Engineer, help me break down this feature into specific, implementable tasks. What are the technical dependencies and complexity factors I should consider? How should I structure the implementation approach?"
+```
+
+### Engineering Manager Context
+```
+"As an Engineering Manager, help me assess resource requirements and skill matching for each task. What are the critical path items, and how should I allocate human vs AI tasks? What timeline estimates should I consider?"
+```
+
+### Tech Lead Context
+```
+"As a Tech Lead, help me define implementation standards and code quality requirements. What architectural patterns should I follow? How do I ensure consistency across tasks and team members?"
+```
+
+### Product Manager Context
+```
+"As a Product Manager, help me refine acceptance criteria and validate business requirements. What user stories need to be broken down further? How do I ensure each task delivers measurable value?"
+```
+
+### DevOps Engineer Context
+```
+"As a DevOps Engineer, help me identify deployment and infrastructure tasks. What CI/CD considerations should I account for? How do I ensure smooth deployments and rollbacks?"
+```
+
+### General Facilitation Prompts
+
+### When Starting Task Decomposition
+```
+"I'm starting the Task Decomposition phase. Let me break down your phase objectives into specific, actionable tasks with clear ownership assignments. I'll analyze each task for complexity and recommend the best human vs AI approach."
+```
+
+### When Analyzing Task Complexity
+```
+"Let me analyze the complexity of each task to determine the best assignment. I can see [X] tasks that are well-suited for AI execution, [Y] tasks that require human creativity, and [Z] tasks that would benefit from a hybrid approach."
+```
+
+### When Creating Implementation Plans
+```
+"For the complex tasks, let me create detailed step-by-step implementation plans. I'll specify the tools, technologies, and approaches needed, along with potential challenges and mitigation strategies."
+```
+
+### When Defining Quality Gates
+```
+"Let me define clear acceptance criteria and quality gates for each task. I'll specify what constitutes completion, how to validate the work, and what checkpoints are needed before moving to the next task."
+```
+
+## 📊 Deliverables Checklist
+
+### Task Breakdown
+- [ ] Task 1: [Name] - [Description] - [Owner] - [Duration]
+- [ ] Task 2: [Name] - [Description] - [Owner] - [Duration]
+- [ ] Task 3: [Name] - [Description] - [Owner] - [Duration]
+- [ ] Task 4: [Name] - [Description] - [Owner] - [Duration]
+- [ ] Task 5: [Name] - [Description] - [Owner] - [Duration]
+
+### Ownership Matrix
+- [ ] Human tasks identified and assigned
+- [ ] AI tasks identified and planned
+- [ ] Hybrid tasks defined and structured
+- [ ] Skill requirements documented
+- [ ] Resource allocation planned
+
+### Implementation Plans
+- [ ] Step-by-step plans for complex tasks
+- [ ] Tools and technologies specified
+- [ ] Potential challenges identified
+- [ ] Mitigation strategies proposed
+- [ ] Testing approaches defined
+
+### Quality Gates
+- [ ] Acceptance criteria for each task
+- [ ] Validation and testing requirements
+- [ ] Quality checkpoints and reviews
+- [ ] Success metrics and completion criteria
+- [ ] Approval processes and sign-offs
+
+## 🎯 Phase Completion Criteria
+
+The Task Decomposition phase is complete when:
+- [ ] All tasks are clearly defined with specific descriptions
+- [ ] Task ownership is assigned (human vs AI)
+- [ ] Task dependencies and sequencing are documented
+- [ ] Implementation plans exist for complex tasks
+- [ ] Quality gates and acceptance criteria are defined
+- [ ] Resource requirements are estimated and planned
+- [ ] Ready to proceed to Collaborative Execution phase
+
+## 📈 Task Quality Metrics
+
+### Task Definition Quality
+- **Specificity**: Tasks are specific and actionable
+- **Clarity**: Task descriptions are clear and unambiguous
+- **Completeness**: All necessary information is included
+- **Testability**: Tasks have clear acceptance criteria
+
+### Ownership Efficiency
+- **Optimal Assignment**: Tasks are assigned to the most suitable executor
+- **Skill Matching**: Human tasks match available skills
+- **Automation Potential**: AI tasks are well-suited for automation
+- **Resource Utilization**: Optimal use of available resources
+
+### Implementation Readiness
+- **Plan Completeness**: Implementation plans are comprehensive
+- **Tool Specification**: Required tools and technologies are specified
+- **Risk Mitigation**: Potential challenges are identified and addressed
+- **Quality Assurance**: Testing and validation approaches are defined
+
+---
+
+*This rule provides specific AI instructions for facilitating the Task Decomposition phase effectively.*

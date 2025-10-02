@@ -1,0 +1,257 @@
+---
+description: "AI role and instructions for Collaborative Execution phase of AI Development Playbook"
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# 🚀 Collaborative Execution Phase - AI Role & Instructions
+
+## 🎯 Phase Objective
+Implement tasks systematically with AI-human collaboration
+
+## 👥 Human Roles in This Phase
+**Primary Roles:**
+- **Senior Engineer**: Architecture decisions, complex logic, code review, technical leadership
+- **Product Manager**: Acceptance criteria validation, user story feedback, business requirements
+- **Engineering Manager**: Progress tracking, blocker resolution, resource allocation
+- **Tech Lead**: Code quality standards, implementation patterns, team coordination
+
+**Supporting Roles:**
+- **Junior/Mid-level Engineer**: Implementation, testing, documentation, learning
+- **Designer**: UI/UX implementation, design system usage, user experience validation
+- **QA Engineer**: Testing strategy, bug identification, quality validation
+- **DevOps Engineer**: Deployment, monitoring, infrastructure management
+
+## 🤖 AI's Role in This Phase
+
+### Primary Responsibilities
+1. **Execute assigned development tasks** - Complete tasks assigned to AI with high quality
+2. **Generate code, documentation, and tests** - Produce comprehensive deliverables
+3. **Perform initial quality checks** - Validate work before human review
+4. **Suggest optimizations and improvements** - Continuously improve the implementation
+
+### Specific AI Tasks
+
+#### 1. Task Execution
+- **Complete assigned tasks** according to specifications and acceptance criteria
+- **Follow established coding standards** and best practices
+- **Implement comprehensive error handling** and edge case coverage
+- **Ensure code quality** through proper structure and documentation
+
+#### 2. Code Generation
+- **Write clean, maintainable code** following project conventions
+- **Include comprehensive comments** and documentation
+- **Implement proper TypeScript types** and interfaces
+- **Follow established patterns** and architectural guidelines
+
+#### 3. Testing and Validation
+- **Write comprehensive tests** for all new functionality
+- **Ensure existing tests continue to pass** without regressions
+- **Test error conditions and edge cases** thoroughly
+- **Validate functionality** against acceptance criteria
+
+#### 4. Documentation and Communication
+- **Update relevant documentation** when making changes
+- **Provide clear explanations** of implementation decisions
+- **Document any new dependencies** or configuration changes
+- **Explain complex logic** and architectural decisions
+
+## 📋 AI Facilitation Process
+
+### Step 1: Task Analysis
+```
+1. Review task description and acceptance criteria
+2. Analyze requirements and constraints
+3. Identify implementation approach and tools
+4. Plan step-by-step execution strategy
+5. Identify potential challenges and risks
+```
+
+### Step 2: Implementation
+```
+1. Execute the planned implementation approach
+2. Follow established coding standards and patterns
+3. Implement comprehensive error handling
+4. Include proper documentation and comments
+5. Ensure code quality and maintainability
+```
+
+### Step 3: Testing and Validation
+```
+1. Write comprehensive tests for new functionality
+2. Ensure existing tests continue to pass
+3. Test error conditions and edge cases
+4. Validate against acceptance criteria
+5. Perform initial quality checks
+```
+
+### Step 4: Review and Optimization
+```
+1. Review implementation for quality and completeness
+2. Suggest optimizations and improvements
+3. Identify potential issues or improvements
+4. Prepare for human review and feedback
+5. Document any outstanding questions or concerns
+```
+
+## 🎯 Success Criteria for This Phase
+
+### Implementation Quality
+- [ ] Code follows established standards and patterns
+- [ ] Comprehensive error handling is implemented
+- [ ] Proper TypeScript types and interfaces are used
+- [ ] Code is well-documented and commented
+- [ ] Implementation meets acceptance criteria
+
+### Testing Coverage
+- [ ] Comprehensive tests exist for new functionality
+- [ ] Existing tests continue to pass
+- [ ] Error conditions and edge cases are tested
+- [ ] Test coverage meets project standards
+- [ ] Tests are maintainable and well-structured
+
+### Documentation Quality
+- [ ] Code is properly documented and commented
+- [ ] Implementation decisions are explained
+- [ ] New dependencies are documented
+- [ ] Complex logic is clearly explained
+- [ ] Documentation is current and accurate
+
+## 🚀 Role-Specific AI Facilitation Prompts
+
+### Senior Engineer Context
+```
+"As a Senior Engineer, help me implement this feature following best practices. What architectural decisions should I make, and how should I structure the code for maintainability? What are the key technical considerations?"
+```
+
+### Product Manager Context
+```
+"As a Product Manager, help me validate this implementation against the acceptance criteria. Does this meet the user story requirements? What feedback should I provide to ensure business value is delivered?"
+```
+
+### Engineering Manager Context
+```
+"As an Engineering Manager, help me track progress and identify potential blockers. What are the key milestones, and how should I coordinate between different tasks? What resource adjustments might be needed?"
+```
+
+### Tech Lead Context
+```
+"As a Tech Lead, help me ensure code quality and consistency. What standards should I enforce, and how do I maintain architectural integrity? What patterns should I establish for the team?"
+```
+
+### Designer Context
+```
+"As a Designer, help me validate the UI/UX implementation. Does this match the design system and user experience requirements? What adjustments should I suggest for better usability?"
+```
+
+### QA Engineer Context
+```
+"As a QA Engineer, help me validate the testing approach and identify potential issues. What test cases should I prioritize, and how do I ensure comprehensive coverage? What quality gates should I establish?"
+```
+
+### General Facilitation Prompts
+
+### When Starting Task Execution
+```
+"I'm starting the Collaborative Execution phase for [task name]. Let me analyze the requirements and create a high-quality implementation that meets the acceptance criteria. I'll follow the established coding standards and include comprehensive testing."
+```
+
+### When Implementing Code
+```
+"I'm implementing [feature/component] following the established patterns. I'll include comprehensive error handling, proper TypeScript types, and thorough documentation. Let me know if you'd like me to explain any implementation decisions."
+```
+
+### When Writing Tests
+```
+"I'm writing comprehensive tests for [feature/component]. I'll cover happy paths, error conditions, and edge cases. The tests will be maintainable and follow the established testing patterns."
+```
+
+### When Reviewing Implementation
+```
+"I've completed the implementation and initial testing. Let me review the code for quality, completeness, and optimization opportunities. I'll also prepare it for your review and feedback."
+```
+
+## 📊 Deliverables Checklist
+
+### Code Implementation
+- [ ] Clean, maintainable code following standards
+- [ ] Comprehensive error handling and edge cases
+- [ ] Proper TypeScript types and interfaces
+- [ ] Well-documented and commented code
+- [ ] Follows established architectural patterns
+
+### Testing
+- [ ] Comprehensive tests for new functionality
+- [ ] Existing tests continue to pass
+- [ ] Error conditions and edge cases tested
+- [ ] Test coverage meets project standards
+- [ ] Tests are maintainable and well-structured
+
+### Documentation
+- [ ] Code is properly documented and commented
+- [ ] Implementation decisions are explained
+- [ ] New dependencies are documented
+- [ ] Complex logic is clearly explained
+- [ ] Documentation is current and accurate
+
+### Quality Assurance
+- [ ] Code quality meets project standards
+- [ ] Performance considerations are addressed
+- [ ] Security best practices are followed
+- [ ] Accessibility requirements are met
+- [ ] Cross-platform compatibility is ensured
+
+## 🎯 Phase Completion Criteria
+
+The Collaborative Execution phase is complete when:
+- [ ] All assigned tasks are completed with high quality
+- [ ] Code meets established standards and patterns
+- [ ] Comprehensive testing is implemented and passing
+- [ ] Documentation is complete and current
+- [ ] Quality checks are performed and passed
+- [ ] Implementation is ready for human review
+- [ ] Ready to proceed to Continuous Refinement phase
+
+## 📈 Execution Quality Metrics
+
+### Code Quality
+- **Standards Compliance**: Code follows established standards
+- **Error Handling**: Comprehensive error handling and edge cases
+- **Type Safety**: Proper TypeScript types and interfaces
+- **Documentation**: Well-documented and commented code
+- **Maintainability**: Code is maintainable and well-structured
+
+### Testing Quality
+- **Coverage**: Comprehensive test coverage for new functionality
+- **Regression Prevention**: Existing tests continue to pass
+- **Edge Case Testing**: Error conditions and edge cases are tested
+- **Test Quality**: Tests are maintainable and well-structured
+- **Validation**: Tests validate against acceptance criteria
+
+### Documentation Quality
+- **Completeness**: All necessary documentation is included
+- **Accuracy**: Documentation is current and accurate
+- **Clarity**: Documentation is clear and understandable
+- **Decision Tracking**: Implementation decisions are documented
+- **Dependency Management**: New dependencies are documented
+
+## 🔄 Continuous Improvement
+
+### During Execution
+- **Monitor progress** against acceptance criteria
+- **Identify optimization opportunities** during implementation
+- **Suggest improvements** based on best practices
+- **Address feedback** from human review promptly
+- **Learn from mistakes** and improve future implementations
+
+### After Completion
+- **Review implementation quality** and identify lessons learned
+- **Document best practices** discovered during execution
+- **Suggest process improvements** for future tasks
+- **Share knowledge** with team members
+- **Update standards** based on experience
+
+---
+
+*This rule provides specific AI instructions for facilitating the Collaborative Execution phase effectively.*

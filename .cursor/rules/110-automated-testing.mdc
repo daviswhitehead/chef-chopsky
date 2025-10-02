@@ -1,0 +1,120 @@
+---
+description: "General-purpose automated testing rules for this repo. Optimized for an E2E-first approach using Playwright, with optional integration/unit tests"
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# 🧪 Automated Testing Guidance (Integration Rules)
+
+## 🎯 Testing Strategy
+- **Default strategy**: E2E-first for user-visible flows; add targeted integration tests for API routes, and unit tests for pure utilities.
+- **Prefer Playwright** for flows, mock third-party services, and keep tests self-contained via internal APIs.
+
+## 🔍 Selectors & Accessibility
+- **Use a11y-first selectors**: `getByRole`, `getByText`, `[role="alert"]`. Add roles/labels in UI.
+- **Avoid brittle CSS selectors**; assert on visible text/roles.
+
+## ⏱️ Resilient Waits
+- **Primary**: wait for spinner text "Chef Chopsky is thinking..." to detach.
+- **Fallback**: proceed if an assistant bubble `[class*="bg-gray-100"]` is visible.
+- **Add brief grace waits** after `page.reload()` if API loads data.
+
+## 🔄 Error/Retry Tests
+- **Simulate error** via `page.route('**/api/ai/chat', ...)` then fulfill success on retry.
+- **For timeouts**, simulate aborts or delayed fulfillments deterministically.
+- **Keep retry logic observable** (toasts, messages) for assertions.
+
+## 🚀 Parallelism
+- **Local**: `workers=2`. **CI**: `workers=1`, `retries=1`, trace on-retry only.
+
+## 📊 Reports
+- **Headless**; do not auto-serve HTML report. Open explicitly when needed.
+
+## 🚦 CI Gates
+- **Block merges** if E2E fails.
+- **Run Chromium-only** on CI, single project.
+
+## 🎯 Pro Tips
+- **Don't blindly increase timeouts**; prefer deterministic mocks.
+- **Use `Logger.info/debug`** instead of `console.log` for environment-gated output.
+- **Always use `TestEnvironment`** for proper cleanup and isolation.
+- **Wait for data readiness** before navigation (e.g., conversation creation).
+- **Register routes BEFORE** triggering user actions, cleanup in `TestEnvironment.cleanup`.
+
+## 🤖 LLM Testing Guidelines
+- **NEVER** assert on exact LLM response content - LLMs are non-deterministic.
+- **DO** test response quality: length, structure, relevance to domain.
+- **DO** verify response format (JSON structure, required fields, timing).
+- **MAKE CONTENT CHECKS OPTIONAL**: Domain-specific terms should be logged, not required.
+- **AVOID** `expect(response).toContain('specific-word')` - use broader term matching.
+- **USE** `expect(response.length).toBeGreaterThan(minLength)` for content validation.
+- **USE** `expect(response).toMatch(/[.!?]$/)` for proper sentence structure.
+- **USE** optional logging: `if (!hasTerms) console.log('Response:', response.substring(0, 200))`.
+- **PRIORITIZE** API functionality over content validation.
+
+## 📝 Playwright Snippets
+
+### Error then Success for Retry
+```ts
+await page.route('**/api/ai/chat', (route, req) => {
+  const isRetry = req.postDataJSON()?.retryAttempt > 0;
+  return isRetry
+    ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: 'OK', model: 'openai/gpt-5-nano' }) })
+    : route.fulfill({ status: 500, body: JSON.stringify({ error: 'Down' }) });
+});
+```
+
+### Resilient Spinner Wait
+```ts
+await TestUtils.waitForLoadingToComplete(page).catch(async () => {
+  await page.waitForSelector('[class*="bg-gray-100"]', { timeout: 5000 });
+});
+```
+
+### Environment-Gated Logging
+```ts
+import { Logger } from './fixtures/logger';
+Logger.info('Test step completed'); // Only shows with DEBUG_E2E=1
+```
+
+### Proper Test Environment Setup
+```ts
+let env: TestEnvironment;
+test.beforeEach(async ({ page }) => { 
+  env = new TestEnvironment(); 
+  await env.setup(page); 
+});
+test.afterEach(async () => { 
+  await env.cleanup(); // Critical for isolation
+});
+```
+
+### LLM Response Testing (Non-deterministic)
+```ts
+// ✅ GOOD: Test response quality and structure (REQUIRED)
+expect(response.assistant_message.content).toBeTruthy();
+expect(response.assistant_message.content.length).toBeGreaterThan(10);
+expect(response.assistant_message.content).toMatch(/[.!?]$/); // Proper sentence ending
+
+// ✅ GOOD: Optional domain relevance check (LOGGED, NOT REQUIRED)
+const foodTerms = ['food', 'nutrition', 'diet', 'meal', 'recipe', 'cooking', 'healthy', 'eat', 'ingredient'];
+const hasFoodTerms = foodTerms.some(term => 
+  response.assistant_message.content.toLowerCase().includes(term)
+);
+
+// Log for debugging but don't fail the test
+if (!hasFoodTerms) {
+  console.log('ℹ️ LLM response did not contain expected food terms:');
+  console.log('Response:', response.assistant_message.content.substring(0, 200) + '...');
+  console.log('This is OK - LLMs are non-deterministic');
+}
+
+// ❌ BAD: Don't test exact content or require specific terms
+// expect(response.assistant_message.content).toContain('protein');
+// expect(hasFoodTerms).toBe(true); // This will fail randomly
+```
+
+---
+
+*This rule provides comprehensive testing guidance with a focus on E2E testing and LLM response handling.*
