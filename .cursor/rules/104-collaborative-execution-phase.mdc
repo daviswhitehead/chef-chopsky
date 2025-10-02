@@ -10,6 +10,19 @@ alwaysApply: false
 ## 🎯 Phase Objective
 Implement tasks systematically with AI-human collaboration
 
+## 👥 Human Roles in This Phase
+**Primary Roles:**
+- **Senior Engineer**: Architecture decisions, complex logic, code review, technical leadership
+- **Product Manager**: Acceptance criteria validation, user story feedback, business requirements
+- **Engineering Manager**: Progress tracking, blocker resolution, resource allocation
+- **Tech Lead**: Code quality standards, implementation patterns, team coordination
+
+**Supporting Roles:**
+- **Junior/Mid-level Engineer**: Implementation, testing, documentation, learning
+- **Designer**: UI/UX implementation, design system usage, user experience validation
+- **QA Engineer**: Testing strategy, bug identification, quality validation
+- **DevOps Engineer**: Deployment, monitoring, infrastructure management
+
 ## 🤖 AI's Role in This Phase
 
 ### Primary Responsibilities
@@ -105,7 +118,39 @@ Implement tasks systematically with AI-human collaboration
 - [ ] Complex logic is clearly explained
 - [ ] Documentation is current and accurate
 
-## 🚀 AI Facilitation Prompts
+## 🚀 Role-Specific AI Facilitation Prompts
+
+### Senior Engineer Context
+```
+"As a Senior Engineer, help me implement this feature following best practices. What architectural decisions should I make, and how should I structure the code for maintainability? What are the key technical considerations?"
+```
+
+### Product Manager Context
+```
+"As a Product Manager, help me validate this implementation against the acceptance criteria. Does this meet the user story requirements? What feedback should I provide to ensure business value is delivered?"
+```
+
+### Engineering Manager Context
+```
+"As an Engineering Manager, help me track progress and identify potential blockers. What are the key milestones, and how should I coordinate between different tasks? What resource adjustments might be needed?"
+```
+
+### Tech Lead Context
+```
+"As a Tech Lead, help me ensure code quality and consistency. What standards should I enforce, and how do I maintain architectural integrity? What patterns should I establish for the team?"
+```
+
+### Designer Context
+```
+"As a Designer, help me validate the UI/UX implementation. Does this match the design system and user experience requirements? What adjustments should I suggest for better usability?"
+```
+
+### QA Engineer Context
+```
+"As a QA Engineer, help me validate the testing approach and identify potential issues. What test cases should I prioritize, and how do I ensure comprehensive coverage? What quality gates should I establish?"
+```
+
+### General Facilitation Prompts
 
 ### When Starting Task Execution
 ```

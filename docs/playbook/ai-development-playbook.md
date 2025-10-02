@@ -151,6 +151,7 @@ This playbook now includes **tactical phase-specific Cursor rules** that make ea
 
 ### Supporting Assets
 - **tactical-phase-guide.md**: Complete guide to using the tactical approach
+- **human-roles-by-phase.md**: Real-world human roles and responsibilities for each phase
 - **phase-execution-template.md**: Template for executing each phase
 - **templates/**: Intent, roadmap, and task breakdown templates
 

@@ -10,6 +10,18 @@ alwaysApply: false
 ## 🎯 Phase Objective
 Iterate and improve based on feedback and testing
 
+## 👥 Human Roles in This Phase
+**Primary Roles:**
+- **Product Manager**: Feedback analysis, prioritization, iteration planning, user value assessment
+- **Senior Engineer**: Performance optimization, architecture improvements, technical debt management
+- **Engineering Manager**: Process improvement, team learning, resource optimization
+- **User Researcher**: User feedback analysis, validation, insights, usability testing
+
+**Supporting Roles:**
+- **QA Engineer**: Quality metrics analysis, testing improvements, bug pattern identification
+- **DevOps Engineer**: Performance monitoring, infrastructure optimization, deployment improvements
+- **Designer**: UX improvements, design system updates, user experience optimization
+
 ## 🤖 AI's Role in This Phase
 
 ### Primary Responsibilities
@@ -112,7 +124,39 @@ Iterate and improve based on feedback and testing
 - [ ] Optimization decisions are documented
 - [ ] All deliverables are accurate and up-to-date
 
-## 🚀 AI Facilitation Prompts
+## 🚀 Role-Specific AI Facilitation Prompts
+
+### Product Manager Context
+```
+"As a Product Manager, help me analyze the user feedback and prioritize improvements. What metrics should I track, and how should I plan the next iteration? What user value should I focus on next?"
+```
+
+### Senior Engineer Context
+```
+"As a Senior Engineer, help me identify performance bottlenecks and architectural improvements. What technical debt should I address, and how can I optimize the system for better scalability?"
+```
+
+### Engineering Manager Context
+```
+"As an Engineering Manager, help me analyze the development process and identify improvement opportunities. What worked well, and what should we change for the next iteration? How can I optimize team productivity?"
+```
+
+### User Researcher Context
+```
+"As a User Researcher, help me analyze user feedback and identify key insights. What patterns do I see in user behavior, and how should this inform our next iteration? What user needs are we missing?"
+```
+
+### QA Engineer Context
+```
+"As a QA Engineer, help me analyze quality metrics and identify testing improvements. What bug patterns do I see, and how can I improve our testing strategy? What quality gates should I strengthen?"
+```
+
+### DevOps Engineer Context
+```
+"As a DevOps Engineer, help me analyze performance metrics and infrastructure optimization opportunities. What deployment improvements should I make, and how can I enhance monitoring and observability?"
+```
+
+### General Facilitation Prompts
 
 ### When Starting Refinement
 ```

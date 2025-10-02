@@ -10,6 +10,18 @@ alwaysApply: false
 ## 🎯 Phase Objective
 Break down project into manageable phases with clear milestones
 
+## 👥 Human Roles in This Phase
+**Primary Roles:**
+- **Product Manager**: Prioritization, sequencing, dependencies, user value
+- **Engineering Manager**: Resource allocation, timeline, capacity, skill matching
+- **Software Architect**: Technical dependencies, risks, architectural approach
+- **Business Stakeholder**: Budget, timeline, business priorities, ROI
+
+**Supporting Roles:**
+- **DevOps/Platform Engineer**: Infrastructure dependencies, deployment considerations
+- **QA Manager**: Testing strategy, quality gates, validation approach
+- **Design Lead**: Design system dependencies, UX considerations
+
 ## 🤖 AI's Role in This Phase
 
 ### Primary Responsibilities
@@ -105,7 +117,34 @@ Break down project into manageable phases with clear milestones
 - [ ] Resource availability is considered and planned
 - [ ] Training needs are identified and scheduled
 
-## 🚀 AI Facilitation Prompts
+## 🚀 Role-Specific AI Facilitation Prompts
+
+### Product Manager Context
+```
+"As a Product Manager, help me prioritize these user stories and create a logical phase sequence. What dependencies should I consider, and how should I balance user value with technical complexity? How do I ensure each phase delivers measurable value?"
+```
+
+### Engineering Manager Context
+```
+"As an Engineering Manager, help me assess resource requirements and timeline estimates. What are the critical path items, and how should I allocate human vs AI tasks? What skills do I need to consider for each phase?"
+```
+
+### Software Architect Context
+```
+"As a Software Architect, help me identify technical dependencies and risks. What architectural decisions should I make now, and what can be deferred? How do I ensure the technical foundation supports future phases?"
+```
+
+### Business Stakeholder Context
+```
+"As a Business Stakeholder, help me evaluate the business impact and ROI of each phase. What are the key milestones for stakeholder communication? How do I balance speed to market with quality and risk?"
+```
+
+### DevOps/Platform Engineer Context
+```
+"As a DevOps Engineer, help me identify infrastructure dependencies and deployment considerations. What environments do I need, and when? How do I ensure smooth deployments and rollbacks?"
+```
+
+### General Facilitation Prompts
 
 ### When Starting Roadmap Creation
 ```

@@ -10,6 +10,17 @@ alwaysApply: false
 ## 🎯 Phase Objective
 Clearly define project vision, problem statement, and success criteria
 
+## 👥 Human Roles in This Phase
+**Primary Roles:**
+- **Product Manager**: Problem definition, user needs, success criteria
+- **Business Stakeholder**: Vision, constraints, non-goals, business priorities
+- **Domain Expert**: Context, edge cases, assumptions, industry knowledge
+
+**Supporting Roles:**
+- **User Researcher**: User personas, jobs-to-be-done, validation
+- **Designer**: User experience considerations, design constraints
+- **Legal/Compliance**: Regulatory requirements, risk constraints
+
 ## 🤖 AI's Role in This Phase
 
 ### Primary Responsibilities
@@ -105,7 +116,29 @@ Clearly define project vision, problem statement, and success criteria
 - [ ] Dependencies are mapped
 - [ ] Edge cases are considered
 
-## 🚀 AI Facilitation Prompts
+## 🚀 Role-Specific AI Facilitation Prompts
+
+### Product Manager Context
+```
+"As a Product Manager, help me define the core problem statement and user value proposition. What questions should I be asking about target users and their pain points? How can I ensure this problem is worth solving?"
+```
+
+### Business Stakeholder Context
+```
+"As a Business Stakeholder, help me articulate the vision and success criteria. What are the key business constraints I should consider? How do I define what success looks like in measurable terms?"
+```
+
+### Domain Expert Context
+```
+"As a Domain Expert, help me identify potential challenges and edge cases. What assumptions am I making that could be wrong? What industry-specific considerations should I account for?"
+```
+
+### User Researcher Context
+```
+"As a User Researcher, help me create user personas and validate assumptions. What user research should I conduct? How can I ensure I'm solving the right problem for the right people?"
+```
+
+### General Facilitation Prompts
 
 ### When Starting Intent Capture
 ```

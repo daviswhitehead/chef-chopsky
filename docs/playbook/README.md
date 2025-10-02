@@ -18,7 +18,8 @@ This playbook integrates the Specflow methodology with proven practices from sol
 ### Core Documentation
 - **[AI Development Playbook](./ai-development-playbook.md)**: The main playbook with 5-phase process
 - **[Implementation Guide](./implementation-guide.md)**: Step-by-step setup and usage instructions
-- **[Cursor Rules](./cursor-rules.md)**: Guidelines for AI collaboration in Cursor IDE
+- **[Tactical Phase Guide](./tactical-phase-guide.md)**: Complete guide to using the tactical approach
+- **[Human Roles by Phase](./human-roles-by-phase.md)**: Real-world human roles and responsibilities
 
 ### Templates
 - **[Intent Template](./templates/intent-template.md)**: Project vision and problem definition

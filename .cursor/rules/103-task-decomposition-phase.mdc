@@ -10,6 +10,18 @@ alwaysApply: false
 ## 🎯 Phase Objective
 Divide phases into actionable tasks with clear ownership
 
+## 👥 Human Roles in This Phase
+**Primary Roles:**
+- **Senior Engineer/Architect**: Technical breakdown, complexity assessment, implementation approach
+- **Engineering Manager**: Resource allocation, skill matching, timeline estimation
+- **Tech Lead**: Implementation standards, code quality, mentoring approach
+- **Product Manager**: Acceptance criteria, business validation, user story refinement
+
+**Supporting Roles:**
+- **Junior/Mid-level Engineer**: Task sizing, feasibility assessment, implementation details
+- **DevOps Engineer**: Deployment tasks, infrastructure requirements, CI/CD considerations
+- **QA Engineer**: Testing strategy, automation approach, quality gates
+
 ## 🤖 AI's Role in This Phase
 
 ### Primary Responsibilities
@@ -105,7 +117,34 @@ Divide phases into actionable tasks with clear ownership
 - [ ] Testing and validation approaches are defined
 - [ ] Quality gates and checkpoints are established
 
-## 🚀 AI Facilitation Prompts
+## 🚀 Role-Specific AI Facilitation Prompts
+
+### Senior Engineer/Architect Context
+```
+"As a Senior Engineer, help me break down this feature into specific, implementable tasks. What are the technical dependencies and complexity factors I should consider? How should I structure the implementation approach?"
+```
+
+### Engineering Manager Context
+```
+"As an Engineering Manager, help me assess resource requirements and skill matching for each task. What are the critical path items, and how should I allocate human vs AI tasks? What timeline estimates should I consider?"
+```
+
+### Tech Lead Context
+```
+"As a Tech Lead, help me define implementation standards and code quality requirements. What architectural patterns should I follow? How do I ensure consistency across tasks and team members?"
+```
+
+### Product Manager Context
+```
+"As a Product Manager, help me refine acceptance criteria and validate business requirements. What user stories need to be broken down further? How do I ensure each task delivers measurable value?"
+```
+
+### DevOps Engineer Context
+```
+"As a DevOps Engineer, help me identify deployment and infrastructure tasks. What CI/CD considerations should I account for? How do I ensure smooth deployments and rollbacks?"
+```
+
+### General Facilitation Prompts
 
 ### When Starting Task Decomposition
 ```
