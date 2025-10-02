@@ -167,12 +167,43 @@ export class AxiosDatabaseService {
     return this.createFeedback(conversationId, userId, satisfaction, feedback, tags);
   }
 
+  async submitFeedback(conversationId: string, userId: string, satisfaction: number, feedback?: string, tags?: string[]): Promise<Feedback> {
+    return this.createFeedback(conversationId, userId, satisfaction, feedback, tags);
+  }
+
   async getFeedbackByConversation(conversationId: string): Promise<Feedback[]> {
     const response = await axiosInstance.get(
       `${supabaseUrl}/rest/v1/feedback?conversation_id=eq.${conversationId}&select=*`,
       { headers: this.getHeaders() }
     );
     return response.data || [];
+  }
+
+  async getFeedbackStats(userId?: string): Promise<{
+    averageSatisfaction: number
+    totalConversations: number
+    totalFeedback: number
+  }> {
+    let query = `${supabaseUrl}/rest/v1/feedback?select=satisfaction,conversation_id`;
+    
+    if (userId) {
+      query += `&user_id=eq.${userId}`;
+    }
+
+    const response = await axiosInstance.get(query, { headers: this.getHeaders() });
+    const feedback = response.data || [];
+    
+    const totalFeedback = feedback.length;
+    const totalConversations = new Set(feedback.map((f: any) => f.conversation_id)).size;
+    const averageSatisfaction = totalFeedback > 0 
+      ? feedback.reduce((sum: number, f: any) => sum + f.satisfaction, 0) / totalFeedback 
+      : 0;
+
+    return {
+      averageSatisfaction,
+      totalConversations,
+      totalFeedback
+    };
   }
 }
 
