@@ -177,8 +177,36 @@ jobs:
           fi
           
           # Start cursor-agent in background with verbatim prompt content
+          echo "Starting cursor-agent with model: $MODEL_NAME"
+          echo "Prompt file size: $(wc -c < "$PROMPT_FILE") bytes"
+          echo "Cursor-agent version: $(cursor-agent --version 2>&1 || echo 'version check failed')"
+          
+          # Test cursor-agent basic functionality first
+          if ! cursor-agent --help > /dev/null 2>&1; then
+            echo "❌ cursor-agent basic functionality test failed"
+            exit 1
+          fi
+          
+          # Check if CURSOR_API_KEY is set
+          if [ -z "$CURSOR_API_KEY" ]; then
+            echo "❌ CURSOR_API_KEY environment variable is not set"
+            exit 1
+          fi
+          echo "✅ CURSOR_API_KEY is set (length: ${#CURSOR_API_KEY})"
+          
           cursor-agent -p "$(cat "$PROMPT_FILE")" --force --model "$MODEL_NAME" --output-format=text > cursor_output.log 2>&1 &
           CURSOR_PID=$!
+          echo "Cursor-agent started with PID: $CURSOR_PID"
+          
+          # Wait a moment and check if the process is still running
+          sleep 3
+          if ! kill -0 $CURSOR_PID 2>/dev/null; then
+            echo "❌ Cursor-agent process died immediately after startup"
+            echo "Initial log output:"
+            cat cursor_output.log 2>/dev/null || echo "No log output available"
+            exit 1
+          fi
+          echo "✅ Cursor-agent process is running"
 
           # Start a background tail to stream logs with timestamps
           ( while kill -0 $CURSOR_PID 2>/dev/null; do date '+[%Y-%m-%d %H:%M:%S]'; tail -n +1 -c +0 -f cursor_output.log 2>/dev/null | sed 's/^/  /'; sleep 5; done ) &
@@ -331,4 +359,44 @@ jobs:
           PROMPT
           
           # Run with timeout and explicit termination handling, passing prompt file and model
-          timeout 10m ./cursor_wrapper.sh prompt.txt "$MODEL"
+          if timeout 10m ./cursor_wrapper.sh prompt.txt "$MODEL"; then
+            echo "✅ Cursor-agent completed successfully"
+          else
+            echo "⚠️ Cursor-agent failed or timed out, running fallback analysis"
+            
+            # Fallback: Create a simple analysis without cursor-agent
+            cat > fallback_analysis.md << 'EOF'
+            # CI Failure Analysis (Fallback)
+            
+            ## Summary
+            The cursor-agent failed to execute properly, but we can still provide basic analysis.
+            
+            ## Workflow Context
+            - **Repository**: ${{ github.repository }}
+            - **Workflow Run ID**: ${{ steps.context.outputs.WORKFLOW_RUN_ID }}
+            - **Head Branch**: ${{ steps.context.outputs.HEAD_BRANCH }}
+            - **Head SHA**: ${{ steps.context.outputs.HEAD_SHA }}
+            - **PR Number**: ${{ steps.pr-info.outputs.PR_NUMBER }}
+            
+            ## Common CI Issues to Check
+            1. **Linting Errors**: Run `npm run lint` to check for ESLint issues
+            2. **TypeScript Errors**: Run `npm run build` to check for type errors
+            3. **Test Failures**: Run `npm test` to check for failing tests
+            4. **Dependency Issues**: Run `npm install` to ensure dependencies are up to date
+            5. **Environment Variables**: Check that all required environment variables are set
+            
+            ## Suggested Debugging Steps
+            1. Check the failed workflow logs for specific error messages
+            2. Run the failing commands locally to reproduce the issue
+            3. Review recent commits for changes that might have caused the failure
+            4. Check if any new dependencies or configuration changes were introduced
+            
+            ## Next Steps
+            - Review the specific error messages in the failed workflow
+            - Test the fix locally before pushing changes
+            - Consider running the workflow again after making fixes
+            EOF
+            
+            echo "📋 Fallback analysis created: fallback_analysis.md"
+            cat fallback_analysis.md
+          fi
