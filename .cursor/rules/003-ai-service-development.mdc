@@ -7,7 +7,7 @@ globs:
 alwaysApply: true
 ---
 
-# 🤖 AI Service Development Rules
+# 🤖 AI Service Development Rules (Priority 3)
 
 ## 🎯 Core Principle: Real AI Responses Only
 
@@ -116,7 +116,6 @@ if (process.env.NODE_ENV === 'production') {
 - Silent fallbacks to mock mode
 
 ## 🎯 Success Criteria
-
 - **AI services always use real models in production**
 - **Clear warnings when running in mock mode**
 - **Health checks validate AI connectivity**
@@ -144,50 +143,6 @@ if (process.env.NODE_ENV === 'production') {
 - [ ] Check observability traces
 - [ ] Monitor for mock response patterns
 
-## 📋 AI Service Testing
+---
 
-### Unit Tests
-```typescript
-// ✅ GOOD: Test mock mode detection
-describe('AI Service Configuration', () => {
-  it('should detect mock mode with placeholder API key', () => {
-    process.env.OPENAI_API_KEY = 'your_openai_api_key_here';
-    const config = loadConfig();
-    expect(config.isMockMode).toBe(true);
-  });
-  
-  it('should throw error in production with mock mode', () => {
-    process.env.NODE_ENV = 'production';
-    process.env.OPENAI_API_KEY = 'test-key';
-    expect(() => loadConfig()).toThrow('Cannot run in mock mode in production');
-  });
-});
-```
-
-### Integration Tests
-```typescript
-// ✅ GOOD: Test real AI responses
-describe('AI Service Integration', () => {
-  it('should return contextual responses for cooking questions', async () => {
-    const response = await aiService.chat('What are the benefits of quinoa?');
-    
-    expect(response.content).toBeTruthy();
-    expect(response.content.length).toBeGreaterThan(50);
-    expect(response.content).toMatch(/[.!?]$/); // Proper sentence ending
-    expect(response.content).not.toMatch(/\.\.\.$/); // Not truncated
-  });
-});
-```
-
-## 🚀 Deployment Guidelines
-
-### Environment Setup
-- **Development**: Mock mode allowed with warnings
-- **Staging**: Real AI required, mock mode blocked
-- **Production**: Real AI required, comprehensive validation
-
-### Monitoring
-- **Health Checks**: Regular AI connectivity validation
-- **Response Quality**: Monitor for mock response patterns
-- **Error Rates**: Track AI service failures
-- **Performance**: Monitor response times and token usage
+*This rule ensures AI services use real models and prevents mock mode issues in production.*

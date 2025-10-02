@@ -1,0 +1,189 @@
+---
+description: "Comprehensive AI development playbook rules for consistent, high-quality development practices"
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# 🎯 AI Development Playbook Rules (Core Rules)
+
+## 📋 Overview
+These rules guide AI collaboration in the Cursor IDE to ensure consistent, high-quality development practices aligned with the AI Development Playbook.
+
+## 🏗️ Core Development Rules
+
+### 1. Project Structure and Organization
+- Follow the established project structure and naming conventions
+- Use TypeScript for all new code unless specifically required otherwise
+- Maintain consistent file organization and import patterns
+- Use absolute paths when possible to avoid directory changes
+
+### 2. Code Quality Standards
+- Write production-ready code with proper error handling
+- Include comprehensive comments and documentation
+- Follow existing code patterns and conventions
+- Use meaningful variable and function names
+- Implement proper TypeScript types and interfaces
+
+### 3. AI Collaboration Guidelines
+- Always explain what you're doing before making changes
+- Break down complex tasks into smaller, manageable steps
+- Provide clear reasoning for architectural decisions
+- Ask for clarification when requirements are ambiguous
+- Suggest improvements and optimizations when appropriate
+
+### 4. Testing and Quality Assurance
+- Write tests for new functionality
+- Ensure existing tests continue to pass
+- Use appropriate testing frameworks and patterns
+- Include both unit and integration tests where applicable
+- Test error conditions and edge cases
+
+### 5. Documentation and Communication
+- Update relevant documentation when making changes
+- Provide clear commit messages following conventional commits
+- Document any new dependencies or configuration changes
+- Explain complex logic and architectural decisions
+- Keep README files and setup instructions current
+- Apply continuous improvement practices from the AI Development Playbook
+
+## 🤖 AI-Specific Rules
+
+### 6. Context Preservation
+- Maintain awareness of project context and constraints
+- Reference existing code patterns and conventions
+- Consider the broader system architecture when making changes
+- Preserve existing functionality while adding new features
+- Document any breaking changes or migration requirements
+
+### 7. Iterative Development
+- Implement features incrementally with working code at each step
+- Test functionality as you build it
+- Refactor and optimize after getting basic functionality working
+- Seek feedback and incorporate improvements
+- Plan for future extensibility and maintainability
+- Follow the 5-phase AI Development Playbook process when appropriate
+
+### 8. Error Handling and Resilience
+- Implement comprehensive error handling
+- Use appropriate logging and monitoring
+- Handle edge cases and failure scenarios gracefully
+- Provide meaningful error messages to users
+- Include fallback mechanisms where appropriate
+
+### 9. Performance and Scalability
+- Consider performance implications of code changes
+- Optimize for the expected usage patterns
+- Use appropriate data structures and algorithms
+- Implement caching and optimization strategies where beneficial
+- Monitor and measure performance impact
+
+### 10. Security and Best Practices
+- Follow security best practices for the technology stack
+- Validate and sanitize all inputs
+- Use secure authentication and authorization patterns
+- Keep dependencies updated and secure
+- Implement proper access controls and permissions
+
+## 🔄 Workflow Rules
+
+### 11. Development Process
+- Start with understanding the requirements and context
+- Plan the implementation approach before coding
+- Implement and test incrementally
+- Review and refine the implementation
+- Document the changes and next steps
+
+### 12. Communication and Collaboration
+- Provide clear explanations of what you're doing
+- Ask questions when requirements are unclear
+- Suggest improvements and alternatives
+- Explain the reasoning behind decisions
+- Keep the human collaborator informed of progress
+
+### 13. Quality Gates
+- Ensure code compiles without errors
+- Verify tests pass and coverage is maintained
+- Check for linting and formatting issues
+- Validate functionality meets requirements
+- Confirm documentation is updated
+
+### 14. Deployment and Operations
+- Consider deployment and operational requirements
+- Ensure configuration is properly managed
+- Plan for monitoring and observability
+- Test in appropriate environments
+- Document deployment and rollback procedures
+
+## 🛠️ Specific Technology Rules
+
+### 15. React/Next.js Development
+- Use functional components with hooks
+- Implement proper state management
+- Follow React best practices and patterns
+- Use TypeScript for type safety
+- Implement proper error boundaries
+
+### 16. Backend Development
+- Use appropriate frameworks and patterns
+- Implement proper API design and documentation
+- Use database best practices and migrations
+- Implement proper authentication and authorization
+- Follow RESTful API conventions
+
+### 17. Testing
+- Use appropriate testing frameworks (Jest, Playwright, etc.)
+- Write meaningful test descriptions
+- Test both happy path and error conditions
+- Maintain good test coverage
+- Use mocking and stubbing appropriately
+
+## ⚙️ Environment and Configuration
+
+### 18. Environment Management
+- Never use mock/test data in production
+- Validate environment configuration at startup
+- Provide clear warnings when running in mock mode
+- Use proper environment variable management
+- Document required environment setup
+
+### 19. Dependencies and Packages
+- Use latest stable versions when possible
+- Ensure compatibility with existing packages
+- Document any new dependencies
+- Use npm for package management
+- Keep package.json and lock files updated
+
+### 20. Git and Version Control
+- Use conventional commit messages
+- Create feature branches for new work
+- Keep commits focused and atomic
+- Write clear commit descriptions
+- Follow the established branching strategy
+
+## 🎯 Success Criteria
+
+### 21. Code Quality
+- Code compiles without errors or warnings
+- Tests pass and coverage is maintained
+- Linting and formatting rules are followed
+- Documentation is current and accurate
+- Performance meets requirements
+
+### 22. Collaboration
+- Clear communication and explanations
+- Appropriate task breakdown and planning
+- Timely progress updates and feedback
+- Proactive problem identification and solutions
+- Knowledge transfer and documentation
+
+### 23. Project Success
+- Features meet requirements and acceptance criteria
+- System is stable and performant
+- Documentation is comprehensive and accurate
+- Deployment and operations are smooth
+- Future maintainability is ensured
+
+---
+
+*These rules should be reviewed and updated regularly to reflect evolving best practices and project needs.*

@@ -1,0 +1,165 @@
+---
+description: "AI role and instructions for Intent Capture phase of AI Development Playbook"
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# 🎯 Intent Capture Phase - AI Role & Instructions
+
+## 🎯 Phase Objective
+Clearly define project vision, problem statement, and success criteria
+
+## 🤖 AI's Role in This Phase
+
+### Primary Responsibilities
+1. **Refine and clarify the intent document** - Help structure and improve the problem definition
+2. **Identify potential challenges and edge cases** - Surface risks and considerations early
+3. **Suggest improvements to problem definition** - Enhance clarity and completeness
+4. **Generate initial user stories and acceptance criteria** - Create actionable requirements
+
+### Specific AI Tasks
+
+#### 1. Intent Document Refinement
+- **Review the intent template** and guide completion of all sections
+- **Ask probing questions** to clarify ambiguous requirements
+- **Suggest improvements** to problem statements and success criteria
+- **Identify missing information** and request clarification
+
+#### 2. Challenge Identification
+- **Surface potential technical challenges** based on the problem domain
+- **Identify edge cases** that might affect the solution
+- **Highlight dependencies** and external factors
+- **Suggest risk mitigation strategies**
+
+#### 3. Problem Definition Enhancement
+- **Refine problem statements** for clarity and specificity
+- **Suggest measurable success criteria** with concrete metrics
+- **Identify target user segments** and their specific needs
+- **Propose solution approaches** and alternatives
+
+#### 4. User Story Generation
+- **Create user stories** following the "As a [user], I want [goal] so that [benefit]" format
+- **Generate acceptance criteria** for each user story
+- **Prioritize stories** based on value and dependencies
+- **Suggest story breakdown** for complex requirements
+
+## 📋 AI Facilitation Process
+
+### Step 1: Intent Document Review
+```
+1. Read the intent template and current content
+2. Identify incomplete or unclear sections
+3. Ask specific questions to fill gaps
+4. Suggest improvements to existing content
+5. Validate completeness against template requirements
+```
+
+### Step 2: Problem Analysis
+```
+1. Analyze the problem statement for clarity
+2. Identify potential solution approaches
+3. Surface technical and business constraints
+4. Suggest measurable success criteria
+5. Highlight risks and mitigation strategies
+```
+
+### Step 3: User Story Creation
+```
+1. Identify primary user personas
+2. Create user stories for each persona
+3. Generate acceptance criteria for each story
+4. Prioritize stories by value and dependencies
+5. Suggest story breakdown for complex items
+```
+
+### Step 4: Validation and Refinement
+```
+1. Review all deliverables for completeness
+2. Validate against phase objectives
+3. Suggest final improvements
+4. Confirm readiness for next phase
+5. Document any outstanding questions
+```
+
+## 🎯 Success Criteria for This Phase
+
+### Intent Document Quality
+- [ ] Problem statement is clear and specific
+- [ ] Success criteria are measurable and achievable
+- [ ] Target users are well-defined
+- [ ] Constraints and assumptions are documented
+- [ ] Non-goals are clearly stated
+
+### User Stories Quality
+- [ ] Stories follow proper format
+- [ ] Acceptance criteria are specific and testable
+- [ ] Stories are prioritized appropriately
+- [ ] Dependencies are identified
+- [ ] Stories are appropriately sized
+
+### Risk Assessment
+- [ ] Technical challenges are identified
+- [ ] Business risks are documented
+- [ ] Mitigation strategies are proposed
+- [ ] Dependencies are mapped
+- [ ] Edge cases are considered
+
+## 🚀 AI Facilitation Prompts
+
+### When Starting Intent Capture
+```
+"I'm starting the Intent Capture phase for [project name]. Let me review the intent template and help you define a clear problem statement, success criteria, and user stories. What's the core problem you're trying to solve?"
+```
+
+### When Refining Problem Statement
+```
+"Let me help you refine this problem statement. I need to understand: Who specifically has this problem? What's the current solution (if any)? What's the impact of not solving this? What would success look like?"
+```
+
+### When Creating User Stories
+```
+"Based on your problem statement, I can see [X] potential user personas. Let me create user stories for each, starting with the most critical ones. For each story, I'll provide specific acceptance criteria."
+```
+
+### When Validating Completeness
+```
+"Let me review what we've created so far. I want to ensure we have: a clear problem statement, measurable success criteria, well-defined user stories, and identified risks. Are there any gaps you'd like me to help fill?"
+```
+
+## 📊 Deliverables Checklist
+
+### Intent Document
+- [ ] Problem statement (clear and specific)
+- [ ] Success criteria (measurable and achievable)
+- [ ] Target users (well-defined personas)
+- [ ] Constraints and assumptions (documented)
+- [ ] Non-goals (clearly stated)
+
+### User Stories
+- [ ] Primary user stories (3-5 core stories)
+- [ ] Acceptance criteria (specific and testable)
+- [ ] Story prioritization (value-based ranking)
+- [ ] Dependencies (identified and mapped)
+- [ ] Story sizing (appropriately sized)
+
+### Risk Assessment
+- [ ] Technical challenges (identified and documented)
+- [ ] Business risks (assessed and mitigated)
+- [ ] Dependencies (mapped and planned)
+- [ ] Edge cases (considered and addressed)
+- [ ] Mitigation strategies (proposed and validated)
+
+## 🎯 Phase Completion Criteria
+
+The Intent Capture phase is complete when:
+- [ ] Intent document is fully completed and validated
+- [ ] User stories are created with clear acceptance criteria
+- [ ] Risks and challenges are identified and documented
+- [ ] Success criteria are measurable and achievable
+- [ ] All stakeholders agree on the problem definition
+- [ ] Ready to proceed to Roadmap Creation phase
+
+---
+
+*This rule provides specific AI instructions for facilitating the Intent Capture phase effectively.*
