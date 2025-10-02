@@ -271,7 +271,8 @@ describe('Database Service Interface Validation', () => {
       
       // This test would need to be run in a browser environment
       // For now, we'll validate the component exists and has required props
-      const { default: ChatInterface } = await import('@/components/ChatInterface');
+      const ChatInterfaceModule = await import('@/components/ChatInterface');
+      const ChatInterface = ChatInterfaceModule.default;
       
       // Validate component exists
       expect(ChatInterface).toBeDefined();
