@@ -87,7 +87,7 @@ Create a `.env` file in the `agent/` directory with the following variables:
 OPENAI_API_KEY=your_openai_api_key_here
 
 # LangSmith Configuration (optional but recommended)
-LANGCHAIN_TRACING_V2=true
+LANGCHAIN_TRACING=true
 LANGCHAIN_PROJECT=chef chopsky
 LANGCHAIN_API_KEY=your_langsmith_api_key_here
 

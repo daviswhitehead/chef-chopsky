@@ -32,7 +32,7 @@ This task list implements the vertical slice: User creates conversation → send
 - [x] Environment configuration
   - [x] Update `agent/.env.example` with required keys:
     - `OPENAI_API_KEY`
-    - `LANGCHAIN_TRACING_V2=true`
+    - `LANGCHAIN_TRACING=true`
     - `LANGCHAIN_PROJECT=chef chopsky`
     - `LANGCHAIN_API_KEY` (optional, for LangSmith cloud)
     - `PORT=3001` (agent service port)
