@@ -7,6 +7,27 @@ This file tracks end-to-end tasks across all phases for the v6 project. Check of
 - [~] In Progress
 - [x] Done
 
+## Progress Notes
+
+### ✅ Completed (Railway Agent + Vercel Frontend Deployment)
+- **Railway Project**: `chef-chopsky` with production environment
+- **Agent URL**: https://chef-chopsky-production.up.railway.app
+- **Health Endpoint**: `/health` responding correctly with status `ok`
+- **Configuration**: Using `railway.toml` config-as-code approach
+- **Environment**: Production environment variables configured in Railway dashboard
+
+- **Vercel Project**: `chef-chopsky` linked and deployed
+- **Frontend URL**: https://chef-chopsky-i11srt6k1-davis-whitehead.vercel.app
+- **Build Status**: ✅ Successful build and deployment
+- **Environment**: Production environment variables configured
+- **Security**: Authentication protection enabled (good security practice)
+
+### 🚧 Next Steps (Phase 1 Completion)
+1. **Production Supabase**: Create production database project and apply schema
+2. **Environment Integration**: Connect frontend to production Supabase
+3. **End-to-End Testing**: Verify complete functionality
+4. **Monitoring Setup**: Configure UptimeRobot for both services
+
 ---
 
 ## Phase 1 — MVP Production Deployment (Day 1)
@@ -15,16 +36,16 @@ This file tracks end-to-end tasks across all phases for the v6 project. Check of
 - Deploy the app to a public URL with a production Supabase and basic uptime monitoring.
 
 ### Tasks
-- [ ] 1.1 Create Vercel project (frontend) and Railway project (agent) and link repos
-- [ ] 1.2 Configure production environment variables in Vercel
+- [x] 1.1 Create Vercel project (frontend) and Railway project (agent) and link repos
+- [x] 1.2 Configure production environment variables in Vercel
 - [ ] 1.3 Create production Supabase project; apply schema and enable backups
 - [ ] 1.4 Point frontend to production Supabase creds
 - [ ] 1.5 Smoke test core flows on production URL
 - [ ] 1.6 Set up UptimeRobot checks for frontend URL and agent `/health`
 
 ### Acceptance Criteria
-- [ ] Frontend accessible at public URL (Vercel)
-- [ ] Agent accessible at public URL (Railway) with `/health` endpoint
+- [x] Frontend accessible at public URL (Vercel)
+- [x] Agent accessible at public URL (Railway) with `/health` endpoint
 - [ ] Core chat functionality works end-to-end
 - [ ] DB schema deployed and read/write OK
 - [ ] UptimeRobot active with email alerts
