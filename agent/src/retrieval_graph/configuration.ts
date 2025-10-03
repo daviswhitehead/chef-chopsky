@@ -53,12 +53,19 @@ export function ensureIndexConfiguration(
   const configurable = (config?.configurable || {}) as Partial<
     typeof IndexConfigurationAnnotation.State
   >;
+  
+  // Import config here to avoid circular dependency
+  const { retrieverProvider, embeddingModel, appEnv } = require('../config/index.js').config;
+  
   return {
     userId: configurable.userId || "default", // Give a default user for shared docs
-    embeddingModel:
-      configurable.embeddingModel || "openai/text-embedding-3-small",
-    retrieverProvider: configurable.retrieverProvider || "memory",
-    searchKwargs: configurable.searchKwargs || {},
+    embeddingModel: configurable.embeddingModel || embeddingModel,
+    retrieverProvider: configurable.retrieverProvider || retrieverProvider,
+    searchKwargs: {
+      ...configurable.searchKwargs,
+      // Add environment discriminator to prevent cross-environment data bleed
+      env: appEnv,
+    },
   };
 }
 
