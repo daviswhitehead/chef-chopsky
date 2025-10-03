@@ -322,5 +322,5 @@ export const db = (() => {
     }
     return global.__mockDb;
   }
-  return new AxiosDatabaseService();
+  return new DatabaseService();
 })()
