@@ -8,9 +8,10 @@ Rules are numbered by priority (001-299), with lower numbers having higher prior
 
 ### Priority 001-099: Core Rules (Always Applied)
 - **001-core-conventions.mdc**: Project foundation, architecture, and critical environment rules
-- **002-terminal-safety.mdc**: Terminal safety and process management
-- **003-ai-service-development.mdc**: AI service development and mock mode prevention
-- **004-ai-development-playbook.mdc**: Comprehensive AI development playbook rules
+- **002-production-safety.mdc**: Production safety rules to prevent mock mode and ensure fail-fast behavior
+- **003-terminal-safety.mdc**: Terminal safety and process management
+- **004-ai-service-development.mdc**: AI service development and mock mode prevention
+- **005-ai-development-playbook.mdc**: Comprehensive AI development playbook rules
 
 ### Priority 100-199: Integration Rules (Conditionally Applied)
 - **100-ai-feature-development.mdc**: AI-first feature development workflow

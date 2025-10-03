@@ -5,7 +5,7 @@ globs:
 alwaysApply: true
 ---
 
-# 🎯 AI Development Playbook Rules (Core Rules)
+# 🎯 AI Development Playbook Rules (Priority 5)
 
 ## 📋 Overview
 These rules guide AI collaboration in the Cursor IDE to ensure consistent, high-quality development practices aligned with the AI Development Playbook.
