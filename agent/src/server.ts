@@ -61,31 +61,9 @@ function generateMockResponse(userMessage: string): string {
 
 const app = express();
 
-// Environment validation on startup
+// Environment validation is now handled in config/index.ts
 console.log('🔧 Agent Service Startup Validation...');
-const isMockMode = config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here';
-
-if (isMockMode) {
-  if (config.nodeEnv === 'production') {
-    console.error('🚨 CRITICAL ERROR: Cannot run in production with invalid OpenAI API key!');
-    console.error('🚨 Production environment requires a valid OPENAI_API_KEY');
-    console.error('🚨 Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
-    console.error('🚨 This is a CRITICAL configuration error that must be fixed immediately.');
-    console.error('🚨 Agent service will NOT start in production with invalid API key.');
-    process.exit(1);
-  } else {
-    console.warn('⚠️  WARNING: Agent service is starting in MOCK MODE!');
-    console.warn('⚠️  You will get fake responses instead of real AI responses.');
-    console.warn('⚠️  To fix this:');
-    console.warn('⚠️  1. Copy agent/.env.example to agent/.env');
-    console.warn('⚠️  2. Edit agent/.env and set OPENAI_API_KEY=your_real_api_key');
-    console.warn('⚠️  3. Restart the agent service');
-    console.warn('⚠️  Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
-  }
-} else {
-  console.log('✅ Agent service configured with real OpenAI API key');
-}
-console.log('🔧 Environment validation complete');
+console.log('✅ Environment validation complete');
 
 // Middleware
 app.use(cors({
@@ -156,19 +134,23 @@ app.post('/chat', (req, res) => {
     });
     console.log(`[${requestId}] ✅ Messages converted to LangChain format`);
 
-    // Create configuration
+    // Create configuration using environment-driven settings
     console.log(`[${requestId}] ⚙️ Creating agent configuration`);
     const agentConfig = ensureConfiguration({
       configurable: {
         userId: conversation_id, // Use conversation_id as userId for now
-        embeddingModel: 'openai/text-embedding-3-small',
-        retrieverProvider: 'memory', // Start with memory for simplicity
+        embeddingModel: config.embeddingModel, // Use environment-driven embedding model
+        retrieverProvider: config.retrieverProvider, // Use environment-driven retriever provider
         searchKwargs: {},
         responseModel: 'openai/gpt-5-nano',
         queryModel: 'openai/gpt-5-nano'
       }
     });
-    console.log(`[${requestId}] ✅ Agent configuration created`);
+    console.log(`[${requestId}] ✅ Agent configuration created with:`, {
+      retrieverProvider: config.retrieverProvider,
+      embeddingModel: config.embeddingModel,
+      appEnv: config.appEnv
+    });
 
     // Check if we're in mock mode (for local testing with test-key or missing key)
     const isMockMode = config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here';
