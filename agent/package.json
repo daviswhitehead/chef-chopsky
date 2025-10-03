@@ -11,6 +11,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
+    "start": "node dist/server.js",
     "dev": "npx @langchain/langgraph-cli dev",
     "server": "npx tsx src/server.ts",
     "server:dev": "npx tsx watch src/server.ts",
