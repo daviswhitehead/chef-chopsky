@@ -13,6 +13,7 @@
     "clean": "rm -rf dist",
     "start": "node dist/src/server.js",
     "sync:env": "node scripts/sync-env-simple.js",
+    "deploy:railway": "node scripts/deploy-railway.js",
     "dev": "npx @langchain/langgraph-cli dev",
     "server": "npx tsx src/server.ts",
     "server:dev": "npx tsx watch src/server.ts",
