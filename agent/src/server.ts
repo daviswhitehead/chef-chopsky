@@ -12,6 +12,17 @@ if (config.nodeEnv === 'development') {
   console.log('🔧 Development mode: SSL certificate validation disabled');
 }
 
+// Handle unhandled errors
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
 /**
  * Generate a mock response for testing purposes
  */
@@ -304,10 +315,22 @@ app.use('*', (req, res) => {
 const PORT = config.serverPort;
 const HOST = config.serverHost;
 
+console.log(`🔧 Starting server with config:`, {
+  PORT,
+  HOST,
+  NODE_ENV: config.nodeEnv,
+  OPENAI_API_KEY: config.openaiApiKey ? 'SET' : 'MISSING',
+  LANGCHAIN_TRACING: config.langsmithTracing,
+  LANGCHAIN_PROJECT: config.langsmithProject
+});
+
 app.listen(PORT, HOST, () => {
   console.log(`🚀 Chef Chopsky Agent Service running on http://${HOST}:${PORT}`);
   console.log(`📊 Health check: http://${HOST}:${PORT}/health`);
   console.log(`🔧 Environment: ${config.nodeEnv}`);
+}).on('error', (error) => {
+  console.error('💥 Server startup error:', error);
+  process.exit(1);
 });
 
 export default app;
