@@ -30,7 +30,7 @@ export const config = {
   
   // Express server settings
   serverPort: parseInt(process.env.PORT || '3001'),
-  serverHost: process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'),
+  serverHost: process.env.NODE_ENV === 'production' ? '0.0.0.0' : (process.env.HOST || 'localhost'),
 };
 
 // Validate required configuration
