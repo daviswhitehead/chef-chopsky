@@ -2,7 +2,7 @@
 description: "Comprehensive AI development playbook rules for consistent, high-quality development practices"
 globs:
   - "**/*"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # 🎯 AI Development Playbook Rules (Core Rules)
