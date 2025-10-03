@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "hooks/block-env-access.js"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "hooks/block-env-access.js"
+      }
+    ]
+  }
+}
