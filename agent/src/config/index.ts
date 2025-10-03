@@ -17,7 +17,7 @@ export const config = {
   
   // Optional LangSmith configuration (using LangChain standard env vars)
   langsmithApiKey: process.env.LANGCHAIN_API_KEY,
-  langsmithTracing: process.env.LANGCHAIN_TRACING_V2 === 'true',
+  langsmithTracing: process.env.LANGCHAIN_TRACING === 'true',
   langsmithProject: process.env.LANGCHAIN_PROJECT || 'chef chopsky',
   
   // Environment settings
@@ -30,7 +30,7 @@ export const config = {
   
   // Express server settings
   serverPort: parseInt(process.env.PORT || '3001'),
-  serverHost: process.env.HOST || 'localhost',
+  serverHost: process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'),
 };
 
 // Validate required configuration

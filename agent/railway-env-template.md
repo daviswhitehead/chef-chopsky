@@ -16,7 +16,7 @@ LANGCHAIN_API_KEY=lsv2_pt_your-langsmith-api-key-here
 
 # Server Configuration
 PORT=3001
-HOST=localhost
+# Note: HOST is auto-set to 0.0.0.0 in production for Railway compatibility
 NODE_ENV=production
 LOG_LEVEL=info
 
