@@ -76,7 +76,7 @@ We will attempt v1 without schema changes; if needed, add a small migration in a
 - Provider: OpenAI (default)
 - Required env (local dev):
   - `OPENAI_API_KEY`
-  - `LANGCHAIN_TRACING_V2=true`
+  - `LANGCHAIN_TRACING=true`
   - `LANGCHAIN_PROJECT=chef chopsky`
   - `LANGCHAIN_API_KEY` (if using LangSmith cloud)
   - Frontend Supabase envs (already present in frontend)

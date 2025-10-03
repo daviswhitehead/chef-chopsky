@@ -2,7 +2,8 @@ import axios from 'axios';
 import https from 'https';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || supabasePublishableKey;
 
 // Create axios instance with SSL verification disabled for development
 const axiosInstance = axios.create({
@@ -43,8 +44,8 @@ export interface Feedback {
 export class AxiosDatabaseService {
   private getHeaders() {
     return {
-      'apikey': supabaseKey,
-      'Authorization': `Bearer ${supabaseKey}`,
+      'apikey': supabaseSecretKey,
+      'Authorization': `Bearer ${supabaseSecretKey}`,
       'Content-Type': 'application/json'
     };
   }

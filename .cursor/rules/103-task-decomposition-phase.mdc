@@ -65,6 +65,8 @@ Divide phases into actionable tasks with clear ownership
 3. Create detailed task descriptions
 4. Identify task dependencies and sequencing
 5. Suggest task prioritization and grouping
+6. Create a project tasks markdown file under docs/projects/<project>/tasks.md
+7. Ensure every task is numbered (e.g., 1.1, 2.3) and use sub-task letters (e.g., 2.1.a)
 ```
 
 ### Step 2: Ownership Assignment
@@ -174,6 +176,7 @@ Divide phases into actionable tasks with clear ownership
 - [ ] Task 3: [Name] - [Description] - [Owner] - [Duration]
 - [ ] Task 4: [Name] - [Description] - [Owner] - [Duration]
 - [ ] Task 5: [Name] - [Description] - [Owner] - [Duration]
+  - Note: All tasks must include numeric IDs (phase.scopedNumber, e.g., 2.5) and use sub-task letters where applicable
 
 ### Ownership Matrix
 - [ ] Human tasks identified and assigned

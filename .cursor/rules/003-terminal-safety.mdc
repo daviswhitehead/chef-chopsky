@@ -5,7 +5,7 @@ globs:
 alwaysApply: true
 ---
 
-# 🚨 Terminal Safety Rules (Priority 2)
+# 🚨 Terminal Safety Rules (Priority 3)
 
 ## 🚨 CRITICAL: Never Block Terminal with Long-Running Processes
 

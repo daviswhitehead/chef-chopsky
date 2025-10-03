@@ -305,8 +305,16 @@ export class DatabaseService {
 }
 
 // Use mock database for testing when Supabase is not properly configured
-// Temporarily force mock database due to network connectivity issues
+// NEVER use mock database in production - fail loudly instead
 const isTestMode = false; // Use real Supabase database
+
+// Production safety check - fail loudly if trying to use mock in production
+if (process.env.NODE_ENV === 'production' && isTestMode) {
+  console.error('🚨 CRITICAL ERROR: Cannot use mock database in production!');
+  console.error('🚨 Production environment requires real Supabase configuration');
+  console.error('🚨 This is a CRITICAL configuration error that must be fixed immediately.');
+  throw new Error('CRITICAL CONFIGURATION ERROR: Mock database cannot be used in production environment');
+}
 
 console.log('Database: Using mock database for testing (isTestMode =', isTestMode, ')');
 
@@ -322,5 +330,5 @@ export const db = (() => {
     }
     return global.__mockDb;
   }
-  return new AxiosDatabaseService();
+  return new DatabaseService();
 })()

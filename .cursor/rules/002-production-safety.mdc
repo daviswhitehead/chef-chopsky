@@ -1,0 +1,151 @@
+---
+description: "Production safety rules to prevent mock mode and ensure fail-fast behavior in production environments"
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# 🚨 Production Safety Rules (Priority 2)
+
+## 🚨 CRITICAL: Never Use Mock Mode in Production
+
+### ❌ ABSOLUTELY FORBIDDEN
+- **NEVER** implement mock mode fallbacks in production environments
+- **NEVER** use test data or placeholder responses in production
+- **NEVER** silently fall back to mock behavior when API keys are missing
+- **NEVER** allow services to run with invalid configuration in production
+
+### ✅ ALWAYS REQUIRED
+- **ALWAYS** validate critical configuration on startup
+- **ALWAYS** fail loudly and immediately if production requirements are not met
+- **ALWAYS** implement environment-specific behavior (dev vs production)
+- **ALWAYS** provide clear, actionable error messages
+
+## 🛡️ Implementation Patterns
+
+### ✅ CORRECT: Fail-Fast Pattern
+```typescript
+// Environment validation on startup
+const isMockMode = !isValidApiKey;
+if (isMockMode && config.nodeEnv === 'production') {
+  console.error('🚨 CRITICAL ERROR: Cannot run in production with invalid API key!');
+  console.error('🚨 Production environment requires a valid OPENAI_API_KEY');
+  process.exit(1);
+}
+```
+
+### ✅ CORRECT: Environment-Aware Validation
+```typescript
+// Different behavior for different environments
+if (isMockMode) {
+  if (config.nodeEnv === 'production') {
+    throw new Error('CRITICAL: Mock mode not allowed in production');
+  } else {
+    console.warn('⚠️ Development mode: Using mock responses');
+    return mockResponse;
+  }
+}
+```
+
+### ❌ FORBIDDEN: Silent Fallbacks
+```typescript
+// DON'T: Silent fallback to mock data
+if (!apiKey) {
+  console.warn('API key missing, using mock data');
+  return mockData; // Silent failure in production
+}
+```
+
+### ❌ FORBIDDEN: Environment-Agnostic Mock Mode
+```typescript
+// DON'T: Same mock behavior in all environments
+if (!isValidApiKey) {
+  console.warn('Using mock mode');
+  return mockResponse; // Same fallback in dev and production
+}
+```
+
+## 🔍 Code Review Checklist
+
+### Before Any Production Deployment
+- [ ] **No Mock Mode**: Verify no mock/test data fallbacks exist
+- [ ] **Environment Validation**: All critical config validated on startup
+- [ ] **Fail-Fast Pattern**: Services exit immediately on config errors
+- [ ] **Clear Error Messages**: Error messages are specific and actionable
+- [ ] **Monitoring Integration**: Errors are visible in logs and monitoring
+
+### For AI Services
+- [ ] **API Key Validation**: OpenAI/API keys validated on startup
+- [ ] **Production Guards**: Different behavior for dev vs production
+- [ ] **Service Dependencies**: External service connectivity verified
+- [ ] **Error Visibility**: Configuration errors are immediately visible
+
+### For Frontend Services
+- [ ] **Environment Variables**: All required production variables validated
+- [ ] **Database Configuration**: Production database properly configured
+- [ ] **Service URLs**: All external service URLs are production-ready
+- [ ] **Error Boundaries**: Graceful error handling with clear user messages
+
+## 🚨 Red Flags to Watch For
+
+### Code Red Flags
+- `mockMode = true` without environment checks
+- `return mockData` in production code paths
+- `console.warn` instead of `console.error` for critical issues
+- Missing `process.exit(1)` for critical configuration errors
+- Environment-agnostic fallback behavior
+
+### Configuration Red Flags
+- Missing API keys in production environment
+- Placeholder values like `'your_api_key_here'` in production
+- Test/development URLs in production configuration
+- Missing environment variable validation
+
+### Runtime Red Flags
+- Services starting with warnings instead of errors
+- Mock responses in production logs
+- Silent failures in production monitoring
+- Users receiving generic error messages
+
+## 🎯 Success Criteria
+
+### Production Safety Validation
+- [ ] **No Silent Failures**: All configuration errors are immediately visible
+- [ ] **Environment Separation**: Different behaviors for dev vs production
+- [ ] **Clear Error Messages**: Users and developers know exactly what's wrong
+- [ ] **Monitoring Integration**: Errors are visible in logs and monitoring
+- [ ] **Quick Resolution**: Error messages include specific fix instructions
+
+### Testing Requirements
+- [ ] **Configuration Tests**: Verify all required variables are validated
+- [ ] **Environment Tests**: Different behavior per environment
+- [ ] **Error Message Tests**: Verify error messages are helpful
+- [ ] **Integration Tests**: End-to-end validation of production setup
+
+## 🔧 Enforcement
+
+### Immediate Actions
+- **STOP** any attempt to implement mock mode in production
+- **REQUIRE** environment-specific validation for all services
+- **ENFORCE** fail-fast patterns for critical configuration
+- **DEMAND** clear, actionable error messages
+
+### If Mock Mode is Detected in Production
+1. **IMMEDIATELY STOP** the deployment
+2. **IDENTIFY** the root cause of the configuration issue
+3. **FIX** the configuration problem properly
+4. **IMPLEMENT** proper environment validation
+5. **TEST** the fix in staging before production deployment
+
+## 🎯 Success Criteria
+- **ZERO** mock mode usage in production environments
+- **ZERO** silent configuration failures
+- **100%** environment-specific validation
+- **CLEAR** error messages for all configuration issues
+- **COMPLETE** production safety compliance
+
+---
+
+**THIS RULE OVERRIDES ALL OTHER RULES AND MUST BE FOLLOWED WITHOUT EXCEPTION**
+
+*The integrity of production environments depends on strict adherence to this rule.*

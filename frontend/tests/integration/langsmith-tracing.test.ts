@@ -207,7 +207,7 @@ describe('LangSmith Tracing Integration Tests', () => {
       
       const requiredEnvVars = [
         'LANGCHAIN_API_KEY',
-        'LANGCHAIN_TRACING_V2',
+        'LANGCHAIN_TRACING',
         'LANGCHAIN_PROJECT'
       ];
       

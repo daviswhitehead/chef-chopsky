@@ -19,7 +19,7 @@
 #   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   
 #   # LangSmith configuration
-#   LANGCHAIN_TRACING_V2: true
+#   LANGCHAIN_TRACING: true
 #   LANGCHAIN_PROJECT: chef-chopsky-pr
 #   LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
 

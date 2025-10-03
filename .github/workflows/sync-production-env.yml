@@ -1,0 +1,66 @@
+name: Production Environment Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to sync to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      sync_service_key:
+        description: 'Sync Supabase service role key'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  sync-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Login to Vercel
+        run: vercel login --token ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Sync Environment Variables
+        run: |
+          # Set environment variables from secrets
+          echo "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" | vercel env add NEXT_PUBLIC_SUPABASE_URL ${{ github.event.inputs.environment }}
+          echo "${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" | vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ${{ github.event.inputs.environment }}
+          echo "${{ secrets.AGENT_SERVICE_URL }}" | vercel env add AGENT_SERVICE_URL ${{ github.event.inputs.environment }}
+          echo "${{ github.event.inputs.environment }}" | vercel env add NODE_ENV ${{ github.event.inputs.environment }}
+          echo "${{ github.event.inputs.environment }}" | vercel env add NEXT_PUBLIC_APP_ENV ${{ github.event.inputs.environment }}
+          
+          # Conditionally sync service role key
+          if [ "${{ github.event.inputs.sync_service_key }}" = "true" ]; then
+            echo "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" | vercel env add SUPABASE_SERVICE_ROLE_KEY ${{ github.event.inputs.environment }}
+          fi
+
+      - name: Verify Environment Variables
+        run: vercel env ls
+
+      - name: Trigger Redeploy
+        run: |
+          cd frontend
+          vercel --prod --yes
+
+      - name: Run Production Tests
+        if: github.event.inputs.environment == 'production'
+        run: |
+          cd frontend
+          npm install
+          npm run test:e2e:production -- --grep "production services health check"
+          npm run test:e2e:production -- --grep "production home page loads correctly"

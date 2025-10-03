@@ -12,6 +12,17 @@ if (config.nodeEnv === 'development') {
   console.log('🔧 Development mode: SSL certificate validation disabled');
 }
 
+// Handle unhandled errors
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
 /**
  * Generate a mock response for testing purposes
  */
@@ -52,14 +63,25 @@ const app = express();
 
 // Environment validation on startup
 console.log('🔧 Agent Service Startup Validation...');
-if (config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here') {
-  console.warn('⚠️  WARNING: Agent service is starting in MOCK MODE!');
-  console.warn('⚠️  You will get fake responses instead of real AI responses.');
-  console.warn('⚠️  To fix this:');
-  console.warn('⚠️  1. Copy agent/.env.example to agent/.env');
-  console.warn('⚠️  2. Edit agent/.env and set OPENAI_API_KEY=your_real_api_key');
-  console.warn('⚠️  3. Restart the agent service');
-  console.warn('⚠️  Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
+const isMockMode = config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here';
+
+if (isMockMode) {
+  if (config.nodeEnv === 'production') {
+    console.error('🚨 CRITICAL ERROR: Cannot run in production with invalid OpenAI API key!');
+    console.error('🚨 Production environment requires a valid OPENAI_API_KEY');
+    console.error('🚨 Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
+    console.error('🚨 This is a CRITICAL configuration error that must be fixed immediately.');
+    console.error('🚨 Agent service will NOT start in production with invalid API key.');
+    process.exit(1);
+  } else {
+    console.warn('⚠️  WARNING: Agent service is starting in MOCK MODE!');
+    console.warn('⚠️  You will get fake responses instead of real AI responses.');
+    console.warn('⚠️  To fix this:');
+    console.warn('⚠️  1. Copy agent/.env.example to agent/.env');
+    console.warn('⚠️  2. Edit agent/.env and set OPENAI_API_KEY=your_real_api_key');
+    console.warn('⚠️  3. Restart the agent service');
+    console.warn('⚠️  Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
+  }
 } else {
   console.log('✅ Agent service configured with real OpenAI API key');
 }
@@ -152,46 +174,60 @@ app.post('/chat', (req, res) => {
     const isMockMode = config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here';
     
     if (isMockMode) {
-      console.warn(`[${requestId}] ⚠️  WARNING: Agent service is running in MOCK MODE!`);
-      console.warn(`[${requestId}] ⚠️  This means you're getting fake responses instead of real AI responses.`);
-      console.warn(`[${requestId}] ⚠️  To fix this, set a valid OPENAI_API_KEY in your agent/.env file.`);
-      console.warn(`[${requestId}] ⚠️  Current API key: ${config.openaiApiKey ? 'Set but invalid' : 'Not set'}`);
-      console.log(`[${requestId}] 🎭 Mock mode enabled - returning mock response`);
-      const agentStartTime = Date.now();
-      
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-      
-      const agentDuration = Date.now() - agentStartTime;
-      console.log(`[${requestId}] ✅ Mock agent completed in ${agentDuration}ms`);
-      
-      // Create mock response based on the last user message
-      const lastUserMessage = langchainMessages[langchainMessages.length - 1];
-      const userContent = typeof lastUserMessage.content === 'string' 
-        ? lastUserMessage.content 
-        : Array.isArray(lastUserMessage.content) 
-          ? lastUserMessage.content.map(c => typeof c === 'string' ? c : (c as { text?: string }).text || '').join(' ')
-          : '';
-      const mockResponse = generateMockResponse(userContent);
-      
-      const assistantMessage = {
-        id: messageId,
-        role: 'assistant',
-        content: mockResponse,
-        model: 'openai/gpt-5-nano',
-        usage: {
-          prompt_tokens: 100,
-          completion_tokens: 50,
-          total_tokens: 150
-        }
-      };
-      
-      const timing_ms = Date.now() - startTime;
-      console.log(`[${requestId}] 🎉 Mock request completed successfully in ${timing_ms}ms`);
-      return res.json({
-        assistant_message: assistantMessage,
-        timing_ms
-      });
+      if (config.nodeEnv === 'production') {
+        console.error(`[${requestId}] 🚨 CRITICAL ERROR: Cannot process requests in production with invalid OpenAI API key!`);
+        console.error(`[${requestId}] 🚨 Production environment requires a valid OPENAI_API_KEY`);
+        console.error(`[${requestId}] 🚨 Current API key: ${config.openaiApiKey ? 'Set but invalid' : 'Not set'}`);
+        console.error(`[${requestId}] 🚨 This is a CRITICAL configuration error that must be fixed immediately.`);
+        
+        return res.status(500).json({
+          error: 'CRITICAL CONFIGURATION ERROR',
+          message: 'Production environment requires valid OpenAI API key. Service cannot process requests.',
+          details: 'OPENAI_API_KEY is missing or invalid in production environment',
+          timing_ms: Date.now() - startTime
+        });
+      } else {
+        console.warn(`[${requestId}] ⚠️  WARNING: Agent service is running in MOCK MODE!`);
+        console.warn(`[${requestId}] ⚠️  This means you're getting fake responses instead of real AI responses.`);
+        console.warn(`[${requestId}] ⚠️  To fix this, set a valid OPENAI_API_KEY in your agent/.env file.`);
+        console.warn(`[${requestId}] ⚠️  Current API key: ${config.openaiApiKey ? 'Set but invalid' : 'Not set'}`);
+        console.log(`[${requestId}] 🎭 Mock mode enabled - returning mock response`);
+        const agentStartTime = Date.now();
+        
+        // Simulate processing time
+        await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+        
+        const agentDuration = Date.now() - agentStartTime;
+        console.log(`[${requestId}] ✅ Mock agent completed in ${agentDuration}ms`);
+        
+        // Create mock response based on the last user message
+        const lastUserMessage = langchainMessages[langchainMessages.length - 1];
+        const userContent = typeof lastUserMessage.content === 'string' 
+          ? lastUserMessage.content 
+          : Array.isArray(lastUserMessage.content) 
+            ? lastUserMessage.content.map(c => typeof c === 'string' ? c : (c as { text?: string }).text || '').join(' ')
+            : '';
+        const mockResponse = generateMockResponse(userContent);
+        
+        const assistantMessage = {
+          id: messageId,
+          role: 'assistant',
+          content: mockResponse,
+          model: 'openai/gpt-5-nano',
+          usage: {
+            prompt_tokens: 100,
+            completion_tokens: 50,
+            total_tokens: 150
+          }
+        };
+        
+        const timing_ms = Date.now() - startTime;
+        console.log(`[${requestId}] 🎉 Mock request completed successfully in ${timing_ms}ms`);
+        return res.json({
+          assistant_message: assistantMessage,
+          timing_ms
+        });
+      }
     }
     
     // Run the agent with LangSmith tracing (disabled if API key issues)
@@ -304,10 +340,22 @@ app.use('*', (req, res) => {
 const PORT = config.serverPort;
 const HOST = config.serverHost;
 
+console.log(`🔧 Starting server with config:`, {
+  PORT,
+  HOST,
+  NODE_ENV: config.nodeEnv,
+  OPENAI_API_KEY: config.openaiApiKey ? 'SET' : 'MISSING',
+  LANGCHAIN_TRACING: config.langsmithTracing,
+  LANGCHAIN_PROJECT: config.langsmithProject
+});
+
 app.listen(PORT, HOST, () => {
   console.log(`🚀 Chef Chopsky Agent Service running on http://${HOST}:${PORT}`);
   console.log(`📊 Health check: http://${HOST}:${PORT}/health`);
   console.log(`🔧 Environment: ${config.nodeEnv}`);
+}).on('error', (error) => {
+  console.error('💥 Server startup error:', error);
+  process.exit(1);
 });
 
 export default app;

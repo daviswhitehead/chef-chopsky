@@ -208,7 +208,7 @@ AGENT_SERVICE_URL=http://localhost:3001
 OPENAI_API_KEY=your_openai_key
 
 # LangSmith (optional)
-LANGCHAIN_TRACING_V2=true
+LANGCHAIN_TRACING=true
 LANGCHAIN_PROJECT=chef chopsky
 LANGCHAIN_API_KEY=your_langsmith_key
 

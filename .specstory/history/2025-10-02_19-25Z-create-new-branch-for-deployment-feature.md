@@ -36,3 +36,249 @@ The branch name follows conventional naming patterns and clearly describes the f
 
 ---
 
+_**User (2025-10-02 19:54Z)**_
+
+Can you catch this branch up with the latest changes on main and then publish it?
+
+---
+
+_**Assistant (default)**_
+
+Updating the branch with the latest from main, then publishing it.
+
+
+---
+
+Tool use: **run_terminal_cmd**
+
+```bash
+cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My\ Drive/github/chef-chopsky && git fetch origin
+```
+
+---
+
+Tool use: **run_terminal_cmd**
+
+```bash
+cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My\ Drive/github/chef-chopsky && git merge origin/main
+```
+
+```
+Updating fd2ca1e..b3777f6
+Fast-forward
+ .cursor/rules/001-core-conventions.mdc             |   50 +
+ ...-best-practices.mdc => 002-terminal-safety.mdc} |   92 +-
+ ...elopment.mdc => 003-ai-service-development.mdc} |   51 +-
+ .cursor/rules/004-ai-development-playbook.mdc      |  189 ++
+ ...elopment.mdc => 100-ai-feature-development.mdc} |   60 +-
+ .cursor/rules/101-intent-capture-phase.mdc         |  198 ++
+ .cursor/rules/102-roadmap-creation-phase.mdc       |  226 ++
+ .cursor/rules/103-task-decomposition-phase.mdc     |  232 ++
+ .../rules/104-collaborative-execution-phase.mdc    |  257 ++
+ .cursor/rules/105-continuous-refinement-phase.mdc  |  263 ++
+ .cursor/rules/110-automated-testing.mdc            |  120 +
+ ...ration.mdc => 120-pull-request-preparation.mdc} |   15 +-
+ .cursor/rules/200-playwright-test-generator.mdc    |   43 +
+ .cursor/rules/README.md                            |   92 +
+ .cursor/rules/automated-testing.mdc                |  101 -
+ .cursor/rules/environment-configuration.mdc        |  159 -
+ .cursor/rules/generate-playwright-tests.mdc        |   34 -
+ .cursor/rules/solopreneur.mdc                      |   65 -
+ .github/workflows/auto-fix-ci.yml                  |   70 +-
+ .specstory/history/2025-09-30_14-53Z-auto-fix.md   | 2874 +++++++++++++++++
+ .specstory/history/2025-10-02_19-17Z-e2e.md        | 3136 ++++++++++++++++++
+ ...25Z-create-new-branch-for-deployment-feature.md |   38 +
+ ...3Z-create-branch-for-ai-development-playbook.md |  251 ++
+ ...10-02_19-43Z-feature-ai-development-playbook.md | 3345 ++++++++++++++++++++
+ {documentation => docs}/business/principles.md     |    0
+ docs/playbook/README.md                            |  152 +
+ docs/playbook/ai-development-playbook.md           |  191 ++
+ docs/playbook/human-roles-by-phase.md              |  186 ++
+ docs/playbook/implementation-guide.md              |  206 ++
+ docs/playbook/tactical-phase-guide.md              |  253 ++
+ docs/playbook/templates/intent-template.md         |   98 +
+ .../playbook/templates/phase-execution-template.md |  179 ++
+ docs/playbook/templates/roadmap-template.md        |  144 +
+ docs/playbook/templates/task-breakdown-template.md |  173 +
+ {documentation => docs}/product/brand.md           |    0
+ {documentation => docs}/product/feature-library.md |    0
+ {documentation => docs}/product/jobs-to-be-done.md |    0
+ {documentation => docs}/product/personas.md        |    0
+ .../product/platform-strategy.md                   |    0
+ {documentation => docs}/product/questions.md       |    0
+ {documentation => docs}/product/revenue-model.md   |    0
+ {documentation => docs}/product/scenarios.md       |    0
+ {documentation => docs}/product/success-metrics.md |    0
+ .../product/value-proposition.md                   |    0
+ {documentation => docs}/product/vision.md          |    0
+ .../v0: chef-chopsky custom gpt/custom-gpt.md      |    0
+ .../projects/v0: chef-chopsky custom gpt/prompt.md |    0
+ .../projects/v1: product foundations/prompt.md     |    0
+ .../v2: iterations after first use/prompt.md       |    0
+ .../agent-chat-ui-integration.md                   |    0
+ .../langgraph-agent-setup.md                       |    0
+ .../MANUAL_TESTING_GUIDE.md                        |    0
+ .../PROJECT_COMPLETION_SUMMARY.md                  |    0
+ .../v4: frontend-agent-integration/README.md       |    0
+ .../auto-fix-system/README.md                      |    0
+ .../auto-fix-system/auto-fix-setup.md              |    0
+ .../automated-ci-fix-architecture.md               |    0
+ .../auto-fix-system/automated-ci-fix-plan.md       |    0
+ .../auto-fix-system/cursor-cli-integration.md      |    0
+ .../auto-fix-system/cursor-integration-complete.md |    0
+ .../auto-fix-system/implementation-summary.md      |    0
+ .../auto-fix-system/mvp-tasks.md                   |    0
+ .../auto-fix-system/rapid-prototype-plan.md        |    0
+ .../e2e-testing/README.md                          |    0
+ .../e2e-testing/e2e-improvements-plan.md           |    0
+ .../v4: frontend-agent-integration/plan.md         |    0
+ .../v4: frontend-agent-integration/tasks.md        |    0
+ .../v5: agent-parallelization/batch-1-briefs.md    |    0
+ .../projects/v5: agent-parallelization/plan.md     |    0
+ .../projects/v5: agent-parallelization/tasks.md    |    0
+ {documentation => docs}/roadmap.md                 |    0
+ .../testing/ai-driven-testing-patterns.md          |    0
+ .../testing/e2e-debugging-guide.md                 |    0
+ .../testing/testing-playbook.md                    |    0
+ documentation/.DS_Store                            |  Bin 6148 -> 0 bytes
+ frontend/app/api/debug-env/route.ts                |    1 -
+ frontend/app/api/test-axios-db/route.ts            |    1 -
+ frontend/app/api/test-axios/route.ts               |    1 -
+ frontend/app/api/test-create-conversation/route.ts |    1 -
+ frontend/app/api/test-external/route.ts            |    1 -
+ frontend/app/api/test-fetch-direct/route.ts        |    1 -
+ frontend/app/api/test-hardcoded/route.ts           |    1 -
+ frontend/app/api/test-supabase-axios/route.ts      |    1 -
+ frontend/app/api/test-supabase-minimal/route.ts    |    1 -
+ frontend/app/api/test-supabase-simple/route.ts     |    1 -
+ frontend/app/api/test-supabase/route.ts            |    1 -
+ frontend/lib/axios-database.ts                     |   31 +
+ frontend/lib/supabase.ts                           |   46 +-
+ 88 files changed, 13071 insertions(+), 560 deletions(-)
+ create mode 100644 .cursor/rules/001-core-conventions.mdc
+ rename .cursor/rules/{terminal-best-practices.mdc => 002-terminal-safety.mdc} (53%)
+ rename .cursor/rules/{ai-service-development.mdc => 003-ai-service-development.mdc} (73%)
+ create mode 100644 .cursor/rules/004-ai-development-playbook.mdc
+ rename .cursor/rules/{ai-feature-development.mdc => 100-ai-feature-development.mdc} (66%)
+ create mode 100644 .cursor/rules/101-intent-capture-phase.mdc
+ create mode 100644 .cursor/rules/102-roadmap-creation-phase.mdc
+ create mode 100644 .cursor/rules/103-task-decomposition-phase.mdc
+ create mode 100644 .cursor/rules/104-collaborative-execution-phase.mdc
+ create mode 100644 .cursor/rules/105-continuous-refinement-phase.mdc
+ create mode 100644 .cursor/rules/110-automated-testing.mdc
+ rename .cursor/rules/{pull-request-preparation.mdc => 120-pull-request-preparation.mdc} (75%)
+ create mode 100644 .cursor/rules/200-playwright-test-generator.mdc
+ create mode 100644 .cursor/rules/README.md
+ delete mode 100644 .cursor/rules/automated-testing.mdc
+ delete mode 100644 .cursor/rules/environment-configuration.mdc
+ delete mode 100644 .cursor/rules/generate-playwright-tests.mdc
+ delete mode 100644 .cursor/rules/solopreneur.mdc
+ create mode 100644 .specstory/history/2025-09-30_14-53Z-auto-fix.md
+ create mode 100644 .specstory/history/2025-10-02_19-17Z-e2e.md
+ create mode 100644 .specstory/history/2025-10-02_19-25Z-create-new-branch-for-deployment-feature.md
+ create mode 100644 .specstory/history/2025-10-02_19-43Z-create-branch-for-ai-development-playbook.md
+ create mode 100644 .specstory/history/2025-10-02_19-43Z-feature-ai-development-playbook.md
+ rename {documentation => docs}/business/principles.md (100%)
+ create mode 100644 docs/playbook/README.md
+ create mode 100644 docs/playbook/ai-development-playbook.md
+ create mode 100644 docs/playbook/human-roles-by-phase.md
+ create mode 100644 docs/playbook/implementation-guide.md
+ create mode 100644 docs/playbook/tactical-phase-guide.md
+ create mode 100644 docs/playbook/templates/intent-template.md
+ create mode 100644 docs/playbook/templates/phase-execution-template.md
+ create mode 100644 docs/playbook/templates/roadmap-template.md
+ create mode 100644 docs/playbook/templates/task-breakdown-template.md
+ rename {documentation => docs}/product/brand.md (100%)
+ rename {documentation => docs}/product/feature-library.md (100%)
+ rename {documentation => docs}/product/jobs-to-be-done.md (100%)
+ rename {documentation => docs}/product/personas.md (100%)
+ rename {documentation => docs}/product/platform-strategy.md (100%)
+ rename {documentation => docs}/product/questions.md (100%)
+ rename {documentation => docs}/product/revenue-model.md (100%)
+ rename {documentation => docs}/product/scenarios.md (100%)
+ rename {documentation => docs}/product/success-metrics.md (100%)
+ rename {documentation => docs}/product/value-proposition.md (100%)
+ rename {documentation => docs}/product/vision.md (100%)
+ rename {documentation => docs}/projects/v0: chef-chopsky custom gpt/custom-gpt.md (100%)
+ rename {documentation => docs}/projects/v0: chef-chopsky custom gpt/prompt.md (100%)
+ rename {documentation => docs}/projects/v1: product foundations/prompt.md (100%)
+ rename {documentation => docs}/projects/v2: iterations after first use/prompt.md (100%)
+ rename {documentation => docs}/projects/v3: langgraph-agent-setup/agent-chat-ui-integration.md (100%)
+ rename {documentation => docs}/projects/v3: langgraph-agent-setup/langgraph-agent-setup.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/MANUAL_TESTING_GUIDE.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/PROJECT_COMPLETION_SUMMARY.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/README.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/auto-fix-system/README.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/auto-fix-system/auto-fix-setup.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/auto-fix-system/automated-ci-fix-architecture.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/auto-fix-system/automated-ci-fix-plan.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/auto-fix-system/cursor-cli-integration.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/auto-fix-system/cursor-integration-complete.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/auto-fix-system/implementation-summary.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/auto-fix-system/mvp-tasks.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/auto-fix-system/rapid-prototype-plan.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/e2e-testing/README.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/e2e-testing/e2e-improvements-plan.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/plan.md (100%)
+ rename {documentation => docs}/projects/v4: frontend-agent-integration/tasks.md (100%)
+ rename {documentation => docs}/projects/v5: agent-parallelization/batch-1-briefs.md (100%)
+ rename {documentation => docs}/projects/v5: agent-parallelization/plan.md (100%)
+ rename {documentation => docs}/projects/v5: agent-parallelization/tasks.md (100%)
+ rename {documentation => docs}/roadmap.md (100%)
+ rename {documentation => docs}/testing/ai-driven-testing-patterns.md (100%)
+ rename {documentation => docs}/testing/e2e-debugging-guide.md (100%)
+ rename {documentation => docs}/testing/testing-playbook.md (100%)
+ delete mode 100644 documentation/.DS_Store
+ delete mode 100644 frontend/app/api/debug-env/route.ts
+ delete mode 100644 frontend/app/api/test-axios-db/route.ts
+ delete mode 100644 frontend/app/api/test-axios/route.ts
+ delete mode 100644 frontend/app/api/test-create-conversation/route.ts
+ delete mode 100644 frontend/app/api/test-external/route.ts
+ delete mode 100644 frontend/app/api/test-fetch-direct/route.ts
+ delete mode 100644 frontend/app/api/test-hardcoded/route.ts
+ delete mode 100644 frontend/app/api/test-supabase-axios/route.ts
+ delete mode 100644 frontend/app/api/test-supabase-minimal/route.ts
+ delete mode 100644 frontend/app/api/test-supabase-simple/route.ts
+ delete mode 100644 frontend/app/api/test-supabase/route.ts
+
+```
+
+---
+
+Tool use: **run_terminal_cmd**
+
+```bash
+cd /Users/daviswhitehead/Library/CloudStorage/GoogleDrive-whitehead.davis@gmail.com/My\ Drive/github/chef-chopsky && git push -u origin feature/production-deployment
+```
+
+```
+remote: 
+remote: Create a pull request for 'feature/production-deployment' on GitHub by visiting:        
+remote:      https://github.com/daviswhitehead/chef-chopsky/pull/new/feature/production-deployment        
+remote: 
+To https://github.com/daviswhitehead/chef-chopsky.git
+ * [new branch]      feature/production-deployment -> feature/production-deployment
+branch 'feature/production-deployment' set up to track 'origin/feature/production-deployment'.
+
+```
+
+---
+
+Updated `feature/production-deployment` with the latest from main and pushed it to origin.
+
+1. **Fetched latest changes** from the remote repository
+2. **Merged origin/main** into the feature branch (fast-forward)
+3. **Published the branch** to GitHub with upstream tracking
+
+The branch now includes:
+- Updated Cursor rules and AI development playbook
+- Documentation reorganization (moved from `documentation/` to `docs/`)
+- New testing and automation features
+- Cleanup of test API routes
+- Updated Supabase integration
+
+You can continue working on the production deployment feature. When ready, open a pull request at:
+https://github.com/daviswhitehead/chef-chopsky/pull/new/feature/production-deployment
+
+---
+

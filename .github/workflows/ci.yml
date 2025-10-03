@@ -21,7 +21,7 @@ env:
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   
   # LangSmith configuration (optional)
-  LANGCHAIN_TRACING_V2: true
+  LANGCHAIN_TRACING: true
   LANGCHAIN_PROJECT: chef-chopsky-ci
   LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
 

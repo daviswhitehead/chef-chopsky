@@ -1,0 +1,156 @@
+---
+alwaysApply: true
+description: "CRITICAL SECURITY RULE - Prevents AI from accessing environment files that contain secrets"
+---
+
+# 🚨 CRITICAL SECURITY RULE (HIGHEST PRIORITY)
+
+## 🚨 NEVER ACCESS ENVIRONMENT FILES
+
+### ❌ ABSOLUTELY FORBIDDEN
+- **NEVER** use `cat`, `read_file`, or any tool to access environment files
+- **NEVER** access `.env`, `.env.local`, `.env.staging`, `.env.production`, `.env.development`
+- **NEVER** access any file containing secrets or sensitive configuration
+- **NEVER** print, display, or output environment file contents
+- **NEVER** use terminal commands that could expose environment variables
+
+### ✅ ONLY ALLOWED
+- **ONLY** access `.env.example` files (these contain no secrets)
+- **ONLY** ask the user directly for specific environment values when needed
+- **ONLY** reference environment variable names (not values)
+
+## 🚨 WHY THIS IS CRITICAL
+
+### Security Risk
+- Environment files contain **API keys**, **database passwords**, **authentication tokens**
+- SpecStory automatically backs up conversations to **public GitHub repositories**
+- Accessing environment files = **direct path for secrets to leak publicly**
+- This could compromise the entire application and user data
+
+### Red Flags to Watch For
+- `cat .env*` commands
+- `read_file` calls on environment files
+- Any attempt to access files with `.env` in the name (except `.env.example`)
+- Terminal commands that might expose environment variables
+- Requests to "show me the environment configuration"
+
+## 🛡️ SAFE ALTERNATIVES
+
+### When You Need Environment Info
+1. **Ask the user directly**: "What is your OPENAI_API_KEY value?"
+2. **Reference .env.example**: "Based on .env.example, you need to set OPENAI_API_KEY"
+3. **Ask for specific values**: "What database URL are you using?"
+
+### Safe Commands
+```bash
+# ✅ SAFE - Only show example file
+cat .env.example
+
+# ✅ SAFE - Check if file exists without reading
+ls -la .env*
+
+# ✅ SAFE - Ask user for specific value
+echo "Please provide your OPENAI_API_KEY value"
+```
+
+## 🚨 ENFORCEMENT
+
+### Immediate Actions
+- **STOP** any attempt to access environment files
+- **ASK** the user for specific values instead
+- **REFERENCE** only `.env.example` for structure guidance
+- **NEVER** assume or guess environment values
+
+### If You Accidentally Access Environment Files
+1. **IMMEDIATELY STOP** and inform the user
+2. **DO NOT** display or reference the contents
+3. **ASK** the user to rotate any exposed secrets
+4. **APOLOGIZE** and commit to following this rule strictly
+
+## 🎯 SUCCESS CRITERIA
+- **ZERO** environment file access attempts
+- **ZERO** secret exposure in conversation logs
+- **ONLY** `.env.example` files accessed for reference
+- **DIRECT** user communication for environment values
+- **COMPLETE** security compliance
+
+---
+
+**THIS RULE OVERRIDES ALL OTHER RULES AND MUST BE FOLLOWED WITHOUT EXCEPTION**
+
+*The security of the application and user data depends on strict adherence to this rule.*# 🚨 CRITICAL SECURITY RULE (HIGHEST PRIORITY)
+
+## 🚨 NEVER ACCESS ENVIRONMENT FILES
+
+### ❌ ABSOLUTELY FORBIDDEN
+- **NEVER** use `cat`, `read_file`, or any tool to access environment files
+- **NEVER** access `.env`, `.env.local`, `.env.staging`, `.env.production`, `.env.development`
+- **NEVER** access any file containing secrets or sensitive configuration
+- **NEVER** print, display, or output environment file contents
+- **NEVER** use terminal commands that could expose environment variables
+
+### ✅ ONLY ALLOWED
+- **ONLY** access `.env.example` files (these contain no secrets)
+- **ONLY** ask the user directly for specific environment values when needed
+- **ONLY** reference environment variable names (not values)
+
+## 🚨 WHY THIS IS CRITICAL
+
+### Security Risk
+- Environment files contain **API keys**, **database passwords**, **authentication tokens**
+- SpecStory automatically backs up conversations to **public GitHub repositories**
+- Accessing environment files = **direct path for secrets to leak publicly**
+- This could compromise the entire application and user data
+
+### Red Flags to Watch For
+- `cat .env*` commands
+- `read_file` calls on environment files
+- Any attempt to access files with `.env` in the name (except `.env.example`)
+- Terminal commands that might expose environment variables
+- Requests to "show me the environment configuration"
+
+## 🛡️ SAFE ALTERNATIVES
+
+### When You Need Environment Info
+1. **Ask the user directly**: "What is your OPENAI_API_KEY value?"
+2. **Reference .env.example**: "Based on .env.example, you need to set OPENAI_API_KEY"
+3. **Ask for specific values**: "What database URL are you using?"
+
+### Safe Commands
+```bash
+# ✅ SAFE - Only show example file
+cat .env.example
+
+# ✅ SAFE - Check if file exists without reading
+ls -la .env*
+
+# ✅ SAFE - Ask user for specific value
+echo "Please provide your OPENAI_API_KEY value"
+```
+
+## 🚨 ENFORCEMENT
+
+### Immediate Actions
+- **STOP** any attempt to access environment files
+- **ASK** the user for specific values instead
+- **REFERENCE** only `.env.example` for structure guidance
+- **NEVER** assume or guess environment values
+
+### If You Accidentally Access Environment Files
+1. **IMMEDIATELY STOP** and inform the user
+2. **DO NOT** display or reference the contents
+3. **ASK** the user to rotate any exposed secrets
+4. **APOLOGIZE** and commit to following this rule strictly
+
+## 🎯 SUCCESS CRITERIA
+- **ZERO** environment file access attempts
+- **ZERO** secret exposure in conversation logs
+- **ONLY** `.env.example` files accessed for reference
+- **DIRECT** user communication for environment values
+- **COMPLETE** security compliance
+
+---
+
+**THIS RULE OVERRIDES ALL OTHER RULES AND MUST BE FOLLOWED WITHOUT EXCEPTION**
+
+*The security of the application and user data depends on strict adherence to this rule.*

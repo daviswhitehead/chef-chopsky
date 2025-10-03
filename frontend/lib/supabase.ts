@@ -6,11 +6,11 @@ const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
 // Create client with publishable key
 export const supabase = createClient(supabaseUrl, supabasePublishableKey)
 
-// For server-side operations, try to use service role key if available
+// For server-side operations, use secret key if available
 // Otherwise fall back to publishable key (should work with RLS policies)
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabasePublishableKey
+const secretKey = process.env.SUPABASE_SECRET_KEY || supabasePublishableKey
 
-export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+export const supabaseAdmin = createClient(supabaseUrl, secretKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false

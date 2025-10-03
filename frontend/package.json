@@ -27,6 +27,13 @@
     "test:e2e:network": "playwright test tests/e2e/network-verification.spec.ts",
     "test:e2e:network:headed": "playwright test tests/e2e/network-verification.spec.ts --headed",
     "test:e2e:network:debug": "playwright test tests/e2e/network-verification.spec.ts --debug",
+    "test:e2e:production": "playwright test --config playwright.production.config.ts",
+    "test:e2e:production:headed": "playwright test --config playwright.production.config.ts --headed",
+    "test:e2e:production:debug": "playwright test --config playwright.production.config.ts --debug",
+    "env:sync:vercel": "node ../scripts/sync-vercel-env.js",
+    "env:setup:production": "../scripts/setup-production-env.sh",
+    "env:create:production": "../scripts/create-env-production.sh",
+    "env:sync:from-file": "../scripts/sync-vercel-env.sh --file frontend/.env.production",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:all:with-network": "npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:e2e:network",
     "test:langsmith": "jest --config jest.integration.config.js tests/integration/langsmith-tracing.test.ts"
