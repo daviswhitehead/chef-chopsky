@@ -33,7 +33,7 @@ print_error() {
 }
 
 # Configuration
-STAGING_FRONTEND_URL="https://chef-chopsky-staging.vercel.app"
+STAGING_FRONTEND_URL="https://chef-chopsky-git-staging.vercel.app"
 STAGING_AGENT_URL="https://chef-chopsky-staging.up.railway.app"
 HEALTH_ENDPOINT="/health"
 

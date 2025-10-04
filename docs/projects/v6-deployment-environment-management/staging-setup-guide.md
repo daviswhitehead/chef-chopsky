@@ -1,15 +1,15 @@
 # Staging Environment Setup Guide
 
 ## Overview
-This guide walks through creating a complete staging environment for Chef Chopsky, separate from production but following the same architecture patterns.
+This guide walks through creating a complete staging environment for Chef Chopsky using Vercel's built-in environment functionality within a single project.
 
 ## Staging Architecture
 
-### Environment Separation
-- **Frontend**: `chef-chopsky-staging` Vercel project
+### Single Project with Environments
+- **Frontend**: `chef-chopsky` Vercel project (single project, multiple environments)
 - **Agent**: `chef-chopsky-staging` Railway project  
 - **Database**: Separate Supabase staging project
-- **Domain**: `https://chef-chopsky-staging.vercel.app`
+- **Domain**: `https://chef-chopsky-git-staging.vercel.app` (preview environment)
 
 ### Cost Optimization
 - Use free tiers where possible
@@ -19,29 +19,32 @@ This guide walks through creating a complete staging environment for Chef Chopsk
 
 ## Step-by-Step Setup
 
-### 1. Create Staging Vercel Project
+### 1. Configure Vercel Environment Variables
 
-#### 1.1 Create New Vercel Project
+#### 1.1 Access Existing Project
 1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
-2. Click "Add New..." → "Project"
-3. Import from GitHub repository
-4. **Project Name**: `chef-chopsky-staging`
-5. **Root Directory**: `frontend/`
-6. **Framework Preset**: Next.js (auto-detected)
+2. Select existing `chef-chopsky` project
+3. Go to Settings → Environment Variables
 
-#### 1.2 Configure Build Settings
-```json
-{
-  "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
-  "devCommand": "npm run dev"
-}
+#### 1.2 Configure Production Environment Variables
+Set variables for **Production** environment (main branch):
+
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-production-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_production_publishable_key_here
+SUPABASE_SECRET_KEY=your_production_supabase_secret_key_here
+
+# Agent Service Configuration
+AGENT_SERVICE_URL=https://chef-chopsky-production.up.railway.app
+
+# Environment Configuration
+NODE_ENV=production
+NEXT_PUBLIC_APP_ENV=production
 ```
 
-#### 1.3 Set Environment Variables
-In Vercel project settings → Environment Variables:
+#### 1.3 Configure Preview Environment Variables
+Set variables for **Preview** environment (staging + feature branches):
 
 ```bash
 # Supabase Configuration

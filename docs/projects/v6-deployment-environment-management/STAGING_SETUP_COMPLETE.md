@@ -1,7 +1,7 @@
-# 🎉 Chef Chopsky Staging Environment Setup Complete
+# 🎉 Chef Chopsky Single-Project Staging Environment Setup Complete
 
 ## Overview
-The staging environment configuration for Chef Chopsky has been successfully created and is ready for manual deployment. All configuration files, scripts, and documentation are in place.
+The staging environment configuration for Chef Chopsky has been successfully updated to use Vercel's single-project approach with built-in environment functionality. All configuration files, scripts, and documentation are in place.
 
 ## What's Been Created
 
@@ -23,10 +23,22 @@ The staging environment configuration for Chef Chopsky has been successfully cre
 
 ## Environment Configuration
 
-### Staging URLs (After Manual Deployment)
-- **Frontend**: `https://chef-chopsky-staging.vercel.app`
+### Environment URLs (After Manual Deployment)
+
+#### Production Environment
+- **Frontend**: `https://chef-chopsky-production.vercel.app`
+- **Branch**: `main`
+- **Agent**: `https://chef-chopsky-production.up.railway.app`
+
+#### Staging Environment (Preview)
+- **Frontend**: `https://chef-chopsky-git-staging.vercel.app`
+- **Branch**: `staging`
 - **Agent**: `https://chef-chopsky-staging.up.railway.app`
-- **Health Check**: `https://chef-chopsky-staging.up.railway.app/health`
+
+#### Feature Environments (Preview)
+- **URL Pattern**: `https://chef-chopsky-git-{branch-name}.vercel.app`
+- **Branches**: Any feature branch
+- **Agent**: `https://chef-chopsky-staging.up.railway.app` (shared)
 
 ### Environment Variables Configured
 - **NODE_ENV**: `staging`
@@ -39,12 +51,13 @@ The staging environment configuration for Chef Chopsky has been successfully cre
 
 ## Next Steps (Manual Deployment Required)
 
-### 1. Create Vercel Staging Project
+### 1. Configure Vercel Environment Variables
 ```bash
 # Go to https://vercel.com/dashboard
-# Create new project: chef-chopsky-staging
-# Set root directory to: frontend/
-# Configure environment variables from frontend/.env.staging
+# Select existing project: chef-chopsky
+# Go to Settings → Environment Variables
+# Configure Production environment variables (main branch)
+# Configure Preview environment variables (staging + feature branches)
 ```
 
 ### 2. Create Supabase Staging Project
@@ -63,7 +76,17 @@ The staging environment configuration for Chef Chopsky has been successfully cre
 # Configure environment variables from agent/.env.staging
 ```
 
-### 4. Validate Deployment
+### 4. Create Staging Branch
+```bash
+# Create staging branch
+git checkout -b staging
+git push origin staging
+
+# This automatically creates staging preview deployment:
+# https://chef-chopsky-git-staging.vercel.app
+```
+
+### 5. Validate Deployment
 ```bash
 # Run validation script
 ./scripts/validate-staging-environment.sh

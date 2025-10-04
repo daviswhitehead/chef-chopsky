@@ -5,16 +5,25 @@ This document tracks the current status of the Chef Chopsky staging environment 
 
 ## Environment URLs
 
-### Staging Environment
-- **Frontend**: `https://chef-chopsky-staging.vercel.app`
-- **Agent**: `https://chef-chopsky-staging.up.railway.app`
-- **Health Check**: `https://chef-chopsky-staging.up.railway.app/health`
-- **Database**: Supabase staging project dashboard
+### Single Vercel Project: `chef-chopsky`
 
-### Production Environment (Reference)
+#### Production Environment
 - **Frontend**: `https://chef-chopsky-production.vercel.app`
+- **Branch**: `main`
 - **Agent**: `https://chef-chopsky-production.up.railway.app`
 - **Health Check**: `https://chef-chopsky-production.up.railway.app/health`
+
+#### Staging Environment (Preview)
+- **Frontend**: `https://chef-chopsky-git-staging.vercel.app`
+- **Branch**: `staging`
+- **Agent**: `https://chef-chopsky-staging.up.railway.app`
+- **Health Check**: `https://chef-chopsky-staging.up.railway.app/health`
+
+#### Feature Environments (Preview)
+- **URL Pattern**: `https://chef-chopsky-git-{branch-name}.vercel.app`
+- **Branches**: Any feature branch (e.g., `feature/new-recipe-search`)
+- **Agent**: `https://chef-chopsky-staging.up.railway.app` (shared)
+- **Health Check**: `https://chef-chopsky-staging.up.railway.app/health`
 
 ## Configuration Files Created
 
