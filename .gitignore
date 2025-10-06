@@ -216,4 +216,11 @@ frontend/supabase/.temp/
 agent/server.log
 
 .github/testing/secrets/.secrets
-.vercel
+.specstory/
+
+# Vercel
+.vercel/
+
+# Environment files
+.env.production
+.env.staging
