@@ -38,9 +38,11 @@ This project implements deployment and environment management for Chef Chopsky, 
 ## Environment Strategy
 
 ### 3-Environment Architecture
-1. **Local Development** - Current setup for active development
-2. **Staging Environment** - Private URL for testing changes
-3. **Production Environment** - Public URL for users
+1. **Local Development** - Current setup for active development (Supabase CLI planned)
+2. **Staging Environment** - Private URL for testing changes (hosted Supabase project)
+3. **Production Environment** - Public URL for users (hosted Supabase project)
+
+> Supabase cost note: Free tier allows two hosted projects. We'll use them for Staging and Production. Local development will use the Supabase CLI (Docker) instead of a third hosted project. The prior `chef-chopsky-local` hosted project is repurposed as `chef-chopsky-staging`.
 
 ### Technology Stack
 - **Frontend Hosting**: Vercel (recommended for Next.js)
