@@ -27,3 +27,192 @@ globs: *
     *   In Vercel, for the `chef-chopsky-staging` project, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to your STAGING project values and `SUPABASE_SECRET_KEY` to the STAGING service role key.
     *   In Vercel, for the `chef-chopsky` (production) project, ensure those three env vars are production values only.
     *   Redeploy both projects after saving changes.
+
+## AI CODING ASSISTANT RULES
+
+### GENERAL BEHAVIOR
+- You are an expert software engineer.
+- Follow instructions precisely and completely.
+- Ask clarifying questions before proceeding if instructions are ambiguous.
+- Generate high-quality, well-documented code.
+- Adhere to project standards and best practices.
+- Focus on solving the user's problem efficiently and effectively.
+- Use the tools available to you to gather information and complete tasks.
+- Never expose secrets or API keys in the codebase or in any generated text.
+- Use `docs/` to learn about architectural decisions, API usage, and data models.
+- Use comments to explain complex code.
+- Use descriptive variable names.
+- Keep code DRY (Don't Repeat Yourself).
+- Acknowledge all steps.
+
+### TOOLS
+- You have access to the following tools:
+  - `codebase_search`: Search the codebase for relevant information.
+  - `file_read`: Read the content of a file.
+  - `file_write`: Write content to a file.
+  - `file_delete`: Delete a file.
+  - `mcp_cursor-playwright_browser_snapshot`: Take a screenshot of the browser.
+  - `mcp_cursor-playwright_browser_console_messages`: Returns all console messages.
+  - `mcp_cursor-playwright_browser_click`: Perform click on a web page
+  - `mcp_cursor-playwright_browser_type`: Type text into editable element
+  - `mcp_cursor-playwright_browser_wait_for`: Wait for text to appear or disappear or a specified time to pass
+  - `mcp_Railway_get-logs`: Get the logs of a Railway service.
+  - `mcp_Railway_list-variables`: List Railway environment variables.
+  - `mcp_Railway_check-railway-status`: Check if Railway CLI is installed and user is logged in.
+  - `mcp_Railway_set-variables`: Set environment variables for a Railway service.
+  - `run_terminal_cmd`: Execute a terminal command.
+  - `apply_patch`: Apply a patch to a file.
+  - `web_search`: Web search for relevant information (e.g., library documentation, usage examples).
+  - `list_dir`: List the files in a directory.
+  - `glob_file_search`: Search for files matching a glob pattern.
+  - `fetch_rules`: Fetch the active rules.
+  - `mcp_vercel_list_teams`: List the user's teams.
+  - `mcp_vercel_list_projects`: List all Vercel projects for a user.
+  - `mcp_vercel_get_project`: Get a specific project in Vercel.
+  - `mcp_vercel_get_deployment`: Get a specific deployment by ID or URL.
+  - `mcp_vercel_get_deployment_build_logs`: Get the build logs of a deployment by deployment ID or URL.
+  - `mcp_vercel_deploy_to_vercel`: Deploy the current project to Vercel
+  - `search_replace`: Performs a find and replace operation.
+
+### SECURITY
+- Never read or write `.env` files directly. This includes `.env.local`, `.env.production`, and `.env.staging`.
+- Never output the contents of `.env` files or any sensitive configuration files.
+- Instead, use the `codebase_search` tool to find relevant information and the `user` to provide the actual API keys or secrets.
+- When creating or modifying code, always use parameterized queries to prevent SQL injection attacks.
+- Sanitize user input to prevent XSS attacks.
+- When using external libraries, carefully review their documentation and security implications.
+
+### STRATEGIC ASSISTANT PROMPT
+
+Here is a strategic assistant prompt to consider:
+```
+As an AI assistant, focus on creating a clear and maintainable structure for the project, while making sure that the code meets security and data privacy standards. Be prepared to explain the reasoning behind any architectural decisions, and to suggest alternative approaches when necessary.
+```
+
+### CODEBASE SEARCH
+- When using `codebase_search`, be specific and descriptive in your search query.
+- Focus on finding relevant code snippets, data models, or architectural patterns.
+- Do not use `codebase_search` to find secrets or API keys.
+- If you can't find something with `codebase_search`, ask the user for more information or context.
+- Prefer searching specific files or directories over the entire codebase.
+
+### FILE READING & WRITING
+- When using `file_read`, be sure to specify the correct file path.
+- When using `file_write`, create a new file if necessary.
+- When modifying an existing file, be sure to preserve the original formatting and structure.
+- Before writing to a file, confirm that you have a clear understanding of the file's purpose and content.
+- If you're asked to write an executable script, be sure to set the correct permissions (e.g., `chmod +x`).
+
+### RUN TERMINAL COMMAND
+- Use the `run_terminal_cmd` tool to execute terminal commands.
+- Be careful when executing commands that could modify the system or data.
+- Always confirm with the user before executing destructive commands (e.g., deleting files, dropping databases).
+- Only run commands that are necessary to complete the task.
+- Do not run commands that could expose secrets or API keys.
+- Always run commands one at a time and do not chain them with `&&` or `||`.
+- When running commands, always specify the full absolute path to the command.
+
+### MULTI-TOOL USAGE
+- Chain multiple tools together to accomplish complex tasks.
+- For example, use `codebase_search` to find a file, then use `file_read` to read its content, and then use `file_write` to modify it.
+- Use `list_dir` to explore directory structures before attempting to read or write files.
+
+### EXTERNAL API CALLS
+- Only make calls to external APIs when necessary.
+- Always use a secure HTTPS connection.
+- Never include secrets or API keys in the URL.
+- Use the appropriate HTTP method (e.g., `GET`, `POST`, `PUT`, `DELETE`).
+- Handle errors gracefully.
+
+### CREATING EXECUTABLE SCRIPTS
+- When creating shell scripts, always include a shebang line (`#!/bin/bash`).
+- Make the script executable using `chmod +x`.
+- Use descriptive variable names.
+- Add comments to explain complex logic.
+- Test the script thoroughly before using it in production.
+
+### CODE COMMENTS
+- Add comments explaining the high-level purpose of functions, classes, and modules.
+- Explain complex logic or algorithms in detail.
+- Use comments to document the purpose of variables and constants.
+- Use comments to explain the expected input and output of functions.
+- Use comments to document any known limitations or issues.
+
+### CURSOR RULES
+- Adhere to all cursor rules and guidelines.
+- Use cursor hooks to enforce project standards and prevent common errors.
+- Use cursor snippets to insert code templates.
+- Use cursor commands to automate repetitive tasks.
+
+### AI DEVELOPMENT PLAYBOOK
+- Follow the AI development playbook for all AI-related tasks.
+- Use the appropriate AI models and tools for the task at hand.
+- Test AI models thoroughly and validate their performance.
+- Document all AI-related code and configurations.
+
+### DOCUMENTATION
+- Create documentation for all new code and features.
+- Update existing documentation when making changes.
+- Use a consistent documentation style.
+- Include examples and usage instructions.
+- Keep documentation up-to-date.
+
+### CODE CONTRIBUTIONS
+- All code contributions should follow the project's coding standards and style guidelines.
+- Code should be well-documented and easy to understand.
+- All code should be tested thoroughly before being submitted for review.
+- Code reviews should be completed in a timely manner.
+- All code contributions should be reviewed by at least one other developer before being merged into the main branch.
+
+### ENVIRONMENT MANAGEMENT
+- Never hardcode environment-specific values in the codebase.
+- Always use environment variables to configure the application.
+- Use a consistent naming convention for environment variables.
+- Document all environment variables in the `docs/` directory.
+- Use separate environment variables for local development, staging, and production.
+- Store secrets and API keys securely using a dedicated secrets management system.
+- Use a tool like `direnv` to manage environment variables during local development.
+- Implement a system for validating environment variables at startup.
+- Never store sensitive information in the codebase or in configuration files that are stored in the codebase.
+- Follow a 3-environment architecture: Development, Staging, and Production.
+
+### DEPLOYMENT AND INFRASTRUCTURE
+- Use Infrastructure-as-Code (IaC) tools to manage infrastructure.
+- Automate deployments using CI/CD pipelines.
+- Monitor application performance and health using monitoring tools.
+- Implement rollback procedures for failed deployments.
+- Use a tool like Terraform or CloudFormation to provision infrastructure.
+- Automate infrastructure provisioning and configuration.
+- Design for scalability and resilience.
+- Implement disaster recovery procedures.
+- Use a CDN to serve static assets.
+- Implement caching to improve performance.
+
+### PRODUCTION SAFETY RULES
+- Validate critical configuration on startup.
+- Fail loudly and immediately if production requirements are not met.
+- Never fall back to mock/test data in production environments.
+- Implement environment-specific validation.
+- Use different behaviors for development vs production.
+- Make production failures impossible to ignore.
+- To access your deployed frontend:
+  1. Visit the Vercel Dashboard
+  2. Navigate to your project
+  3. Click on the deployment to access it with proper authentication
+  4. Or disable protection if you want public access (in project settings)
+- To bypass this for testing:
+  1. Log into Vercel in your browser
+  2. Access through the dashboard
+  3. Or disable protection in project settings if you want public access
+
+### CURSOR RULES
+- Adhere to all cursor rules and guidelines.
+- Use cursor hooks to enforce project standards and prevent common errors.
+- Use cursor snippets to insert code templates.
+- Use cursor commands to automate repetitive tasks.
+
+### AI DEVELOPMENT PLAYBOOK
+- Follow the AI development playbook for all AI-related tasks.
+- Use the appropriate AI models and tools for the task at hand.
+- Test AI models thoroughly and validate their performance.
+- Document all AI-related code and configurations.
