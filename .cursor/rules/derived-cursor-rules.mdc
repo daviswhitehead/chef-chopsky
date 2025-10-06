@@ -1,0 +1,29 @@
+---
+description: AI rules derived by SpecStory from the project AI interaction history
+globs: *
+---
+
+## HEADERS
+
+## PROJECT DOCUMENTATION & CONTEXT SYSTEM
+
+*   **Environment Workflow and Testing Strategy:** Document the environment workflow, explaining the purpose of each environment (Development, Preview, Staging, and Production), the testing strategy for each, and the overall deployment workflow. Include environment-specific configurations and a cost-effective approach using free tiers.
+*   **Staging Setup Guide:** Update the staging setup guide to reflect the separate Vercel project approach instead of using Vercel's built-in environment functionality. This includes architectural changes and step-by-step instructions for creating a separate staging project.
+*   **Local Supabase via CLI:** Adopt Supabase CLI for local development database (Docker-based). Add `npm run supabase:start`/`supabase:stop` scripts and docs. Create `frontend/.env.local.example` pointing to local Supabase URL/anon key. Document migrations flow: `npx supabase db reset` for local; `db push` for staging/prod. Document environment mapping: Local (CLI) | Staging (hosted `chef-chopsky-staging`) | Production (hosted `chef-chopsky`). Note: the previous `chef-chopsky-local` hosted project has been repurposed as the staging project to stay within free tier limits
+
+## TECH STACK
+
+## CODING STANDARDS
+
+## WORKFLOW & RELEASE RULES
+
+*   **Vercel Environment Variables:** When setting environment variables in Vercel projects, the separate staging project approach uses the "production" environment type for the staging project. This is done to stay within free tier limits. This may impact the commands used to sync environment variables.
+*   **Syncing Vercel Environment Variables:** The `sync-vercel-env.sh` script can be used to sync environment variables. The separate staging project uses the "production" environment type, so the command should be run with the `--environment production` flag.
+    *   When syncing environment variables for the staging environment, first navigate to the frontend directory (`cd frontend`). Then, link the Vercel project (`vercel link --yes --project chef-chopsky-staging`). Finally, run the sync script from the parent directory (`cd ..; ./scripts/sync-vercel-env.sh --file frontend/.env.staging --environment production`).
+
+## DEBUGGING
+
+*   **Staging vs Production Supabase Credentials:** If staging writes are appearing in production, it's likely that the Vercel environment variables for both staging and production are linked to the same Supabase project. The `NEXT_PUBLIC_SUPABASE_URL` and keys should be different for each environment. To fix this:
+    *   In Vercel, for the `chef-chopsky-staging` project, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to your STAGING project values and `SUPABASE_SECRET_KEY` to the STAGING service role key.
+    *   In Vercel, for the `chef-chopsky` (production) project, ensure those three env vars are production values only.
+    *   Redeploy both projects after saving changes.

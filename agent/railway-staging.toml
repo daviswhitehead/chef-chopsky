@@ -1,0 +1,44 @@
+# Railway Config as Code for Chef Chopsky Agent Service - STAGING
+# This file defines the staging deployment configuration for the agent service
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm install && npm run build"
+
+[deploy]
+startCommand = "node dist/src/server.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 1
+
+# Service configuration
+[service]
+name = "chef-chopsky-staging-agent"
+description = "Chef Chopsky AI Agent Service - Staging Environment"
+
+# Environment-specific settings
+[environments.staging]
+# Staging-specific overrides
+# Note: Environment variables are managed separately via Railway dashboard or CLI
+
+# Resource limits and scaling
+[resources]
+# Memory and CPU limits can be specified here
+# Railway will auto-scale based on usage
+
+# Networking configuration
+[networking]
+# Port configuration
+# Railway automatically sets PORT environment variable
+
+# Monitoring and observability
+[monitoring]
+# Health check configuration
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+
+# Logging configuration
+[logging]
+# Log level and format settings
+level = "info"
