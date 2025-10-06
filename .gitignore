@@ -216,3 +216,4 @@ frontend/supabase/.temp/
 agent/server.log
 
 .github/testing/secrets/.secrets
+.vercel

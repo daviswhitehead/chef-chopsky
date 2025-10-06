@@ -1,15 +1,16 @@
 # Staging Environment Setup Guide
 
 ## Overview
-This guide walks through creating a complete staging environment for Chef Chopsky using Vercel's built-in environment functionality within a single project.
+This guide walks through creating a complete staging environment for Chef Chopsky using a separate Vercel project (free tier) instead of Vercel Pro's built-in environment functionality.
 
 ## Staging Architecture
 
-### Single Project with Environments
-- **Frontend**: `chef-chopsky` Vercel project (single project, multiple environments)
+### Separate Projects Approach
+- **Frontend Production**: `chef-chopsky` Vercel project
+- **Frontend Staging**: `chef-chopsky-staging` Vercel project (separate project)
 - **Agent**: `chef-chopsky-staging` Railway project  
 - **Database**: Separate Supabase staging project
-- **Domain**: `https://chef-chopsky-git-staging.vercel.app` (preview environment)
+- **Domain**: `https://chef-chopsky-staging.vercel.app` (dedicated staging URL)
 
 ### Cost Optimization
 - Use free tiers where possible
@@ -19,18 +20,42 @@ This guide walks through creating a complete staging environment for Chef Chopsk
 
 ## Step-by-Step Setup
 
-### 1. Configure Vercel Environment Variables
+### 1. Create Separate Vercel Staging Project
 
-#### 1.1 Access Existing Project
+#### 1.1 Create New Vercel Project
 1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
-2. Select existing `chef-chopsky` project
-3. Go to Settings → Environment Variables
+2. Click "New Project"
+3. **Import Git Repository**: Select your `chef-chopsky` repository
+4. **Project Name**: `chef-chopsky-staging`
+5. **Root Directory**: `frontend/`
+6. **Framework Preset**: Next.js
+7. Click "Deploy"
 
-#### 1.2 Configure Production Environment Variables
-Set variables for **Production** environment (main branch):
+#### 1.2 Configure Staging Environment Variables
+In the new staging project, go to Settings → Environment Variables:
 
 ```bash
-# Supabase Configuration
+# Supabase Configuration (Staging)
+NEXT_PUBLIC_SUPABASE_URL=https://your-staging-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_staging_publishable_key_here
+SUPABASE_SECRET_KEY=your_staging_supabase_secret_key_here
+
+# Agent Service Configuration
+AGENT_SERVICE_URL=https://chef-chopsky-staging.up.railway.app
+
+# Environment Configuration
+NODE_ENV=staging
+NEXT_PUBLIC_APP_ENV=staging
+
+# Staging Access Control
+STAGING_PASSWORD=chef-chopsky-staging-2025
+```
+
+#### 1.3 Configure Production Environment Variables
+In your existing production project (`chef-chopsky`), ensure these variables are set:
+
+```bash
+# Supabase Configuration (Production)
 NEXT_PUBLIC_SUPABASE_URL=https://your-production-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_production_publishable_key_here
 SUPABASE_SECRET_KEY=your_production_supabase_secret_key_here
@@ -43,24 +68,9 @@ NODE_ENV=production
 NEXT_PUBLIC_APP_ENV=production
 ```
 
-#### 1.3 Configure Preview Environment Variables
-Set variables for **Preview** environment (staging + feature branches):
-
-```bash
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://your-staging-project-ref.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_staging_publishable_key_here
-SUPABASE_SECRET_KEY=your_staging_supabase_secret_key_here
-
-# Agent Service Configuration
-AGENT_SERVICE_URL=https://chef-chopsky-staging.up.railway.app
-
-# Environment Configuration
-NODE_ENV=staging
-NEXT_PUBLIC_APP_ENV=staging
-```
-
 ### 2. Create Staging Supabase Project
+
+> Note: To stay within Supabase free-tier project limits, the previously named `chef-chopsky-local` hosted project can be repurposed as the staging database. For local development going forward, we'll use the Supabase CLI (Docker) instead of a third hosted project. See the roadmap backlog for details.
 
 #### 2.1 Create New Supabase Project
 1. Go to [supabase.com/dashboard](https://supabase.com/dashboard)
@@ -259,15 +269,46 @@ Verify no cross-environment data bleed:
 - `agent/railway-staging.toml` - Staging Railway config
 
 ### URLs and Endpoints
-- **Frontend**: `https://chef-chopsky-staging.vercel.app`
-- **Agent**: `https://chef-chopsky-staging.up.railway.app`
+- **Frontend Production**: `https://chef-chopsky.vercel.app`
+- **Frontend Staging**: `https://chef-chopsky-staging.vercel.app`
+- **Agent Staging**: `https://chef-chopsky-staging.up.railway.app`
 - **Health Check**: `https://chef-chopsky-staging.up.railway.app/health`
 - **Database**: Supabase staging project dashboard
+
+## Benefits of Separate Projects Approach
+
+### Cost Savings
+- **No Vercel Pro Required**: Avoid $30/month Pro subscription
+- **Free Tier Usage**: Both projects use Vercel's free tier
+- **Independent Scaling**: Each environment scales independently
+
+### Operational Benefits
+- **Clear Separation**: Production and staging are completely isolated
+- **Independent Deployments**: Deploy to staging without affecting production
+- **Easy Management**: Separate project settings and configurations
+- **Team Access**: Different team members can have different access levels
+
+### Development Workflow
+- **Feature Testing**: Test features in staging before production
+- **Safe Experimentation**: Try new configurations without risk
+- **Stakeholder Demos**: Share staging URL for demos and testing
+- **CI/CD Integration**: Easy to integrate with automated deployment pipelines
+
+### Comparison with Vercel Pro Environments
+| Feature | Separate Projects (Free) | Vercel Pro Environments |
+|---------|-------------------------|------------------------|
+| Cost | $0/month | $30/month |
+| Isolation | Complete | Partial |
+| Custom Domains | Yes | Yes |
+| Environment Variables | Per project | Per environment |
+| Deployment Control | Independent | Branch-based |
+| Team Access | Per project | Per environment |
 
 ## Cost Management
 
 ### Free Tier Usage
-- **Vercel**: Free tier (100GB bandwidth, unlimited static)
+- **Vercel Production**: Free tier (100GB bandwidth, unlimited static)
+- **Vercel Staging**: Free tier (100GB bandwidth, unlimited static) - **Separate project**
 - **Railway**: Free tier (100GB bandwidth, 1GB RAM)
 - **Supabase**: Free tier (500MB database, 2GB bandwidth)
 - **OpenAI**: Shared with production (pay-per-use)

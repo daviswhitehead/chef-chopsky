@@ -145,6 +145,24 @@
 - **AI Tasks**: Documentation generation, monitoring setup guidance, troubleshooting guides
 - **Time Estimate**: 4-6 hours over 2 days
 
+## Backlog (Future)
+
+### Auth + User-Scoped Retrieval (separate project)
+- [ ] 5.1 Supabase Auth integration (JWT) and user context to agent
+- [ ] 5.2 Supabase RLS policies for user-scoped documents (pantry, notes)
+- [ ] 5.3 Pinecone metadata schema `{ user_id, org_id?, env, doc_id, type }`
+- [ ] 5.4 Sync worker: Supabase → Pinecone upsert/delete with retries
+- [ ] 5.5 Post-retrieval authorization check against Supabase before returning data
+- [ ] 5.6 E2E tests for user isolation
+
+### Local Supabase via CLI
+- [ ] 6.1 Adopt Supabase CLI for local development database (Docker-based)
+- [ ] 6.2 Add `npm run supabase:start`/`supabase:stop` scripts and docs
+- [ ] 6.3 Create `frontend/.env.local.example` pointing to local Supabase URL/anon key
+- [ ] 6.4 Migrations flow: `npx supabase db reset` for local; `db push` for staging/prod
+- [ ] 6.5 Document environment mapping: Local (CLI) | Staging (hosted `chef-chopsky-staging`) | Production (hosted `chef-chopsky`)
+- [ ] 6.6 Add note: the previous `chef-chopsky-local` hosted project has been repurposed as the staging project to stay within free tier limits
+
 ## Dependency Mapping
 
 ### Critical Path Dependencies

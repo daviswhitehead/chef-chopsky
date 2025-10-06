@@ -3,5 +3,6 @@
   "workspace_id_at": "2025-10-02T18:25:48Z",
   "git_id": "9560-5f62-f9df-c31f",
   "git_id_at": "2025-10-02T18:25:48Z",
-  "project_name": "chef-chopsky"
+  "project_name": "chef-chopsky",
+  "cloud_sync": true
 }
