@@ -76,6 +76,8 @@ globs: *
   - `mcp_vercel_get_deployment_build_logs`: Get the build logs of a deployment by deployment ID or URL.
   - `mcp_vercel_deploy_to_vercel`: Deploy the current project to Vercel
   - `search_replace`: Performs a find and replace operation.
+  - `read_lints`: Reads linting errors in a file.
+  - `grep`: Searches for a pattern in a file or directory.
 
 ### SECURITY
 - Never read or write `.env` files directly. This includes `.env.local`, `.env.production`, and `.env.staging`.
@@ -301,3 +303,13 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
   !.env.staging.example
   !.env.production.example
   ```
+
+### TESTING
+- Before merging a pull request, run as many checks as possible locally against the branch and staging. This includes:
+    - Running agent tests that are failing in GitHub
+    - Running frontend tests (Node 20.x) that are failing
+    - Running health checks and environment separation tests
+    - Running staging deployment validation
+    - Running CI checks including security and integration tests
+    - Fixing any issues found during local testing.
+- When running agent tests locally, be aware that some tests are designed to trigger production safety guards when running with production configurations but invalid API keys. These "failing" tests are actually verifying that the guards are working correctly.

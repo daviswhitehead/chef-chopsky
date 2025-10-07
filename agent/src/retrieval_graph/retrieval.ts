@@ -11,6 +11,7 @@ import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
 import { Embeddings } from "@langchain/core/embeddings";
 import { CohereEmbeddings } from "@langchain/cohere";
 import { OpenAIEmbeddings } from "@langchain/openai";
+import { config } from "../config/index.js";
 
 async function makeElasticRetriever(
   configuration: ReturnType<typeof ensureConfiguration>,
@@ -47,7 +48,7 @@ async function makeElasticRetriever(
   });
 
   // Import config to get environment-specific index name
-  const { langchainIndexName, appEnv } = require('../config/index.js').config;
+  const { langchainIndexName, appEnv } = config;
   const indexName = `${langchainIndexName}-${appEnv}`;
   
   const vectorStore = new ElasticVectorSearch(embeddingModel, {
@@ -69,7 +70,7 @@ async function makePineconeRetriever(
   embeddingModel: Embeddings,
 ): Promise<VectorStoreRetriever> {
   // Import config to get environment-specific index name
-  const { langchainIndexName, appEnv } = require('../config/index.js').config;
+  const { langchainIndexName, appEnv } = config;
   const indexName = `${langchainIndexName}-${appEnv}`;
   
   const pinecone = new PineconeClient();
@@ -97,7 +98,7 @@ async function makeMongoDBRetriever(
   }
   
   // Import config to get environment-specific namespace prefix
-  const { mongoNamespacePrefix, appEnv } = require('../config/index.js').config;
+  const { mongoNamespacePrefix, appEnv } = config;
   const client = new MongoClient(process.env.MONGODB_URI);
   const namespace = `${mongoNamespacePrefix}_${appEnv}_${configuration.userId}`;
   const [dbName, collectionName] = namespace.split(".");
@@ -151,7 +152,7 @@ async function makeMemoryRetriever(
   const vectorStore = new MemoryVectorStore(embeddingModel);
   
   // Import config to get environment discriminator
-  const { appEnv } = require('../config/index.js').config;
+  const { appEnv } = config;
   
   // Add some sample cooking documents for Chef Chopsky with environment discriminator
   const sampleDocs = [

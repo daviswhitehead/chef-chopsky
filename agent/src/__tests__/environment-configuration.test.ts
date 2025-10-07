@@ -1,3 +1,4 @@
+import { jest, describe, it, beforeEach, expect } from '@jest/globals';
 import { ensureConfiguration } from '../retrieval_graph/configuration.js';
 
 describe('Environment Configuration', () => {
@@ -21,7 +22,8 @@ describe('Environment Configuration', () => {
       expect(() => {
         // Re-import config to trigger validation
         jest.resetModules();
-        require('../config/index.js');
+        // Use dynamic import for ES modules
+        import('../config/index.js');
       }).toThrow('process.exit called');
       
       mockExit.mockRestore();
@@ -40,7 +42,8 @@ describe('Environment Configuration', () => {
       expect(() => {
         // Re-import config to trigger validation
         jest.resetModules();
-        require('../config/index.js');
+        // Use dynamic import for ES modules
+        import('../config/index.js');
       }).toThrow('process.exit called');
       
       mockExit.mockRestore();
@@ -59,7 +62,8 @@ describe('Environment Configuration', () => {
       expect(() => {
         // Re-import config to trigger validation
         jest.resetModules();
-        require('../config/index.js');
+        // Use dynamic import for ES modules
+        import('../config/index.js');
       }).not.toThrow();
       
       mockExit.mockRestore();
@@ -76,22 +80,22 @@ describe('Environment Configuration', () => {
       delete process.env.APP_ENV;
     });
 
-    it('should use environment variables for retriever configuration', () => {
+    it('should use environment variables for retriever configuration', async () => {
       process.env.RETRIEVER_PROVIDER = 'pinecone';
       process.env.EMBEDDING_MODEL = 'openai/text-embedding-3-large';
       
       // Re-import config to get updated values
       jest.resetModules();
-      const { config: updatedConfig } = require('../config/index.js');
+      const { config: updatedConfig } = await import('../config/index.js');
       
       expect(updatedConfig.retrieverProvider).toBe('pinecone');
       expect(updatedConfig.embeddingModel).toBe('openai/text-embedding-3-large');
     });
 
-    it('should use defaults when environment variables are not set', () => {
+    it('should use defaults when environment variables are not set', async () => {
       // Re-import config to get default values
       jest.resetModules();
-      const { config: defaultConfig } = require('../config/index.js');
+      const { config: defaultConfig } = await import('../config/index.js');
       
       expect(defaultConfig.retrieverProvider).toBe('memory');
       expect(defaultConfig.embeddingModel).toBe('openai/text-embedding-3-small');
@@ -99,22 +103,22 @@ describe('Environment Configuration', () => {
       expect(defaultConfig.mongoNamespacePrefix).toBe('retrieval');
     });
 
-    it('should set appEnv based on NODE_ENV', () => {
+    it('should set appEnv based on NODE_ENV', async () => {
       process.env.NODE_ENV = 'production';
       
       // Re-import config to get updated values
       jest.resetModules();
-      const { config: prodConfig } = require('../config/index.js');
+      const { config: prodConfig } = await import('../config/index.js');
       
       expect(prodConfig.appEnv).toBe('production');
     });
 
-    it('should use APP_ENV when explicitly set', () => {
+    it('should use APP_ENV when explicitly set', async () => {
       process.env.APP_ENV = 'staging';
       
       // Re-import config to get updated values
       jest.resetModules();
-      const { config: stagingConfig } = require('../config/index.js');
+      const { config: stagingConfig } = await import('../config/index.js');
       
       expect(stagingConfig.appEnv).toBe('staging');
     });
@@ -133,7 +137,7 @@ describe('Environment Configuration', () => {
       expect(configuration.searchKwargs.k).toBe(5);
     });
 
-    it('should use environment-driven retriever provider', () => {
+    it('should use environment-driven retriever provider', async () => {
       process.env.RETRIEVER_PROVIDER = 'elastic';
       process.env.EMBEDDING_MODEL = 'cohere/embed-english-v3.0';
       

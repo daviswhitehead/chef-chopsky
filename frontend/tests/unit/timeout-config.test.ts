@@ -21,7 +21,11 @@ describe('Timeout Configuration', () => {
   describe('getEnvironmentTimeouts', () => {
     it('should return base timeouts in production', () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        writable: true,
+        configurable: true
+      });
       
       const config = getEnvironmentTimeouts();
       
@@ -29,12 +33,20 @@ describe('Timeout Configuration', () => {
       expect(config.API_ROUTE).toBe(130000);
       expect(config.FRONTEND_COMPONENT).toBe(140000);
       
-      process.env.NODE_ENV = originalEnv;
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true,
+        configurable: true
+      });
     });
 
     it('should return extended timeouts in development', () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true,
+        configurable: true
+      });
       
       const config = getEnvironmentTimeouts();
       
@@ -42,7 +54,11 @@ describe('Timeout Configuration', () => {
       expect(config.API_ROUTE).toBe(195000); // 130 * 1.5
       expect(config.FRONTEND_COMPONENT).toBe(210000); // 140 * 1.5
       
-      process.env.NODE_ENV = originalEnv;
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true,
+        configurable: true
+      });
     });
   });
 

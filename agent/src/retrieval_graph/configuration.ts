@@ -7,6 +7,7 @@ import {
   QUERY_SYSTEM_PROMPT_TEMPLATE,
 } from "./prompts.js";
 import { Annotation } from "@langchain/langgraph";
+import { config as appConfig } from "../config/index.js";
 
 /**
  * typeof ConfigurationAnnotation.State class for indexing and retrieval operations.
@@ -54,13 +55,13 @@ export function ensureIndexConfiguration(
     typeof IndexConfigurationAnnotation.State
   >;
   
-  // Import config here to avoid circular dependency
-  const { retrieverProvider, embeddingModel, appEnv } = require('../config/index.js').config;
+  // Use imported config
+  const { retrieverProvider, embeddingModel, appEnv } = appConfig;
   
   return {
     userId: configurable.userId || "default", // Give a default user for shared docs
     embeddingModel: configurable.embeddingModel || embeddingModel,
-    retrieverProvider: configurable.retrieverProvider || retrieverProvider,
+    retrieverProvider: configurable.retrieverProvider || (retrieverProvider as "elastic" | "elastic-local" | "pinecone" | "mongodb" | "memory"),
     searchKwargs: {
       ...configurable.searchKwargs,
       // Add environment discriminator to prevent cross-environment data bleed
