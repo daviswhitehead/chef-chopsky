@@ -102,7 +102,7 @@ Based on your constraints and requirements, I recommend a **3-environment strate
 - [ ] `RETRIEVER_PROVIDER` and `EMBEDDING_MODEL` read from environment
 - [ ] Per-env vector index/namespace via `LANGCHAIN_INDEX_NAME` (Elastic/Pinecone) or `MONGO_NAMESPACE_PREFIX` (MongoDB)
 - [ ] Documents and queries include environment discriminator (e.g., `env`)
-- [ ] Defaults: Local `memory`, Staging `elastic-local` (or shared dev), Prod `elastic`/`pinecone`/`mongodb`
+- [ ] Defaults: Local `memory`, Staging `pinecone`, Prod `pinecone`/`elastic`/`mongodb`
 
 **Priority**: High  
 **Effort**: Low (2-3 hours)

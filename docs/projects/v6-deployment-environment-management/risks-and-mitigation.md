@@ -44,7 +44,7 @@
 **Mitigation Strategy**:
 - Per-environment vector index/namespace via `LANGCHAIN_INDEX_NAME` (Elastic/Pinecone) or `MONGO_NAMESPACE_PREFIX` (MongoDB)
 - Add environment discriminator (e.g., `env=local|staging|production`) to documents and filters
-- Default retriever providers by environment (Local `memory`, Staging `elastic-local`, Production `elastic`/`pinecone`/`mongodb`)
+- Default retriever providers by environment (Local `memory`, Staging `pinecone`, Production `pinecone`/`elastic`/`mongodb`)
 - CI checks to verify env vars present for non-local runs
 
 ### Medium-Risk Items (Moderate Impact)

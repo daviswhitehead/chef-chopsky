@@ -72,8 +72,8 @@ LANGCHAIN_API_KEY=your_langsmith_api_key_here
 # Frontend Integration
 FRONTEND_URL=https://chef-chopsky-staging.vercel.app
 
-# Retriever & Embeddings (Cost-optimized)
-RETRIEVER_PROVIDER=memory
+# Retriever & Embeddings (Production-ready)
+RETRIEVER_PROVIDER=pinecone
 EMBEDDING_MODEL=openai/text-embedding-3-small
 LANGCHAIN_INDEX_NAME=chef-chopsky-staging
 APP_ENV=staging
@@ -111,7 +111,7 @@ APP_ENV=staging
 - **OpenAI**: Shared with production (pay-per-use)
 
 ### Estimated Monthly Cost
-- **Staging**: $0-5/month (mostly OpenAI API usage)
+- **Staging**: $5-10/month (Pinecone + OpenAI API usage)
 - **Production**: $20-30/month (Pinecone + higher usage)
 
 ## Environment Isolation

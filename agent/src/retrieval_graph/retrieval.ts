@@ -58,6 +58,7 @@ async function makeElasticRetriever(
   const filter = {
     ...searchKwargs,
     user_id: configuration.userId,
+    env: appEnv, // Add environment discriminator
   };
 
   return vectorStore.asRetriever({ filter });
@@ -81,6 +82,7 @@ async function makePineconeRetriever(
   const filter = {
     ...searchKwargs,
     user_id: configuration.userId,
+    env: appEnv, // Add environment discriminator
   };
 
   return vectorStore.asRetriever({ filter });

@@ -30,7 +30,7 @@ if (isMockMode && config.nodeEnv === 'production') {
 
 **Environment-Specific Defaults**:
 - **Local**: `memory` retriever, `openai/text-embedding-3-small`
-- **Staging**: `elastic-local` retriever (configurable)
+- **Staging**: `pinecone` retriever (production parity)
 - **Production**: `pinecone`/`elastic`/`mongodb` retriever (validated)
 
 ### ✅ Task 2.6: Per-Environment Vector Index/Namespace Configuration

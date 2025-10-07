@@ -91,7 +91,7 @@
    - Introduce env vars: `RETRIEVER_PROVIDER`, `EMBEDDING_MODEL`
    - Per-env vector index/namespace: `LANGCHAIN_INDEX_NAME` (Elastic/Pinecone), `MONGO_NAMESPACE_PREFIX` (MongoDB)
    - Add environment discriminator to documents/filters (e.g., `env=local|staging|production`)
-   - Default guidance: Local `memory`, Staging `elastic-local` (or shared dev), Production `elastic`/`pinecone`/`mongodb`
+   - Default guidance: Local `memory`, Staging `pinecone`, Production `pinecone`/`elastic`/`mongodb`
 
 #### Success Criteria
 - [ ] Staging environment accessible and functional

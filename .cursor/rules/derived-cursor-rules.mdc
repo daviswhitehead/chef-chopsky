@@ -20,6 +20,9 @@ globs: *
 *   **Vercel Environment Variables:** When setting environment variables in Vercel projects, the separate staging project approach uses the "production" environment type for the staging project. This is done to stay within free tier limits. This may impact the commands used to sync environment variables.
 *   **Syncing Vercel Environment Variables:** The `sync-vercel-env.sh` script can be used to sync environment variables. The separate staging project uses the "production" environment type, so the command should be run with the `--environment production` flag.
     *   When syncing environment variables for the staging environment, first navigate to the frontend directory (`cd frontend`). Then, link the Vercel project (`vercel link --yes --project chef-chopsky-staging`). Finally, run the sync script from the parent directory (`cd ..; ./scripts/sync-vercel-env.sh --file frontend/.env.staging --environment production`).
+*   **Feature Branch Staging Deployments**: The trigger for feature branch staging deployments in GitHub Actions workflows uses the following logic:
+    *   **Triggers**: The workflow is automatically triggered when code is pushed to any branch that starts with `feat/` or `feature/`.
+    *   **URL Generation**: The deployment URL is created by taking the branch name (e.g., `feat/new-recipe-search`), replacing `/` with `-` (becomes `feat-new-recipe-search`), and creating the URL: `https://chef-chopsky-git-feat-new-recipe-search.vercel.app`.
 
 ## DEBUGGING
 
@@ -216,3 +219,47 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
 - Use the appropriate AI models and tools for the task at hand.
 - Test AI models thoroughly and validate their performance.
 - Document all AI-related code and configurations.
+
+### ENVIRONMENT VALIDATION AND PRODUCTION GUARDS
+- The agent service must implement environment validation at startup and production guards.
+- The agent service must fail fast in production if required keys are missing or placeholders.
+- The agent service must add clear console warnings in non-prod mock modes.
+- When the agent service is run in development mode with an invalid API key, it MUST show clear warnings about mock mode with helpful instructions
+- The agent service MUST show a warning and helpful instructions for setting the API key when running with an invalid API key in development mode.
+- The agent service MUST work normally without warnings with a valid API key.
+- The agent service MUST work in production with a valid API key.
+- Testing the production safety guards implementation MUST include the following:
+    - Missing API Key (Should Fail Fast)
+    - Invalid API Key in Production (Should Fail Fast)
+    - Placeholder API Key in Production (Should Fail Fast)
+    - Invalid API Key in Development (Should Show Warnings)
+    - Valid API Key (Should Work Normally)
+    - Production with Valid API Key (Should Work)
+
+### ENVIRONMENT CONFIGURATION
+- When configuring environment-driven retriever and embedding:
+    - Read `RETRIEVER_PROVIDER` and `EMBEDDING_MODEL` from environment variables
+    - Set environment-specific defaults:
+        - Local/Development: `memory` retriever (fast, no external dependencies)
+        - Staging: `pinecone` retriever (production-ready)
+        - Production: `pinecone` retriever (production-ready vector store)
+- The `appEnv` configuration must be updated to properly handle staging.
+
+### ENVIRONMENT DISCRIMINATORS
+- The agent service must add environment discriminators to all vector stores, including Elastic and Pinecone filters.
+
+### GITHUB ACTIONS WORKFLOWS
+- When creating GitHub Actions workflows, the trigger for feature branch staging deployments uses the following logic:
+  - **Triggers**: The workflow is automatically triggered when code is pushed to any branch that starts with `feat/` or `feature/`.
+  - **URL Generation**: The deployment URL is created by taking the branch name (e.g., `feat/new-recipe-search`), replacing `/` with `-` (becomes `feat-new-recipe-search`), and creating the URL: `https://chef-chopsky-git-feat-new-recipe-search.vercel.app`.
+
+### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
+- **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
+- **Staging Environment Variables:** When configuring the staging environment in Railway:
+    - `LANGCHAIN_PROJECT` MUST be set to `chef-chopsky-staging`
+    - `APP_ENV` MUST be set to `staging`
+    - `NODE_ENV` MUST be set to `staging`
+    - `LANGCHAIN_INDEX_NAME` MUST be set to `chef-chopsky-staging`
+- **Railway Service Names:**
+    - The production Railway service is named `chef-chopsky`.
+    - A separate Railway service MUST be created for staging and named `chef-chopsky-staging`.

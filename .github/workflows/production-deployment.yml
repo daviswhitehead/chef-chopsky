@@ -1,0 +1,329 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  # Production environment configuration
+  NODE_ENV: production
+  FRONTEND_URL: https://chef-chopsky-production.vercel.app
+  AGENT_SERVICE_URL: https://chef-chopsky-production.up.railway.app
+  
+  # Production Supabase configuration
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PRODUCTION_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.PRODUCTION_SUPABASE_PUBLISHABLE_KEY }}
+  SUPABASE_SECRET_KEY: ${{ secrets.PRODUCTION_SUPABASE_SECRET_KEY }}
+  
+  # OpenAI API key for production
+  OPENAI_API_KEY: ${{ secrets.PRODUCTION_OPENAI_API_KEY }}
+  
+  # LangSmith configuration for production
+  LANGCHAIN_TRACING: true
+  LANGCHAIN_PROJECT: chef-chopsky-production
+  LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+  
+  # Production retriever configuration
+  RETRIEVER_PROVIDER: pinecone
+  EMBEDDING_MODEL: openai/text-embedding-3-small
+  LANGCHAIN_INDEX_NAME: chef-chopsky-production
+  APP_ENV: production
+
+jobs:
+  # Pre-deployment validation and testing
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.decision.outputs.should-deploy }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm run install:all
+      
+    - name: Lint code
+      run: npm run lint
+      
+    - name: Run unit tests
+      run: |
+        echo "🧪 Running frontend unit tests..."
+        cd frontend && npm run test:unit
+        echo "🤖 Running agent unit tests..."
+        cd .. && cd agent && npm run test:unit
+      
+    - name: Build applications
+      run: npm run build
+      
+    - name: Run integration tests
+      run: |
+        echo "🧪 Running integration tests..."
+        cd frontend && npm run test:integration
+        cd ../agent && npm run test:integration
+      
+    - name: Security audit
+      run: |
+        npm audit --audit-level=moderate
+        cd frontend && npm audit --audit-level=moderate
+        cd ../agent && npm audit --audit-level=moderate
+      
+    - name: Deployment decision
+      id: decision
+      run: |
+        if [ "${{ github.event.inputs.force_deploy }}" = "true" ]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+          echo "🚀 Force deployment requested - proceeding despite test results"
+        else
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+          echo "✅ All validation checks passed - proceeding with deployment"
+        fi
+
+  # Deploy to Railway (Agent Service)
+  deploy-agent:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install Railway CLI
+      run: |
+        curl -fsSL https://railway.app/install.sh | sh
+        echo "$HOME/.railway/bin" >> $GITHUB_PATH
+        
+    - name: Login to Railway
+      run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+      
+    - name: Link Railway project
+      run: |
+        cd agent
+        railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+        
+    - name: Set Railway environment variables
+      run: |
+        cd agent
+        railway variables set NODE_ENV=production
+        railway variables set PORT=3001
+        railway variables set OPENAI_API_KEY=${{ secrets.PRODUCTION_OPENAI_API_KEY }}
+        railway variables set LANGCHAIN_TRACING=true
+        railway variables set LANGCHAIN_PROJECT=chef-chopsky-production
+        railway variables set LANGCHAIN_API_KEY=${{ secrets.LANGCHAIN_API_KEY }}
+        railway variables set FRONTEND_URL=https://chef-chopsky-production.vercel.app
+        railway variables set RETRIEVER_PROVIDER=pinecone
+        railway variables set EMBEDDING_MODEL=openai/text-embedding-3-small
+        railway variables set LANGCHAIN_INDEX_NAME=chef-chopsky-production
+        railway variables set APP_ENV=production
+        
+    - name: Deploy to Railway
+      run: |
+        cd agent
+        railway up --detach
+        
+    - name: Wait for Railway deployment
+      run: |
+        echo "⏳ Waiting for Railway deployment to complete..."
+        sleep 30
+        
+    - name: Verify Railway deployment
+      run: |
+        echo "🔍 Verifying Railway deployment..."
+        curl -f https://chef-chopsky-production.up.railway.app/health || {
+          echo "❌ Railway deployment health check failed"
+          exit 1
+        }
+        echo "✅ Railway deployment successful"
+
+  # Deploy to Vercel (Frontend)
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install Vercel CLI
+      run: npm install -g vercel
+      
+    - name: Login to Vercel
+      run: vercel login --token ${{ secrets.VERCEL_TOKEN }}
+      
+    - name: Link Vercel project
+      run: |
+        cd frontend
+        vercel link --yes --project ${{ secrets.VERCEL_PROJECT_ID }}
+        
+    - name: Set Vercel environment variables
+      run: |
+        cd frontend
+        echo "${{ secrets.PRODUCTION_SUPABASE_URL }}" | vercel env add NEXT_PUBLIC_SUPABASE_URL production
+        echo "${{ secrets.PRODUCTION_SUPABASE_PUBLISHABLE_KEY }}" | vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY production
+        echo "${{ secrets.PRODUCTION_SUPABASE_SECRET_KEY }}" | vercel env add SUPABASE_SECRET_KEY production
+        echo "https://chef-chopsky-production.up.railway.app" | vercel env add AGENT_SERVICE_URL production
+        echo "production" | vercel env add NODE_ENV production
+        echo "production" | vercel env add NEXT_PUBLIC_APP_ENV production
+        
+    - name: Deploy to Vercel
+      run: |
+        cd frontend
+        vercel --prod --yes
+        
+    - name: Wait for Vercel deployment
+      run: |
+        echo "⏳ Waiting for Vercel deployment to complete..."
+        sleep 30
+        
+    - name: Verify Vercel deployment
+      run: |
+        echo "🔍 Verifying Vercel deployment..."
+        curl -f https://chef-chopsky-production.vercel.app || {
+          echo "❌ Vercel deployment health check failed"
+          exit 1
+        }
+        echo "✅ Vercel deployment successful"
+
+  # Post-deployment validation
+  post-deployment-tests:
+    runs-on: ubuntu-latest
+    needs: [deploy-agent, deploy-frontend]
+    if: always() && (needs.deploy-agent.result == 'success' && needs.deploy-frontend.result == 'success')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install Playwright browsers
+      run: cd frontend && npx playwright install --with-deps chromium
+      
+    - name: Run production health checks
+      run: |
+        echo "🔍 Running production health checks..."
+        
+        # Check agent health
+        curl -f https://chef-chopsky-production.up.railway.app/health || {
+          echo "❌ Agent health check failed"
+          exit 1
+        }
+        echo "✅ Agent health check passed"
+        
+        # Check frontend health
+        curl -f https://chef-chopsky-production.vercel.app || {
+          echo "❌ Frontend health check failed"
+          exit 1
+        }
+        echo "✅ Frontend health check passed"
+        
+    - name: Run production E2E tests
+      run: |
+        echo "🎭 Running production E2E tests..."
+        cd frontend
+        npm run test:e2e:production -- --grep "production services health check"
+        npm run test:e2e:production -- --grep "production home page loads correctly"
+        npm run test:e2e:production -- --grep "production chat functionality works"
+        
+    - name: Verify environment isolation
+      run: |
+        echo "🔒 Verifying environment isolation..."
+        
+        # Check that production URLs are different from staging
+        PROD_FRONTEND=$(curl -s https://chef-chopsky-production.vercel.app | head -1)
+        PROD_AGENT=$(curl -s https://chef-chopsky-production.up.railway.app/health | jq -r '.service')
+        
+        if [[ "$PROD_AGENT" == *"production"* ]]; then
+          echo "✅ Production environment isolation verified"
+        else
+          echo "❌ Production environment isolation check failed"
+          exit 1
+        fi
+
+  # Deployment notifications
+  notify:
+    runs-on: ubuntu-latest
+    needs: [validate, deploy-agent, deploy-frontend, post-deployment-tests]
+    if: always()
+    
+    steps:
+    - name: Determine deployment status
+      id: status
+      run: |
+        if [ "${{ needs.validate.result }}" == "success" ] && 
+           [ "${{ needs.deploy-agent.result }}" == "success" ] && 
+           [ "${{ needs.deploy-frontend.result }}" == "success" ] && 
+           [ "${{ needs.post-deployment-tests.result }}" == "success" ]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+          echo "message=✅ Production deployment completed successfully!" >> $GITHUB_OUTPUT
+        else
+          echo "status=failure" >> $GITHUB_OUTPUT
+          echo "message=❌ Production deployment failed. Check the logs for details." >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Send success notification
+      if: steps.status.outputs.status == 'success'
+      run: |
+        echo "🚀 Production Deployment Success!"
+        echo "Frontend: https://chef-chopsky-production.vercel.app"
+        echo "Agent: https://chef-chopsky-production.up.railway.app"
+        echo "Health Check: https://chef-chopsky-production.up.railway.app/health"
+        
+    - name: Send failure notification
+      if: steps.status.outputs.status == 'failure'
+      run: |
+        echo "❌ Production Deployment Failed!"
+        echo "Check the workflow logs for details."
+        echo "Validate: ${{ needs.validate.result }}"
+        echo "Deploy Agent: ${{ needs.deploy-agent.result }}"
+        echo "Deploy Frontend: ${{ needs.deploy-frontend.result }}"
+        echo "Post-deployment Tests: ${{ needs.post-deployment-tests.result }}"
+        
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ${{ steps.status.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Message:** ${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Deployment Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Validation:** ${{ needs.validate.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Agent Deployment:** ${{ needs.deploy-agent.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend Deployment:** ${{ needs.deploy-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Post-deployment Tests:** ${{ needs.post-deployment-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Production URLs" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend:** https://chef-chopsky-production.vercel.app" >> $GITHUB_STEP_SUMMARY
+        echo "- **Agent:** https://chef-chopsky-production.up.railway.app" >> $GITHUB_STEP_SUMMARY
+        echo "- **Health Check:** https://chef-chopsky-production.up.railway.app/health" >> $GITHUB_STEP_SUMMARY

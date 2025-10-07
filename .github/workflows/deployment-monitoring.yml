@@ -1,0 +1,315 @@
+name: Deployment Monitoring & Alerts
+
+on:
+  workflow_run:
+    workflows: ["Production Deployment", "Staging Deployment"]
+    types: [completed, requested, in_progress]
+  schedule:
+    # Run health checks every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'Type of health check to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - production
+          - staging
+          - feature-branches
+
+env:
+  # Monitoring configuration
+  MONITORING_ENABLED: true
+  ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+  UPTIME_ROBOT_API_KEY: ${{ secrets.UPTIME_ROBOT_API_KEY }}
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  
+  # Service URLs
+  PRODUCTION_FRONTEND: https://chef-chopsky-production.vercel.app
+  PRODUCTION_AGENT: https://chef-chopsky-production.up.railway.app
+  STAGING_FRONTEND: https://chef-chopsky-git-staging.vercel.app
+  STAGING_AGENT: https://chef-chopsky-staging.up.railway.app
+
+jobs:
+  # Monitor deployment status and send alerts
+  monitor-deployments:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_run'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Analyze deployment status
+      id: analyze
+      run: |
+        WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+        WORKFLOW_CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+        WORKFLOW_STATUS="${{ github.event.workflow_run.status }}"
+        BRANCH_NAME="${{ github.event.workflow_run.head_branch }}"
+        
+        echo "workflow-name=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
+        echo "workflow-conclusion=$WORKFLOW_CONCLUSION" >> $GITHUB_OUTPUT
+        echo "workflow-status=$WORKFLOW_STATUS" >> $GITHUB_OUTPUT
+        echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+        
+        # Determine alert level and message
+        if [ "$WORKFLOW_STATUS" == "completed" ]; then
+          if [ "$WORKFLOW_CONCLUSION" == "success" ]; then
+            echo "alert-level=success" >> $GITHUB_OUTPUT
+            echo "alert-message=✅ $WORKFLOW_NAME completed successfully on $BRANCH_NAME" >> $GITHUB_OUTPUT
+          else
+            echo "alert-level=error" >> $GITHUB_OUTPUT
+            echo "alert-message=❌ $WORKFLOW_NAME failed on $BRANCH_NAME" >> $GITHUB_OUTPUT
+          fi
+        elif [ "$WORKFLOW_STATUS" == "in_progress" ]; then
+          echo "alert-level=info" >> $GITHUB_OUTPUT
+          echo "alert-message=🔄 $WORKFLOW_NAME started on $BRANCH_NAME" >> $GITHUB_OUTPUT
+        else
+          echo "alert-level=warning" >> $GITHUB_OUTPUT
+          echo "alert-message=⚠️ $WORKFLOW_NAME status: $WORKFLOW_STATUS on $BRANCH_NAME" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Send deployment alert
+      if: env.ALERT_WEBHOOK_URL != ''
+      run: |
+        curl -X POST "${{ env.ALERT_WEBHOOK_URL }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "text": "${{ steps.analyze.outputs.alert-message }}",
+            "attachments": [{
+              "color": "${{ steps.analyze.outputs.alert-level == 'success' && 'good' || steps.analyze.outputs.alert-level == 'error' && 'danger' || 'warning' }}",
+              "fields": [
+                {"title": "Workflow", "value": "${{ steps.analyze.outputs.workflow-name }}", "short": true},
+                {"title": "Branch", "value": "${{ steps.analyze.outputs.branch-name }}", "short": true},
+                {"title": "Status", "value": "${{ steps.analyze.outputs.workflow-status }}", "short": true},
+                {"title": "Conclusion", "value": "${{ steps.analyze.outputs.workflow-conclusion }}", "short": true},
+                {"title": "URL", "value": "<${{ github.event.workflow_run.html_url }}|View Workflow Run>", "short": false}
+              ]
+            }]
+          }'
+          
+    - name: Create monitoring summary
+      run: |
+        echo "## 🔔 Deployment Monitoring Alert" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Workflow:** ${{ steps.analyze.outputs.workflow-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ steps.analyze.outputs.branch-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ${{ steps.analyze.outputs.workflow-status }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Conclusion:** ${{ steps.analyze.outputs.workflow-conclusion }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Alert Level:** ${{ steps.analyze.outputs.alert-level }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Message:** ${{ steps.analyze.outputs.alert-message }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Workflow Run:** [${{ github.event.workflow_run.id }}](${{ github.event.workflow_run.html_url }})" >> $GITHUB_STEP_SUMMARY
+
+  # Health check monitoring
+  health-monitoring:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check production health
+      id: prod-health
+      run: |
+        echo "🔍 Checking production health..."
+        
+        # Check frontend
+        FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.PRODUCTION_FRONTEND }}" || echo "000")
+        FRONTEND_TIME=$(curl -s -o /dev/null -w "%{time_total}" "${{ env.PRODUCTION_FRONTEND }}" || echo "0")
+        
+        # Check agent
+        AGENT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.PRODUCTION_AGENT }}/health" || echo "000")
+        AGENT_TIME=$(curl -s -o /dev/null -w "%{time_total}" "${{ env.PRODUCTION_AGENT }}/health" || echo "0")
+        
+        # Check agent health endpoint response
+        AGENT_HEALTH=$(curl -s "${{ env.PRODUCTION_AGENT }}/health" | jq -r '.status' 2>/dev/null || echo "unknown")
+        
+        echo "frontend-status=$FRONTEND_STATUS" >> $GITHUB_OUTPUT
+        echo "frontend-time=$FRONTEND_TIME" >> $GITHUB_OUTPUT
+        echo "agent-status=$AGENT_STATUS" >> $GITHUB_OUTPUT
+        echo "agent-time=$AGENT_TIME" >> $GITHUB_OUTPUT
+        echo "agent-health=$AGENT_HEALTH" >> $GITHUB_OUTPUT
+        
+        # Determine overall health
+        if [ "$FRONTEND_STATUS" == "200" ] && [ "$AGENT_STATUS" == "200" ] && [ "$AGENT_HEALTH" == "ok" ]; then
+          echo "overall-status=healthy" >> $GITHUB_OUTPUT
+          echo "✅ Production services are healthy"
+        else
+          echo "overall-status=unhealthy" >> $GITHUB_OUTPUT
+          echo "❌ Production services are unhealthy"
+        fi
+        
+    - name: Check staging health
+      id: staging-health
+      run: |
+        echo "🔍 Checking staging health..."
+        
+        # Check frontend
+        FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.STAGING_FRONTEND }}" || echo "000")
+        FRONTEND_TIME=$(curl -s -o /dev/null -w "%{time_total}" "${{ env.STAGING_FRONTEND }}" || echo "0")
+        
+        # Check agent
+        AGENT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.STAGING_AGENT }}/health" || echo "000")
+        AGENT_TIME=$(curl -s -o /dev/null -w "%{time_total}" "${{ env.STAGING_AGENT }}/health" || echo "0")
+        
+        # Check agent health endpoint response
+        AGENT_HEALTH=$(curl -s "${{ env.STAGING_AGENT }}/health" | jq -r '.status' 2>/dev/null || echo "unknown")
+        
+        echo "frontend-status=$FRONTEND_STATUS" >> $GITHUB_OUTPUT
+        echo "frontend-time=$FRONTEND_TIME" >> $GITHUB_OUTPUT
+        echo "agent-status=$AGENT_STATUS" >> $GITHUB_OUTPUT
+        echo "agent-time=$AGENT_TIME" >> $GITHUB_OUTPUT
+        echo "agent-health=$AGENT_HEALTH" >> $GITHUB_OUTPUT
+        
+        # Determine overall health
+        if [ "$FRONTEND_STATUS" == "200" ] && [ "$AGENT_STATUS" == "200" ] && [ "$AGENT_HEALTH" == "ok" ]; then
+          echo "overall-status=healthy" >> $GITHUB_OUTPUT
+          echo "✅ Staging services are healthy"
+        else
+          echo "overall-status=unhealthy" >> $GITHUB_OUTPUT
+          echo "❌ Staging services are unhealthy"
+        fi
+        
+    - name: Send health alerts
+      if: env.ALERT_WEBHOOK_URL != ''
+      run: |
+        # Check if any services are unhealthy
+        if [ "${{ steps.prod-health.outputs.overall-status }}" == "unhealthy" ] || [ "${{ steps.staging-health.outputs.overall-status }}" == "unhealthy" ]; then
+          ALERT_MESSAGE="🚨 Health Check Alert: Services are unhealthy"
+          
+          curl -X POST "${{ env.ALERT_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "text": "'"$ALERT_MESSAGE"'",
+              "attachments": [{
+                "color": "danger",
+                "fields": [
+                  {"title": "Production Frontend", "value": "${{ steps.prod-health.outputs.frontend-status }} (${{ steps.prod-health.outputs.frontend-time }}s)", "short": true},
+                  {"title": "Production Agent", "value": "${{ steps.prod-health.outputs.agent-status }} (${{ steps.prod-health.outputs.agent-time }}s)", "short": true},
+                  {"title": "Staging Frontend", "value": "${{ steps.staging-health.outputs.frontend-status }} (${{ steps.staging-health.outputs.frontend-time }}s)", "short": true},
+                  {"title": "Staging Agent", "value": "${{ steps.staging-health.outputs.agent-status }} (${{ steps.staging-health.outputs.agent-time }}s)", "short": true},
+                  {"title": "Production Health", "value": "${{ steps.prod-health.outputs.agent-health }}", "short": true},
+                  {"title": "Staging Health", "value": "${{ steps.staging-health.outputs.agent-health }}", "short": true}
+                ]
+              }]
+            }'
+        fi
+        
+    - name: Create health monitoring summary
+      run: |
+        echo "## 🏥 Health Monitoring Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Production Environment" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend:** ${{ steps.prod-health.outputs.frontend-status }} (${{ steps.prod-health.outputs.frontend-time }}s)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Agent:** ${{ steps.prod-health.outputs.agent-status }} (${{ steps.prod-health.outputs.agent-time }}s)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Health Status:** ${{ steps.prod-health.outputs.agent-health }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Overall:** ${{ steps.prod-health.outputs.overall-status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Staging Environment" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend:** ${{ steps.staging-health.outputs.frontend-status }} (${{ steps.staging-health.outputs.frontend-time }}s)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Agent:** ${{ steps.staging-health.outputs.agent-status }} (${{ steps.staging-health.outputs.agent-time }}s)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Health Status:** ${{ steps.staging-health.outputs.agent-health }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Overall:** ${{ steps.staging-health.outputs.overall-status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### URLs" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production Frontend:** ${{ env.PRODUCTION_FRONTEND }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production Agent:** ${{ env.PRODUCTION_AGENT }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Staging Frontend:** ${{ env.STAGING_FRONTEND }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Staging Agent:** ${{ env.STAGING_AGENT }}" >> $GITHUB_STEP_SUMMARY
+
+  # Uptime monitoring integration
+  uptime-monitoring:
+    runs-on: ubuntu-latest
+    if: env.UPTIME_ROBOT_API_KEY != ''
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Update UptimeRobot monitors
+      run: |
+        echo "🔄 Updating UptimeRobot monitors..."
+        
+        # Update production frontend monitor
+        curl -X POST "https://api.uptimerobot.com/v2/editMonitor" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "api_key=${{ env.UPTIME_ROBOT_API_KEY }}&format=json&id=${{ secrets.UPTIME_ROBOT_PROD_FRONTEND_ID }}&url=${{ env.PRODUCTION_FRONTEND }}"
+          
+        # Update production agent monitor
+        curl -X POST "https://api.uptimerobot.com/v2/editMonitor" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "api_key=${{ env.UPTIME_ROBOT_API_KEY }}&format=json&id=${{ secrets.UPTIME_ROBOT_PROD_AGENT_ID }}&url=${{ env.PRODUCTION_AGENT }}/health"
+          
+        # Update staging frontend monitor
+        curl -X POST "https://api.uptimerobot.com/v2/editMonitor" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "api_key=${{ env.UPTIME_ROBOT_API_KEY }}&format=json&id=${{ secrets.UPTIME_ROBOT_STAGING_FRONTEND_ID }}&url=${{ env.STAGING_FRONTEND }}"
+          
+        # Update staging agent monitor
+        curl -X POST "https://api.uptimerobot.com/v2/editMonitor" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "api_key=${{ env.UPTIME_ROBOT_API_KEY }}&format=json&id=${{ secrets.UPTIME_ROBOT_STAGING_AGENT_ID }}&url=${{ env.STAGING_AGENT }}/health"
+          
+        echo "✅ UptimeRobot monitors updated"
+
+  # Error monitoring integration
+  error-monitoring:
+    runs-on: ubuntu-latest
+    if: env.SENTRY_DSN != ''
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: Install Sentry CLI
+      run: npm install -g @sentry/cli
+      
+    - name: Configure Sentry
+      run: |
+        echo "🔧 Configuring Sentry monitoring..."
+        
+        # Create Sentry configuration
+        cat > .sentryclirc << EOF
+        [defaults]
+        org=chef-chopsky
+        project=chef-chopsky
+        
+        [auth]
+        token=${{ secrets.SENTRY_AUTH_TOKEN }}
+        EOF
+        
+        # Create Sentry properties
+        cat > sentry.properties << EOF
+        defaults.url=https://sentry.io/
+        defaults.org=chef-chopsky
+        defaults.project=chef-chopsky
+        EOF
+        
+        echo "✅ Sentry configuration created"
+        
+    - name: Create Sentry release
+      run: |
+        echo "📦 Creating Sentry release..."
+        
+        # Create release
+        sentry-cli releases new "${{ github.sha }}"
+        
+        # Associate commits
+        sentry-cli releases set-commits "${{ github.sha }}" --auto
+        
+        # Finalize release
+        sentry-cli releases finalize "${{ github.sha }}"
+        
+        echo "✅ Sentry release created: ${{ github.sha }}"

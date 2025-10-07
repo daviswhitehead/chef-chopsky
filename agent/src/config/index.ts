@@ -33,7 +33,14 @@ export const config = {
   serverHost: process.env.NODE_ENV === 'production' ? '0.0.0.0' : (process.env.HOST || 'localhost'),
   
   // Retriever & Embeddings Configuration (Environment-driven)
-  retrieverProvider: process.env.RETRIEVER_PROVIDER || 'memory',
+  retrieverProvider: process.env.RETRIEVER_PROVIDER || (() => {
+    const env = process.env.NODE_ENV || 'development';
+    switch (env) {
+      case 'production': return 'pinecone'; // Default to pinecone for production
+      case 'staging': return 'pinecone'; // Default to pinecone for staging
+      default: return 'memory'; // Default to memory for local development
+    }
+  })(),
   embeddingModel: process.env.EMBEDDING_MODEL || 'openai/text-embedding-3-small',
   
   // Vector Store Configuration (per-environment)
@@ -41,7 +48,14 @@ export const config = {
   mongoNamespacePrefix: process.env.MONGO_NAMESPACE_PREFIX || 'retrieval',
   
   // Environment discriminator for retrieval isolation
-  appEnv: process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'local'),
+  appEnv: process.env.APP_ENV || (() => {
+    const nodeEnv = process.env.NODE_ENV || 'development';
+    switch (nodeEnv) {
+      case 'production': return 'production';
+      case 'staging': return 'staging';
+      default: return 'local';
+    }
+  })(),
 };
 
 // Validate required configuration and production safety
@@ -78,6 +92,7 @@ function validateConfig() {
       console.error(`🚨 Current retriever: ${config.retrieverProvider}`);
       console.error(`🚨 Valid production retrievers: ${validProductionRetrievers.join(', ')}`);
       console.error('🚨 Set RETRIEVER_PROVIDER to a production-ready option (pinecone, elastic, mongodb)');
+      console.error('🚨 Default production retriever is pinecone');
       process.exit(1);
     }
   }
@@ -92,6 +107,12 @@ function validateConfig() {
     console.warn('⚠️  3. Restart the agent service');
     console.warn('⚠️  Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
   }
+  
+  // Log environment-driven configuration
+  console.log('🔧 Environment-driven configuration:');
+  console.log(`🔧   Retriever Provider: ${config.retrieverProvider} (${config.nodeEnv} default)`);
+  console.log(`🔧   Embedding Model: ${config.embeddingModel}`);
+  console.log(`🔧   Environment: ${config.nodeEnv}`);
 }
 
 // Validate configuration on import
