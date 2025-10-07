@@ -5,5 +5,8 @@
 .env.test.local
 .env.production.local
 !.env.example
+!.env.local.example
+!.env.staging.example
+!.env.production.example
 # SpecStory derived-cursor-rules.mdc backup files
 .specstory/ai_rules_backups/*

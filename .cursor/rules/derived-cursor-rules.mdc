@@ -146,6 +146,12 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
 - Use cursor hooks to enforce project standards and prevent common errors.
 - Use cursor snippets to insert code templates.
 - Use cursor commands to automate repetitive tasks.
+- The `.cursorignore` file blocks `.env` files, but `.env.example` files are allowed with the `!.env.example` rule. To allow creating `.env.local.example`, `.env.staging.example`, and `.env.production.example`, add the following rules to the `.cursorignore` file:
+  ```
+  !.env.local.example
+  !.env.staging.example
+  !.env.production.example
+  ```
 
 ### AI DEVELOPMENT PLAYBOOK
 - Follow the AI development playbook for all AI-related tasks.
@@ -263,3 +269,35 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
 - **Railway Service Names:**
     - The production Railway service is named `chef-chopsky`.
     - A separate Railway service MUST be created for staging and named `chef-chopsky-staging`.
+
+### ENVIRONMENT FILES
+- When creating or updating environment files, ensure the following files exist and are up to date for both the `@frontend/` and `@agent/` directories:
+  - `.env.example`: Core template with essential variables needed across all environments.
+  - `.env.local.example`: Local development configuration
+  - `.env.staging.example`: Staging environment configuration
+  - `.env.production.example`: Production environment configuration
+
+### PINECONE ENVIRONMENT VARIABLE
+- The `PINECONE_ENVIRONMENT` variable specifies the environment for your Pinecone project. To find this value:
+    1. **Access the Pinecone Console**: Log in to your Pinecone account at [https://app.pinecone.io](https://app.pinecone.io).
+    2. **Navigate to the API Keys Section**: In the console, click on the "API Keys" tab on the left-hand side.
+    3. **Locate Your Environment**: Here, you'll find your API keys along with the corresponding environment for each key. The environment is typically a string like `us-east-1-aws` or `gcp-starter`.
+    4. **Serverless Pinecone Indexes**: If you're using a Serverless Pinecone index, the concept of "environment" has been replaced with "region." In this case, you should use the region value instead of the environment. For more details, refer to Pinecone's [Authentication Documentation](https://docs.pinecone.io/reference/api/authentication). If you're using a Serverless Pinecone index, you might not need `PINECONE_ENVIRONMENT` at all.
+    5. **Pod-based Pinecone Indexes**: For older, pod-based Pinecone indexes, you'll need both `PINECONE_API_KEY` and `PINECONE_ENVIRONMENT`. The environment corresponds to the cloud provider and region where your index is hosted.
+    6. **Example Values**: Your `.env.production.example` should look like:
+        ```bash
+        PINECONE_API_KEY=your_production_pinecone_api_key_here
+        PINECONE_ENVIRONMENT=us-east-1-aws  # or whatever your environment shows
+        ```
+    7. **Troubleshooting**:
+        - Make sure you're using the latest Pinecone SDK.
+        - Check if you're using Serverless indexes (which might not require environment).
+        - Contact Pinecone support if you're still having issues.
+
+### CURSOR RULES
+- The `.cursorignore` file blocks `.env` files, but `.env.example` files are allowed with the `!.env.example` rule. To allow creating `.env.local.example`, `.env.staging.example`, and `.env.production.example`, add the following rules to the `.cursorignore` file:
+  ```
+  !.env.local.example
+  !.env.staging.example
+  !.env.production.example
+  ```
