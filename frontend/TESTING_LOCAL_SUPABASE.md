@@ -10,7 +10,56 @@ This guide walks you through testing the local Supabase CLI setup to ensure ever
 
 ## Step-by-Step Testing
 
-### 1. Test Supabase CLI Installation
+### 1. Test Automated Development Workflow (Recommended)
+
+```bash
+# Test the automated workflow - this should just work!
+npm run dev:supabase
+```
+
+**Expected Output:**
+```
+🚀 Starting Chef Chopsky development environment with dynamic Supabase...
+🔍 Checking Supabase status...
+📋 Reading current Supabase credentials...
+✅ Supabase running at: http://127.0.0.1:54321
+✅ Using dynamic credentials (no .env files needed!)
+🎯 Starting frontend and agent services...
+🔍 Checking for existing processes on ports 3000 and 3001...
+🤖 Starting agent service...
+🌐 Starting frontend service...
+🎉 Development environment started!
+📱 Frontend: http://localhost:3000
+🤖 Agent: http://localhost:3001
+🗄️ Supabase Studio: http://127.0.0.1:54323
+```
+
+**Note**: The script automatically handles port conflicts by killing existing processes on ports 3000 and 3001.
+
+**What this does:**
+- Automatically starts Supabase if not running
+- Reads current credentials dynamically
+- Starts both frontend and agent with correct environment variables
+- No manual .env file management needed!
+
+### 2. Test Frontend-Only with Supabase
+
+```bash
+# Test just frontend with automatic Supabase credentials
+npm run dev:frontend:supabase
+```
+
+**Expected Output:**
+```
+🚀 Starting frontend with dynamic Supabase credentials...
+📋 Reading current Supabase credentials...
+✅ Using Supabase URL: http://127.0.0.1:54321
+✅ Using Publishable Key: sb_publishable_...
+✅ Using Secret Key: sb_secret_...
+🎯 Starting Next.js frontend...
+```
+
+### 3. Test Supabase CLI Installation
 
 ```bash
 # Check Supabase CLI version

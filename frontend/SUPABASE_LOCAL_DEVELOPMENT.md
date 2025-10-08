@@ -33,7 +33,43 @@ After starting, you'll have access to:
 - **Studio URL**: `http://127.0.0.1:54323` (Supabase Dashboard)
 - **GraphQL URL**: `http://127.0.0.1:54321/graphql/v1`
 
-### Environment Variables for Local Development
+### 🚀 Automated Development Workflow (Recommended)
+
+### Option 1: Start Everything with One Command
+```bash
+# Start both frontend and agent with automatic Supabase credentials
+npm run dev:supabase
+```
+
+This will:
+- ✅ Check if Supabase is running, start it if needed
+- ✅ Automatically read current Supabase credentials
+- ✅ Start both frontend and agent with dynamic environment variables
+- ✅ No need to modify any .env files!
+
+### Option 2: Start Just Frontend with Supabase
+```bash
+# Start only frontend with automatic Supabase credentials
+npm run dev:frontend:supabase
+
+# Or from frontend directory
+cd frontend && npm run dev:supabase
+```
+
+### Option 3: Manual Setup (if you prefer)
+```bash
+# Start Supabase
+npm run supabase:start
+
+# Get credentials and copy to .env.local
+npm run supabase:env:copy
+# Copy the output to frontend/.env.local
+
+# Start frontend normally
+npm run dev:frontend
+```
+
+## Environment Variables for Local Development
 
 **Important**: Local Supabase generates new credentials each time you start it. You need to update your `.env.local` file with the current credentials.
 

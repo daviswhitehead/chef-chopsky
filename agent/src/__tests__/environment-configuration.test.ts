@@ -1,13 +1,21 @@
 import { jest, describe, it, beforeEach, expect } from '@jest/globals';
 import { ensureConfiguration } from '../retrieval_graph/configuration.js';
 
+// Import the validation function directly for testing
+let validateConfig: () => void;
+
 describe('Environment Configuration', () => {
   describe('Production Safety Guards', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       // Reset environment variables
       delete process.env.NODE_ENV;
       delete process.env.OPENAI_API_KEY;
       delete process.env.RETRIEVER_PROVIDER;
+      
+      // Import the validation function for testing
+      jest.resetModules();
+      const configModule = await import('../config/index.js');
+      validateConfig = configModule.validateConfig;
     });
 
     it('should fail fast in production with invalid API key', () => {
@@ -20,10 +28,7 @@ describe('Environment Configuration', () => {
       });
       
       expect(() => {
-        // Re-import config to trigger validation
-        jest.resetModules();
-        // Use dynamic import for ES modules
-        import('../config/index.js');
+        validateConfig();
       }).toThrow('process.exit called');
       
       mockExit.mockRestore();
@@ -40,10 +45,7 @@ describe('Environment Configuration', () => {
       });
       
       expect(() => {
-        // Re-import config to trigger validation
-        jest.resetModules();
-        // Use dynamic import for ES modules
-        import('../config/index.js');
+        validateConfig();
       }).toThrow('process.exit called');
       
       mockExit.mockRestore();
@@ -60,10 +62,7 @@ describe('Environment Configuration', () => {
       });
       
       expect(() => {
-        // Re-import config to trigger validation
-        jest.resetModules();
-        // Use dynamic import for ES modules
-        import('../config/index.js');
+        validateConfig();
       }).not.toThrow();
       
       mockExit.mockRestore();

@@ -115,8 +115,11 @@ function validateConfig() {
   console.log(`🔧   Environment: ${config.nodeEnv}`);
 }
 
-// Validate configuration on import
-validateConfig();
+// Validate configuration on import (skip in test environment)
+if (process.env.NODE_ENV !== 'test') {
+  validateConfig();
+}
 
-// Export configuration for use in other modules
+// Export configuration and validation function for use in other modules
+export { validateConfig };
 export default config;

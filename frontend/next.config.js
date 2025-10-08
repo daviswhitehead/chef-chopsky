@@ -6,9 +6,7 @@ const nextConfig = {
   outputFileTracingRoot: __dirname,
   // Fix SSL certificate issues in development
   ...(process.env.NODE_ENV === 'development' && {
-    experimental: {
-      serverComponentsExternalPackages: [],
-    },
+    serverExternalPackages: [],
   }),
 }
 

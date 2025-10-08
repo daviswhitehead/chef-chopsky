@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --kill-others --prefix-colors \"blue,green\" \"npm run dev:frontend\" \"npm run dev:agent\"",
-    "dev:frontend": "cd frontend && PORT=3000 npm run dev",
+    "dev:supabase": "./scripts/start-dev-with-supabase.sh",
+    "dev:frontend": "./scripts/start-frontend-with-supabase.sh",
+    "dev:frontend:supabase": "./scripts/start-frontend-with-supabase.sh",
     "dev:agent": "cd agent && PORT=3001 npm run server:dev",
     "build": "npm run build:frontend && npm run build:agent",
     "build:frontend": "cd frontend && npm run build",

@@ -296,6 +296,17 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
         - `APP_ENV: ci`
     - Ensure that the production safety guards and mock mode detection still work as intended.
 - **Disabling GitHub Actions Workflows:** To temporarily disable GitHub Actions workflows, comment out the `on:` section in the workflow file. This prevents the workflow from running on push/PR events while debugging or developing. Remember to re-enable the workflow by uncommenting the `on:` section when finished.
+- **Supabase CLI Installation**: The recommended method for installing the Supabase CLI in CI environments is to download the pre-built binary using `curl`, extract it, and move it to `/usr/local/bin/`.
+    - Example:
+    ```bash
+    curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xz
+    sudo mv supabase /usr/local/bin/
+    supabase --version
+    ```
+- **GitHub Actions CI Workflow - Checkout and Local Action:** When using local actions in GitHub Actions workflows, always include an `actions/checkout` step before running the local action to ensure that the repository code is available.
+    - The `actions/checkout` step MUST be included in the `ci.yml` workflow before running the local action.
+    - The local action MUST include `actions/setup-node@v4` and `npm run install:all`.
+    - The local action should NOT include `actions/checkout@v4` to avoid duplication and conflicts. The `actions/checkout@v4` step must be called in the CI workflow BEFORE the local action.
 
 ### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
 - **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
@@ -305,7 +316,7 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
     - `NODE_ENV` MUST be set to `staging`
     - `LANGCHAIN_INDEX_NAME` MUST be set to `chef-chopsky-staging`
 - **Railway Service Names:**
-    - The production Railway service is named `chef-chopsky`.
+    - The production Railway service is named `chef-chopsky-production`.
     - A separate Railway service MUST be created for staging and named `chef-chopsky-staging`.
 
 ### ENVIRONMENT FILES
@@ -437,10 +448,4 @@ Checks vs Triggers
 | Check type                               | PR(main/ develop) | PR(agent/ main|master) | Push(main/ develop) | Push(staging) | Push(feat/*) | Schedule | Manual |
 |------------------------------------------|-------------------:|-----------------------:|---------------------:|--------------:|-------------:|---------:|-------:|
 | Linting (repo-wide)                      | ✓ (CI/validate)    | –                      | ✓ (CI)               | ✓ (validate)  | ✓ (CI)      | –       | –     |
-| Type-check (build TS in CI)              | ✓ (build steps)    | ✓ (agent build)        | ✓ (build steps)      | ✓ (build)     | ✓ (build)   | –       | –     |
-| Build (frontend + agent)                 | ✓                  | ✓ (agent)              | ✓                    | ✓             | ✓            | –       | –     |
-| Unit tests – Frontend                    | ✓                  | –                      | ✓                    | ✓             | ✓            | –       | –     |
-| Unit tests – Agent                       | ✓                  | ✓                      | ✓                    | ✓             | ✓            | –       | –     |
-| Integration tests – Frontend             | ✓ (CI integration) | –                      | ✓ (CI integration)   | ✓ (validate)  | ✓ (CI)      | –       | –     |
-| Integration tests – Agent                | ✓ (CI integration) | ✓ (in test-agent)      | ✓ (CI integration)   | ✓ (validate)  | ✓ (CI)      | –       | –     |
-| E2E tests – Playwright (frontend)        | ✓ (CI integration) | –                      | ✓ (CI integration)   | ✓ (post-deploy)| ✓ (CI)     | –
+| Type-check (build TS in CI)              | ✓ (build steps)
