@@ -9,8 +9,6 @@ import { MongoClient } from "mongodb";
 import { ensureConfiguration } from "./configuration.js";
 import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
 import { Embeddings } from "@langchain/core/embeddings";
-import { CohereEmbeddings } from "@langchain/cohere";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { config } from "../config/index.js";
 
 async function makeElasticRetriever(
@@ -118,7 +116,7 @@ async function makeMongoDBRetriever(
   return vectorStore.asRetriever({ filter: searchKwargs });
 }
 
-function makeTextEmbeddings(modelName: string): Embeddings {
+async function makeTextEmbeddings(modelName: string): Promise<Embeddings> {
   /**
    * Connect to the configured text encoder.
    */
@@ -131,10 +129,21 @@ function makeTextEmbeddings(modelName: string): Embeddings {
     provider = modelName.slice(0, index);
     model = modelName.slice(index + 1);
   }
+  
+  // Get API key from environment variables
+  const apiKey = process.env.OPENAI_API_KEY;
+  
   switch (provider) {
     case "openai":
-      return new OpenAIEmbeddings({ model });
+      // Dynamic import to avoid loading LangChain modules before env-loader
+      const { OpenAIEmbeddings } = await import("@langchain/openai");
+      return new OpenAIEmbeddings({ 
+        model,
+        ...(apiKey && { apiKey })
+      });
     case "cohere":
+      // Dynamic import to avoid loading LangChain modules before env-loader
+      const { CohereEmbeddings } = await import("@langchain/cohere");
       return new CohereEmbeddings({ model });
     default:
       throw new Error(`Unsupported embedding provider: ${provider}`);
@@ -186,7 +195,7 @@ export async function makeRetriever(
   config: RunnableConfig,
 ): Promise<VectorStoreRetriever> {
   const configuration = ensureConfiguration(config);
-  const embeddingModel = makeTextEmbeddings(configuration.embeddingModel);
+  const embeddingModel = await makeTextEmbeddings(configuration.embeddingModel);
 
   const userId = configuration.userId;
   if (!userId) {

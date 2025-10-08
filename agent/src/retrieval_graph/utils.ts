@@ -2,7 +2,6 @@ import { BaseMessage } from "@langchain/core/messages";
 import { Document } from "langchain/document";
 
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { initChatModel } from "langchain/chat_models/universal";
 
 export function getMessageText(msg: BaseMessage): string {
   /** Get the text content of a message. */
@@ -47,6 +46,9 @@ export async function loadChatModel(
   fullySpecifiedName: string,
   apiKey?: string,
 ): Promise<BaseChatModel> {
+  // Dynamic import to avoid loading LangChain modules before env-loader
+  const { initChatModel } = await import("langchain/chat_models/universal");
+  
   const index = fullySpecifiedName.indexOf("/");
   if (index === -1) {
     // If there's no "/", assume it's just the model

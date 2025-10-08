@@ -29,6 +29,23 @@ if (baseEnv.parsed) {
   Object.assign(process.env, baseEnv.parsed);
 }
 
+// Force set critical environment variables to ensure they're available
+// This is a more aggressive approach to ensure LangChain gets the right values
+if (localEnv.parsed?.OPENAI_API_KEY) {
+  process.env.OPENAI_API_KEY = localEnv.parsed.OPENAI_API_KEY;
+}
+if (localEnv.parsed?.LANGCHAIN_API_KEY) {
+  process.env.LANGCHAIN_API_KEY = localEnv.parsed.LANGCHAIN_API_KEY;
+}
+if (localEnv.parsed?.LANGCHAIN_PROJECT) {
+  process.env.LANGCHAIN_PROJECT = localEnv.parsed.LANGCHAIN_PROJECT;
+}
+if (localEnv.parsed?.LANGCHAIN_TRACING) {
+  process.env.LANGCHAIN_TRACING = localEnv.parsed.LANGCHAIN_TRACING;
+}
+
 console.log('🔧 Environment loaded with priority: .env.local > .env.development > .env');
 console.log(`🔧 OpenAI API Key: ${process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...` : 'Not set'}`);
 console.log(`🔧 LangSmith API Key: ${process.env.LANGCHAIN_API_KEY ? `${process.env.LANGCHAIN_API_KEY.substring(0, 10)}...` : 'Not set'}`);
+console.log(`🔧 LangSmith Project: ${process.env.LANGCHAIN_PROJECT || 'Not set'}`);
+console.log(`🔧 LangSmith Tracing: ${process.env.LANGCHAIN_TRACING || 'Not set'}`);
