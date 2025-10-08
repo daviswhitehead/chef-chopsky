@@ -313,6 +313,54 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
     - Running CI checks including security and integration tests
     - Fixing any issues found during local testing.
 - When running agent tests locally, be aware that some tests are designed to trigger production safety guards when running with production configurations but invalid API keys. These "failing" tests are actually verifying that the guards are working correctly.
+- **90% of your integration tests should use REAL SERVICES.**
+- Mock only:
+    - External services (LangSmith, third-party APIs).
+    - React components (for unit testing).
+    - Services that are intentionally unavailable in the test environment.
+- Never mock:
+    - Your own database operations
+    - Your own API endpoints
+    - Your own service communication
+    - Core business logic
+- **For E2E tests**
+  - They are configured to run in **multiple environments** with different configurations:
+  1.  LOCAL Environment
+      *   File: `playwright.config.ts`
+      *   Base URL: `http://localhost:3000`
+      *   Agent URL: `http://localhost:3001`
+      *   Services: Auto-started via `webServer` configuration
+      *   Commands:
+          *   `npm run test:e2e` - Run E2E tests locally
+          *   `npm run test:e2e:ui` - Run with Playwright UI
+          *   `npm run test:e2e:headed` - Run in headed mode
+  2.  PRODUCTION Environment
+      *   File: `playwright.production.config.ts`
+      *   Base URL: `https://chef-chopsky-production.vercel.app`
+      *   Agent URL: `https://chef-chopsky-production.up.railway.app`
+      *   Services: External (no local servers)
+      *   Commands:
+          *   `npm run test:e2e:production` - Run production E2E tests
+          *   `npm run test:e2e:production:headed` - Run in headed mode
+      *   Test Files:
+          *   `production-tests.spec.ts` - Production-specific tests
+          *   Uses `ProductionTestEnvironment` for setup
+  3.  CI/CD Environment (GitHub Actions)
+      *   File: `.github/workflows/ci.yml`
+      *   Base URL: `http://localhost:3000` (services started in CI)
+      *   Environment: Ubuntu runners with service orchestration
+      *   Service Orchestration:
+          *   Services are started via `start-services.sh`
+          *   Health checks ensure services are ready
+          *   Tests run against localhost services in CI
+- Tests automatically detect their environment through:
+    1.  CI Environment Variable:
+    2.  Base URL Configuration:
+    3.  Service Health Checks:
+- E2E tests automatically detect their environment through:
+    1.  Configuration file used (`playwright.config.ts` vs `playwright.production.config.ts`)
+    2.  Command executed (`test:e2e` vs `test:e2e:production`)
+    3.  CI environment detection (`process.env.CI`)
 
 ### GITHUB CHECKS EXPLAINED
 
@@ -330,8 +378,10 @@ This document provides plain English explanations of the GitHub workflow files, 
 | `deployment-notifications.yml`                         | `workflow_run` (on completion of deployment workflows)                                                                                                                                                                             | Sends notifications about the deployment status, such as success or failure.                                                                    | (This workflow primarily handles notifications and doesn't have direct "checks" in the same sense as the others.)                                                                                               | Provides visibility into the deployment process and ensures that stakeholders are informed of any issues.                                                     | Low      |
 | `sync-production-env.yml`                             | Manual trigger (workflow_dispatch)                                                                                                                                                                                                   | Synchronizes environment variables between different environments.                                                                                 | (This workflow primarily handles environment variable syncing and doesn't have direct "checks" in the same sense as the others.)                                                                                | Ensures that the correct environment variables are configured in all environments.                                                                           | Medium   |
 | `auto-fix-ci.yml`/`auto-fix-ci-alternative.yml`       | `pull_request` (on every pull request)                                                                                                                                                                                                     | Attempts to automatically fix common CI issues.                                                                                                 | (These workflows attempt to automatically fix issues and don't have direct "checks" in the same sense as the others.)                                                                                              | Reduces the burden on developers by automatically fixing common problems.                                                                                     | Low      |
-
-Here’s a quick, high‑signal matrix of what runs when. Checks are rows; triggers are columns. A ✓ means that check runs for that trigger in this repo today.
++
+ ## Checks vs Triggers
+ 
+ Here’s a quick, high‑signal matrix of what runs when. Checks are rows; triggers are columns. A ✓ means that check runs for that trigger in this repo today.
 
 Triggers:
 - PR(main/develop): pull requests targeting main or develop
@@ -368,50 +418,18 @@ Checks vs Triggers
 +
 +
 +
-+# GitHub Checks — What They Do (Plain English)
++## Check Glossary
++ 
++ | Check Category | Specific Check | What It Does | Why It's Important | Priority | Notes |
++ |---|---|---|---|---|---|
++ | **Code Quality** | Linting (repo-wide) | Runs ESLint across entire repository to enforce coding standards and catch syntax errors | Prevents inconsistent code style, catches common bugs, maintains code readability | High | Runs via `npm run lint` in CI workflows |
++ | **Code Quality** | Type-check (TS builds) | Compiles TypeScript code to verify type safety and catch compilation errors | Prevents runtime type errors, ensures API contracts, catches refactoring issues | High | Runs as part of build process; fails fast if types incompatible |
++ | **Code Quality** | Build (frontend + agent) | Compiles and bundles frontend (Next.js) and agent (Express) applications | Ensures code compiles successfully and produces deployable artifacts | High | Must pass before any deployment; catches build-time errors |
++ | **Unit Tests** | test (18.x) | Runs unit tests on Node.js 18.x with frontend and agent test suites | Ensures compatibility with Node.js 18.x and validates core functionality | High | Matrix strategy test; runs `npm run test:unit` in both frontend and agent |
++ | **Unit Tests** | test (20.x) | Runs unit tests on Node.js 20.x with frontend and agent test suites | Ensures compatibility with Node.js 20.x and validates core functionality | High | Matrix strategy test; runs `npm run test:unit` in both frontend and agent |
++ | **Integration Tests** | integration-e2e | Runs comprehensive integration and E2E tests with service orchestration | Validates complete system integration and end-to-end user workflows | High | Starts services, runs integration tests, then E2E tests with Playwright |
++ | **Integration Tests** | integration-high-value | Runs focused integration tests on critical user flows without full service orchestration | Provides fast feedback on business-critical functionality without E2E overhead | High | Runs `npm run test:integration:all` for service configuration and error handling |
++ | **E2E Tests** | Production Services Health | Tests that production services are accessible and responding correctly | Validates production deployment health and service availability | High | Tests production frontend and agent service health endpoints |
++ | **E2E Tests** | Production Home Page | Tests that production home page loads correctly with all UI elements | Validates production frontend deployment and UI functionality | High | Tests production home page loads, UI elements visible, navigation works |
 +
-+This guide maps each workflow to its triggers, what it does, which checks it exposes in the PR UI, why they matter, and their practical priority.
-+
-+## CI (`.github/workflows/ci.yml`)
-+
-+| Item | Description |
-+|---|---|
-+| Triggers | push to `main`, `develop`, `feat/*`; pull_request to `main`, `develop` |
-+| What it does | Installs deps, lints, builds, runs unit tests on Node 18 and 20, then runs integration & E2E suites and a security audit. |
-+| Checks | `CI / test (18.x)`, `CI / test (20.x)`, `CI / integration-e2e`, `CI / integration-high-value`, `CI / security` |
-+| What each checks |<br>- `test (18.x|20.x)`: Lint + unit tests + build on both Node versions.<br>- `integration-e2e`: Spins up services and runs frontend + agent integration and Playwright E2E flows.<br>- `integration-high-value`: Faster, critical-path integration tests (config, error-handling, API validation).<br>- `security`: `npm audit` across repo to flag vulnerable deps. |
-+| Why important |<br>- Node 18/20: guarantees runtime compatibility and catches regressions fast.<br>- integration-e2e: validates the app actually works end-to-end, highest confidence before merge.<br>- integration-high-value: protects the most business-critical flows with quick feedback.<br>- security: prevents known vulnerable libs from shipping. |
-+| Priority | `integration-e2e`: High • `test (18.x|20.x)`: High • `integration-high-value`: High • `security`: Medium |
-+
-+## Test Chef Chopsky Agent (`.github/workflows/test-agent.yml`)
-+
-+| Item | Description |
-+|---|---|
-+| Triggers | push/pull_request to `main`/`master` that touch `agent/**` or this workflow |
-+| What it does | Builds the agent, starts the Express server in CI, verifies `/health`, then runs the agent test suite, and uploads coverage. |
-+| Checks | `Test Chef Chopsky Agent / test-agent` |
-+| What it checks | Agent TypeScript build, boot, health endpoint, and all agent tests (including production safety guards behavior). |
-+| Why important | Catches backend regressions and ensures production safety guards are enforced correctly. |
-+| Priority | High |
-+
-+## Health Checks and Environment Separation Tests (`.github/workflows/health-checks-and-environment-separation-tests.yml`)
-+
-+| Item | Description |
-+|---|---|
-+| Triggers | push to `main`, `staging`, `feat/*`, `feature/*`; pull_request to `main`, `staging`; hourly `schedule`; manual `workflow_dispatch` with `test_type`. |
-+| What it does | Probes live staging/production URLs for health, validates env separation, production/staging rules, and emits a summary. |
-+| Checks | `health-checks`, `environment-separation`, `production-tests`, `staging-tests`, `test-summary` |
-+| What each checks |<br>- `health-checks`: Frontend availability, agent `/health`, and DB connectivity for prod/staging.<br>- `environment-separation`: Confirms config/data isolation (e.g., different indexes, env discriminators).<br>- `production-tests`: Validates prod API key status, retriever type, and guards are active.<br>- `staging-tests`: Validates staging `APP_ENV` and retriever suitability.<br>- `test-summary`: Aggregates results even if some jobs fail/skip. |
-+| Why important | Detects misconfig between environments, prevents cross-env data bleed, and ensures prod cannot run in unsafe modes. |
-+| Priority | `production-tests`: High • `environment-separation`: High • `health-checks`: High • `staging-tests`: Medium • `test-summary`: Low |
-+
-+## Staging Deployment (`.github/workflows/staging-deployment.yml`)
-+
-+| Item | Description |
-+|---|---|
-+| Triggers | push to `staging`, `feat/*`, `feature/*`; pull_request to `staging`, `main`; manual `workflow_dispatch` (branch, force). |
-+| What it does | Decides deployment target URL, validates repo (lint/tests/build/security), deploys agent to Railway + frontend to Vercel preview, runs post-deploy smoke/E2E, then summarizes. |
-+| Checks | `setup`, `validate`, `deploy-agent`, `deploy-frontend`, `post-deployment-tests`, `notify` |
-+| What each checks |<br>- `setup`: Computes branch → preview URL and whether to deploy.<br>- `validate`: Lint, unit/integration tests, build, and audits prior to deploy.<br>- `deploy-agent`: Pushes agent to Railway staging and verifies `/health`.<br>- `deploy-frontend`: Deploys frontend to Vercel preview and verifies reachability.<br>- `post-deployment-tests`: Staging smoke + targeted Playwright flows and env isolation sanity.<br>- `notify`: Writes deployment summary. |
-+| Why important | Prevents bad builds from reaching staging, verifies deployments actually work, and produces a canonical summary for reviewers. |
-+| Priority | `validate`: High • `deploy
++### Integration Test

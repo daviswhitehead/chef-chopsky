@@ -1,6 +1,6 @@
 module.exports = {
   preset: "ts-jest",
-  testEnvironment: "jsdom", // Changed from "node" to "jsdom" for React components
+  testEnvironment: "node", // Use Node.js environment for integration tests to avoid CORS issues
   roots: ["<rootDir>"],
   moduleDirectories: ["node_modules", "<rootDir>"],
   testMatch: ["**/tests/integration/**/*.test.ts", "**/tests/integration/**/*.test.tsx"],
@@ -24,5 +24,8 @@ module.exports = {
   // Less verbose for integration tests (they make real HTTP calls)
   verbose: false,
   // Integration tests should fail fast if services aren't available
-  bail: false
+  bail: false,
+  // Add global setup for integration tests
+  globalSetup: "<rootDir>/tests/integration/global-setup.js",
+  globalTeardown: "<rootDir>/tests/integration/global-teardown.js"
 };

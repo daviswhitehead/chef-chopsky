@@ -236,7 +236,7 @@ describe('Frontend Service Integration Tests', () => {
           }
         } catch (error) {
           Logger.info(`✅ HTTP method validation for ${method} (service down expected)`);
-          expect(error.message).toMatch(/Network request failed|Request with GET\/HEAD method cannot have body/);
+          expect(error.message).toMatch(/Network request failed|Request with GET\/HEAD method cannot have body|Body not allowed for GET or HEAD requests/);
         }
       }
     });

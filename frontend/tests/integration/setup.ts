@@ -2,6 +2,10 @@
 // This file runs before all integration tests
 
 import { Logger } from '../e2e/fixtures/logger';
+import { ServiceHealthChecker, DEFAULT_SERVICES } from './utils/service-health-checker';
+
+// Global health checker instance
+let healthChecker: ServiceHealthChecker;
 
 // Set up global test configuration
 beforeAll(async () => {
@@ -9,6 +13,26 @@ beforeAll(async () => {
 
   // Set longer timeout for integration tests
   jest.setTimeout(60000);
+
+  // Initialize health checker
+  healthChecker = new ServiceHealthChecker(DEFAULT_SERVICES);
+
+  // Check if services are available (but don't fail if they're not)
+  try {
+    const results = await healthChecker.checkAllServices();
+    const healthyCount = results.filter(r => r.healthy).length;
+    
+    if (healthyCount === 0) {
+      Logger.warn('⚠️ No services are currently running - tests may fail');
+      Logger.warn('💡 Run "npm run dev" in both frontend and agent directories');
+    } else if (healthyCount < results.length) {
+      Logger.warn(`⚠️ Only ${healthyCount}/${results.length} services are running`);
+    } else {
+      Logger.info('✅ All services are healthy and ready for testing');
+    }
+  } catch (error) {
+    Logger.warn('⚠️ Could not check service health:', error);
+  }
 
   // Set up global error handling
   process.on('unhandledRejection', (reason, promise) => {

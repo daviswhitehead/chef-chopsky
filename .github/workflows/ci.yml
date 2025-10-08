@@ -79,11 +79,12 @@ jobs:
       # Agent service environment variables
       NODE_ENV: test
       LOG_LEVEL: info
-      LANGSMITH_TRACING: false
+      LANGSMITH_TRACING: true
       LANGSMITH_PROJECT: chef-chopsky-ci
       LANGGRAPH_PORT: 2024
       LANGGRAPH_HOST: localhost
-      OPENAI_API_KEY: test-key
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
     
     steps:
     - name: Checkout code
@@ -155,6 +156,78 @@ jobs:
           frontend/test-results/
           frontend/playwright-report/
           frontend/coverage/integration/
+        retention-days: 7
+
+  # Staging E2E tests (tests against live staging environment)
+  staging-e2e:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    env:
+      # Staging environment URLs
+      STAGING_FRONTEND_URL: https://chef-chopsky-git-staging.vercel.app
+      STAGING_AGENT_URL: https://chef-chopsky-staging.up.railway.app
+      
+      # Staging Supabase configuration
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.STAGING_SUPABASE_SECRET_KEY }}
+      
+      # OpenAI API key for staging tests
+      OPENAI_API_KEY: ${{ secrets.STAGING_OPENAI_API_KEY }}
+      
+      # LangSmith configuration for staging
+      LANGCHAIN_TRACING: true
+      LANGCHAIN_PROJECT: chef-chopsky-staging
+      LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm run install:all
+      
+    - name: Install Playwright browsers
+      run: cd frontend && npx playwright install --with-deps chromium
+      
+    - name: Wait for staging services to be ready
+      run: |
+        echo "⏳ Checking staging services availability..."
+        if curl -f https://chef-chopsky-git-staging.vercel.app >/dev/null 2>&1; then
+          echo "✅ Staging frontend is available"
+        else
+          echo "⚠️ Staging frontend is not available (may not be deployed)"
+        fi
+        
+        if curl -f https://chef-chopsky-staging.up.railway.app/health >/dev/null 2>&1; then
+          echo "✅ Staging agent is available"
+        else
+          echo "⚠️ Staging agent is not available"
+        fi
+        
+        echo "🎭 Proceeding with staging E2E tests (will handle service unavailability gracefully)"
+        
+    - name: Run staging E2E tests
+      run: |
+        echo "🎭 Running staging E2E tests..."
+        cd frontend && npm run test:e2e:staging
+        
+    - name: Upload staging test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: staging-e2e-results
+        path: |
+          frontend/test-results/
+          frontend/playwright-report/
         retention-days: 7
 
   # High-value integration tests (service configuration and error handling)
