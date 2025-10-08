@@ -35,6 +35,7 @@
     "supabase:stop": "cd frontend && supabase stop",
     "supabase:reset": "cd frontend && supabase db reset",
     "supabase:status": "cd frontend && supabase status",
+    "supabase:env:copy": "./scripts/supabase-get-credentials.sh",
     "mcp:browser-tools-server": "npx @agentdeskai/browsertools-mcp@latest"
   },
   "devDependencies": {

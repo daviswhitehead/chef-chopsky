@@ -158,11 +158,16 @@ This file tracks end-to-end tasks across all phases for the v6 project. Check of
 - [ ] 5.6 E2E tests for user isolation
 
 ### Local Supabase via CLI
-- [ ] 6.1 Adopt Supabase CLI (Docker) for local development DB
-- [ ] 6.2 Add scripts: `supabase:start`, `supabase:stop`, `supabase:reset`
-- [ ] 6.3 Create `.env.local.example` with local Supabase URL/anon key
-- [ ] 6.4 Document migrations flow: `db reset` locally; `db push` staging/prod
-- [ ] 6.5 Update docs to reflect that hosted `chef-chopsky-local` has been repurposed as `chef-chopsky-staging` to stay within free tier limits
+- [x] 6.1 Adopt Supabase CLI (Docker) for local development DB
+- [x] 6.2 Add scripts: `supabase:start`, `supabase:stop`, `supabase:reset`
+- [x] 6.3 Create `.env.local.example` with local Supabase URL/anon key
+- [x] 6.4 Document migrations flow: `db reset` locally; `db push` staging/prod
+- [x] 6.5 Update docs to reflect that hosted `chef-chopsky-local` has been repurposed as `chef-chopsky-staging` to stay within free tier limits
+
+**Environment Mapping:**
+- **Local**: Supabase CLI (Docker) - `http://127.0.0.1:54321`
+- **Staging**: Hosted Supabase project `chef-chopsky-staging` 
+- **Production**: Hosted Supabase project `chef-chopsky-production`
 
 ### Staging Access Control
 - [ ] 6.6 Implement staging access control (password or IP allowlist) [Owner: Human]

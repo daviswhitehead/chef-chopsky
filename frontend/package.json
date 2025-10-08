@@ -43,7 +43,8 @@
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",
-    "supabase:status": "supabase status"
+    "supabase:status": "supabase status",
+    "supabase:env:copy": "../scripts/supabase-get-credentials.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",

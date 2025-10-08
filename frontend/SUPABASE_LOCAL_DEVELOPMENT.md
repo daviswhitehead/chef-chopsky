@@ -35,15 +35,34 @@ After starting, you'll have access to:
 
 ### Environment Variables for Local Development
 
-Use these values in your `.env.local` file:
+**Important**: Local Supabase generates new credentials each time you start it. You need to update your `.env.local` file with the current credentials.
 
+#### Option 1: Automatic Credential Extraction
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
-SUPABASE_SECRET_KEY=sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz
+# Get current credentials and copy them
+npm run supabase:env:copy
+
+# This will display the current credentials that you can copy to .env.local
 ```
 
-**Note**: These keys are generated when you run `supabase start` and will be different each time. Check `supabase status` for current values.
+#### Option 2: Manual Extraction
+```bash
+# Check current credentials
+npm run supabase:status
+
+# Copy the values to your .env.local file:
+# NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+# SUPABASE_SECRET_KEY=sb_secret_...
+```
+
+#### Option 3: Use the Example File
+```bash
+# Copy the example file (has placeholder values)
+cp .env.local.example .env.local
+
+# Then update with current credentials using Option 1 or 2 above
+```
 
 ## Database Migration Workflow
 
@@ -205,7 +224,7 @@ npm run supabase:start
 - Environment variables point to staging URLs
 
 ### Production Environment
-- Uses hosted Supabase project: `chef-chopsky`
+- Uses hosted Supabase project: `chef-chopsky-production`
 - Migrations are permanent
 - Always backup before applying migrations
 - Environment variables point to production URLs
