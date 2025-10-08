@@ -134,17 +134,19 @@ async function makeTextEmbeddings(modelName: string): Promise<Embeddings> {
   const apiKey = process.env.OPENAI_API_KEY;
   
   switch (provider) {
-    case "openai":
+    case "openai": {
       // Dynamic import to avoid loading LangChain modules before env-loader
       const { OpenAIEmbeddings } = await import("@langchain/openai");
       return new OpenAIEmbeddings({ 
         model,
         ...(apiKey && { apiKey })
       });
-    case "cohere":
+    }
+    case "cohere": {
       // Dynamic import to avoid loading LangChain modules before env-loader
       const { CohereEmbeddings } = await import("@langchain/cohere");
       return new CohereEmbeddings({ model });
+    }
     default:
       throw new Error(`Unsupported embedding provider: ${provider}`);
   }
