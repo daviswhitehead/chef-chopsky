@@ -26,9 +26,9 @@ env:
   LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
 
 jobs:
-  # Unit tests and linting (fast feedback)
-  test:
-    name: Unit Tests & Build (Node 20)
+  # Code quality validation (fast feedback)
+  code-quality:
+    name: Code Quality: Lint, Tests, Build
     runs-on: ubuntu-latest
     
     steps:
@@ -62,8 +62,9 @@ jobs:
 
   # Integration and E2E tests with service orchestration
   integration-e2e:
+    name: Integration & E2E Tests
     runs-on: ubuntu-latest
-    needs: test
+    needs: code-quality
     
     env:
       # Agent service environment variables
@@ -111,10 +112,8 @@ jobs:
         echo "🧪 Running frontend integration tests..."
         cd frontend && npm run test:integration
         
-    - name: Run agent integration tests
-      run: |
         echo "🤖 Running agent integration tests..."
-        cd agent && npm run test:integration
+        cd ../agent && npm run test:integration
         
     - name: Run E2E tests
       run: |
@@ -143,8 +142,9 @@ jobs:
 
   # Staging E2E tests (tests against live staging environment)
   staging-e2e:
+    name: Staging E2E Tests
     runs-on: ubuntu-latest
-    needs: test
+    needs: code-quality
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     
     env:
@@ -206,37 +206,9 @@ jobs:
           frontend/playwright-report/
         retention-days: 7
 
-  # High-value integration tests (service configuration and error handling)
-  integration-high-value:
-    runs-on: ubuntu-latest
-    needs: test
-    
-    steps:
-    - name: Setup Node.js Environment
-      uses: ./.github/actions/setup-node
-      with:
-        node-version: '20.x'
-      
-    - name: Build applications
-      run: npm run build
-      
-    - name: Run high-value integration tests
-      run: |
-        echo "🧪 Running high-value integration tests..."
-        echo "These tests validate service configuration, error handling, and API validation"
-        cd frontend && npm run test:integration:all
-        
-    - name: Upload integration test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: high-value-integration-results
-        path: |
-          frontend/coverage/integration/
-        retention-days: 7
-
   # Security and dependency check
   security:
+    name: Security Audit
     runs-on: ubuntu-latest
     
     steps:
