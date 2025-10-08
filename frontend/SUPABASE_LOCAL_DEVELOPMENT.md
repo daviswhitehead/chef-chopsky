@@ -45,16 +45,24 @@ This will:
 - ✅ Check if Supabase is running, start it if needed
 - ✅ Automatically read current Supabase credentials
 - ✅ Start both frontend and agent with dynamic environment variables
+- ✅ Handle port conflicts automatically
 - ✅ No need to modify any .env files!
 
 ### Option 2: Start Just Frontend with Supabase
 ```bash
 # Start only frontend with automatic Supabase credentials
-npm run dev:frontend:supabase
+npm run dev:frontend
 
-# Or from frontend directory
-cd frontend && npm run dev:supabase
+# Or use the explicit command
+npm run dev:frontend:supabase
 ```
+
+Both commands will:
+- ✅ Check if Supabase is running, start it if needed
+- ✅ Automatically read current Supabase credentials
+- ✅ Handle port conflicts automatically
+- ✅ Start frontend with dynamic environment variables
+- ✅ No need to modify any .env files!
 
 ### Option 3: Manual Setup (if you prefer)
 ```bash

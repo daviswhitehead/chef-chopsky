@@ -39,6 +39,13 @@ echo "✅ Using Supabase URL: $SUPABASE_URL"
 echo "✅ Using Publishable Key: ${SUPABASE_PUB_KEY:0:20}..."
 echo "✅ Using Secret Key: ${SUPABASE_SECRET_KEY:0:20}..."
 
+# Check for port conflicts and kill existing processes
+echo "🔍 Checking for existing processes on port 3000..."
+if lsof -i :3000 > /dev/null 2>&1; then
+    echo "⚠️ Port 3000 is in use. Killing existing process..."
+    lsof -ti :3000 | xargs kill -9 2>/dev/null || true
+fi
+
 # Start frontend with dynamic environment variables
 echo "🎯 Starting Next.js frontend..."
 exec env \

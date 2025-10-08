@@ -1,7 +1,4 @@
-import * as dotenv from 'dotenv';
-
-// Load environment variables from .env file
-dotenv.config();
+// Environment variables are loaded by env-loader.ts before this module is imported
 
 /**
  * Centralized configuration management for Chef Chopsky LangGraph Agent

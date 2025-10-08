@@ -9,7 +9,11 @@ globs: *
 
 *   **Environment Workflow and Testing Strategy:** Document the environment workflow, explaining the purpose of each environment (Development, Preview, Staging, and Production), the testing strategy for each, and the overall deployment workflow. Include environment-specific configurations and a cost-effective approach using free tiers.
 *   **Staging Setup Guide:** Update the staging setup guide to reflect the separate Vercel project approach instead of using Vercel's built-in environment functionality. This includes architectural changes and step-by-step instructions for creating a separate staging project.
-*   **Local Supabase via CLI:** Adopt Supabase CLI for local development database (Docker-based). Add `npm run supabase:start`/`supabase:stop` scripts and docs. Create `frontend/.env.local.example` pointing to local Supabase URL/anon key. Document migrations flow: `npx supabase db reset` for local; `db push` for staging/prod. Document environment mapping: Local (CLI) | Staging (hosted `chef-chopsky-staging`) | Production (hosted `chef-chopsky`). Note: the previous `chef-chopsky-local` hosted project has been repurposed as the staging project to stay within free tier limits
+*   **Local Supabase via CLI:** Adopt Supabase CLI for local development database (Docker-based). Add `npm run supabase:start`/`supabase:stop` scripts and docs. Create `frontend/.env.local.example` pointing to local Supabase URL/anon key. Document migrations flow: `npx supabase db reset` for local; `db push` for staging/prod. Document environment mapping: Local (CLI) | Staging (hosted `chef-chopsky-staging`) | Production (hosted `chef-chopsky`). Note: the previous `chef-chopsky-local` hosted project has been repurposed as the staging project to stay within free tier limits. Document local Supabase setup and usage.
+    *   **Environment Mapping:**
+        *   **Local**: Supabase CLI (Docker) - `http://127.0.0.1:54321`
+        *   **Staging**: Hosted Supabase project `chef-chopsky-staging`
+        *   **Production**: Hosted Supabase project `chef-chopsky-production`
 
 ## TECH STACK
 
@@ -28,7 +32,7 @@ globs: *
 
 *   **Staging vs Production Supabase Credentials:** If staging writes are appearing in production, it's likely that the Vercel environment variables for both staging and production are linked to the same Supabase project. The `NEXT_PUBLIC_SUPABASE_URL` and keys should be different for each environment. To fix this:
     *   In Vercel, for the `chef-chopsky-staging` project, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to your STAGING project values and `SUPABASE_SECRET_KEY` to the STAGING service role key.
-    *   In Vercel, for the `chef-chopsky` (production) project, ensure those three env vars are production values only.
+    *   In Vercel, for the `chef-chopsky` (production) project, ensure those three env vars are production values only. The production Supabase project is actually `chef-chopsky-production`, not `chef-chopsky`.
     *   Redeploy both projects after saving changes.
 
 ## AI CODING ASSISTANT RULES
@@ -249,6 +253,7 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
         - Allows CI builds to proceed (CI=true)
         - Still blocks actual production deployments with mock config
         - Maintains security for real production environments
+- The agent integration tests must now properly mock the config validation to avoid early `process.exit` calls. The config validation should only run when the test is explicitly validating the configuration.
 
 ### ENVIRONMENT CONFIGURATION
 - When configuring environment-driven retriever and embedding:
@@ -270,21 +275,9 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
 - The "test (20.x)" check in `.github/workflows/ci.yml` should be renamed to `Unit Tests & Build (Node 20)` for a more descriptive name.
 - The composite action approach should be used to eliminate duplication in GitHub Actions workflows, creating reusable actions to maintain job independence, faster CI, consistency and easy maintenance.
 - **GitHub Actions Checkout Step:** When using local actions in GitHub Actions workflows, always include an `actions/checkout` step before running the local action to ensure that the repository code is available.
-    - The `actions/checkout` step MUST be included in the `ci.yml` workflow before running local actions like `setup-node`. This ensures that the workflow has access to the necessary files in the repository.
-- **GitHub Actions Setup Node.js Environment:** When setting up the Node.js environment in GitHub Actions workflows, always use a local action that includes `actions/checkout@v4`, sets up Node.js with `actions/setup-node@v4`, and installs all dependencies using `npm run install:all`.
-    - The local action should be placed in `.github/actions/setup-node/action.yml`.
-    - The CI workflow (`ci.yml`) should call the local action as follows:
-    ```yaml
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Node.js Environment
-        uses: ./.github/actions/setup-node
-        with:
-          node-version: '20.x'
-    ```
-    - The local action (`.github/actions/setup-node/action.yml`) should NOT include `actions/checkout@v4` to avoid duplication and conflicts. The `actions/checkout@v4` step must be called in the CI workflow BEFORE the local action.
-    - The local action (`.github/actions/setup-node/action.yml`) MUST include `actions/setup-node@v4` and `npm run install:all`.
+    - The `actions/checkout` step MUST be included in the `ci.yml` workflow before running the local action.
+    - The local action MUST include `actions/setup-node@v4` and `npm run install:all`.
+    - The local action should NOT include `actions/checkout@v4` to avoid duplication and conflicts. The `actions/checkout@v4` step must be called in the CI workflow BEFORE the local action.
 - **GitHub Actions CI Build Errors**: When the Next.js build fails in the CI environment due to missing Supabase environment variables, the following steps should be taken:
     - Update `frontend/lib/supabase.ts` to replace assertion operators (`!`) with fallback values. Use placeholder values like `https://placeholder.supabase.co` and `placeholder_key` for CI builds.
     - Add CI-specific environment variables to the `.github/workflows/ci.yml` workflow file. These include:
@@ -448,4 +441,7 @@ Checks vs Triggers
 | Check type                               | PR(main/ develop) | PR(agent/ main|master) | Push(main/ develop) | Push(staging) | Push(feat/*) | Schedule | Manual |
 |------------------------------------------|-------------------:|-----------------------:|---------------------:|--------------:|-------------:|---------:|-------:|
 | Linting (repo-wide)                      | ✓ (CI/validate)    | –                      | ✓ (CI)               | ✓ (validate)  | ✓ (CI)      | –       | –     |
-| Type-check (build TS in CI)              | ✓ (build steps)
+| Type-check (build TS in CI)              | ✓ (build steps)    | –                      | ✓ (CI)               | ✓ (validate)  | ✓ (CI)      | –       | –     |
+
+### VERCEL DEPLOYMENTS
+- Even with GitHub Actions workflows disabled, Vercel deployments can still occur due to the Vercel GitHub integration. To prevent automatic deployments from development branches, use one of the following

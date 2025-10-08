@@ -1,10 +1,18 @@
+// CRITICAL: Load environment variables FIRST, before any LangChain imports
+import './env-loader.js';
+
 import express from 'express';
 import cors from 'cors';
-import { config } from './config/index.js';
+import { config, validateConfig } from './config/index.js';
 import { graph } from './retrieval_graph/graph.js';
 import { ensureConfiguration } from './retrieval_graph/configuration.js';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { v4 as uuidv4 } from 'uuid';
+
+// Validate configuration on server startup (but not during test imports)
+if (process.env.NODE_ENV !== 'test') {
+  validateConfig();
+}
 
 // Fix SSL certificate issues in development
 if (config.nodeEnv === 'development') {
@@ -89,6 +97,26 @@ app.get('/health', (_req, res) => {
     timestamp: new Date().toISOString(),
     service: 'chef-chopsky-agent',
     version: '1.0.0'
+  });
+});
+
+// Debug endpoint to show configuration (development only)
+app.get('/debug/config', (_req, res) => {
+  if (config.nodeEnv === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  
+  res.json({
+    environment: config.nodeEnv,
+    openaiApiKey: config.openaiApiKey ? `${config.openaiApiKey.substring(0, 10)}...` : 'Not set',
+    langsmithApiKey: config.langsmithApiKey ? `${config.langsmithApiKey.substring(0, 10)}...` : 'Not set',
+    langsmithTracing: config.langsmithTracing,
+    langsmithProject: config.langsmithProject,
+    retrieverProvider: config.retrieverProvider,
+    embeddingModel: config.embeddingModel,
+    appEnv: config.appEnv,
+    serverPort: config.serverPort,
+    serverHost: config.serverHost
   });
 });
 
