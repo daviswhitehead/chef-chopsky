@@ -106,7 +106,7 @@ app.get('/debug/config', (_req, res) => {
     return res.status(404).json({ error: 'Not found' });
   }
   
-  res.json({
+  return res.json({
     environment: config.nodeEnv,
     openaiApiKey: config.openaiApiKey ? `${config.openaiApiKey.substring(0, 10)}...` : 'Not set',
     langsmithApiKey: config.langsmithApiKey ? `${config.langsmithApiKey.substring(0, 10)}...` : 'Not set',

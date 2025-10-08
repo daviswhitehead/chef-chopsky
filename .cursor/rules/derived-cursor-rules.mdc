@@ -27,6 +27,66 @@ globs: *
 *   **Feature Branch Staging Deployments**: The trigger for feature branch staging deployments uses the following logic:
     *   **Triggers**: The workflow is automatically triggered when code is pushed to any branch that starts with `feat/` or `feature/`.
     *   **URL Generation**: The deployment URL is created by taking the branch name (e.g., `feat/new-recipe-search`), replacing `/` with `-` (becomes `feat-new-recipe-search`), and creating the URL: `https://chef-chopsky-git-feat-new-recipe-search.vercel.app`.
+*   **Pre-Commit Hooks Implementation:** This project uses [Husky](https://typicode.github.io/husky/) and [lint-staged](https://github.com/okonet/lint-staged) to automatically run linting checks before commits.
+    *   To setup:
+        ```bash
+        npm install
+        ```
+    *   The lint-staged configuration is in `package.json`:
+        ```json
+        {
+          "lint-staged": {
+            "frontend/**/*.{js,jsx,ts,tsx}": [
+              "cd frontend && npx eslint --fix"
+            ],
+            "agent/src/**/*.{js,ts}": [
+              "cd agent && npx eslint --fix"
+            ]
+          }
+        }
+        ```
+    *   The pre-commit hook script is in `.husky/pre-commit`:
+        ```bash
+        #!/usr/bin/env sh
+        . "$(dirname -- "$0")/_/husky.sh"
+
+        # Run lint-staged to check staged files
+        npx lint-staged
+        ```
+    *   To bypass the pre-commit hooks:
+        ```bash
+        git commit --no-verify -m "your message"
+        ```
+        *   **Warning**: Only use this in emergencies! It defeats the purpose of the pre-commit hooks and can lead to CI failures.
+    *   If the pre-commit hook isn't running:
+        1.  Make sure Husky is installed:
+            ```bash
+            npm install
+            ```
+        2.  Verify the hook is executable:
+            ```bash
+            ls -la .husky/pre-commit
+            ```
+        3.  Reinstall Husky:
+            ```bash
+            npm uninstall husky && npm install --save-dev husky
+            npx husky
+            ```
+    *   If you're getting linting errors:
+        1.  **Run linting manually** to see the full output:
+            ```bash
+            npm run lint
+            ```
+        2.  **Fix issues automatically** where possible:
+            ```bash
+            cd frontend && npx eslint --fix .
+            cd agent && npx eslint --fix src
+            ```
+        3.  **Fix remaining issues manually** based on the error messages
+    *   If the pre-commit hook is slow:
+        1.  Only stage the files you want to commit (avoid `git add .` for large changesets)
+        2.  The hook only checks staged files, so committing smaller chunks will be faster
+        3.  Consider increasing system resources if linting is consistently slow
 
 ## DEBUGGING
 
@@ -314,6 +374,7 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
        // Dynamic import to avoid loading LangChain modules before env-loader
        const { OpenAIEmbeddings } = await import("@langchain/openai");
     ```
+- **GitHub Actions Workflow - CI Environment Variable:** CI environments must set `CI=true` to allow CI builds to proceed when production safety guards are enabled.
 
 ### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
 - **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
@@ -431,19 +492,4 @@ This document provides plain English explanations of the GitHub workflow files, 
 | `staging-deployment.yml`                             | `push` (on branches that start with `feat/` or `feature/`)                                                                                                                                                                                  | Deploys the application to the staging environment for testing and validation of new features.                                                    | `Staging Deployment / validate`: Validates the staging environment configuration and setup. `Staging Deployment / deploy-agent`: Deploys the agent service to staging. `Staging Deployment / deploy-frontend`: Deploys the frontend to staging. `Staging Deployment / post-deployment-tests`: Runs tests after deployment. | Provides a realistic testing environment for new features before they are released to production. Ensures that deployments are automated and reliable. | Medium   |
 | `production-deployment.yml`                          | Manual trigger (workflow_dispatch)                                                                                                                                                                                                   | Manually deploys the application to the production environment after thorough testing and validation.                                               | `Vercel – chef-chopsky-production`: Attempts to deploy the application to the production environment on Vercel.                                                                                               | Releases a stable and validated version of the application to end-users.                                                                                   | High     |
 | `pr-validation.yml`                                  | `pull_request` (on every pull request)                                                                                                                                                                                                     | Runs basic validations to ensure code quality and security before merging a pull request.                                                              | `CI / security`: Scans code for security vulnerabilities. `CI / Code Quality: Lint, Tests, Build`: Runs linters, unit and integration tests using Node.js 20.x.      | Catches basic issues early and prevents broken code from being merged into the main branch.                                                                   | High     |
-| `deployment-monitoring.yml`                           | `workflow_run` (on completion of deployment workflows)                                                                                                                                                                             | Monitors deployments and sends notifications about their status.                                                                                 | (This workflow primarily handles notifications and doesn't have direct "checks" in the same sense as the others.)                                                                                               | Provides visibility into the deployment process and ensures that stakeholders are informed of any issues.                                                     | Low      |
-| `deployment-notifications.yml`                         | `workflow_run` (on completion of deployment workflows)                                                                                                                                                                             | Sends notifications about the deployment status, such as success or failure.                                                                    | (This workflow primarily handles notifications and doesn't have direct "checks" in the same sense as the others.)                                                                                               | Provides visibility into the deployment process and ensures that stakeholders are informed of any issues.                                                     | Low      |
-| `sync-production-env.yml`                             | Manual trigger (workflow_dispatch)                                                                                                                                                                                                   | Synchronizes environment variables between different environments.                                                                                 | (This workflow primarily handles environment variable syncing and doesn't have direct "checks" in the same sense as the others.)                                                                                | Ensures that the correct environment variables are configured in all environments.                                                                           | Medium   |
-| `auto-fix-ci.yml`/`auto-fix-ci-alternative.yml`       | `pull_request` (on every pull request)                                                                                                                                                                                                     | Attempts to automatically fix common CI issues.                                                                                                 | (These workflows attempt to automatically fix issues and don't have direct "checks" in the same sense as the others.)                                                                                              | Reduces the burden on developers by automatically fixing common problems.                                                                                     | Low      |
-| `staging-validation.yml`                               | `push` (on branches that start with `main` or `develop`); `pull_request` (on branches that target `main` or `develop`)                                                                                                               | Runs E2E tests against the live staging environment.                                                                                             | `Staging E2E Tests`: Executes end-to-end tests on the staging environment.                                                                                                                                   | Validates the stability and functionality of the staging environment before merging changes into production.                                               | Medium   |
-+
- ## Checks vs Triggers
- 
- Here’s a quick, high‑signal matrix of what runs when. Checks are rows; triggers are columns. A ✓ means that check runs for that trigger in this repo today.
-
-Triggers:
-- PR(main/develop): pull requests targeting main or develop
-- PR(agent/main|master): pull requests that touch agent/ and target main/master (test-agent workflow)
-- Push(main/develop): direct pushes to main or develop
-- Push(staging): pushes to staging
-- Push(feat/*): pushes to feature branches (feat/* or feature/*
+| `deployment-monitoring.yml`                           | `workflow

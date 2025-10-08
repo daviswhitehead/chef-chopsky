@@ -9,6 +9,7 @@ on:
 env:
   # Global CI environment
   NODE_ENV: test
+  CI: true
   LOG_LEVEL: info
   LANGGRAPH_PORT: 2024
   LANGGRAPH_HOST: localhost
