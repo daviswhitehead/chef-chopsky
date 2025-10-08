@@ -26,7 +26,7 @@ env:
 jobs:
   # Code quality validation (fast feedback)
   code-quality:
-    name: Code Quality: Lint, Tests, Build
+    name: "Code Quality: Lint, Tests, Build"
     runs-on: ubuntu-latest
     
     steps:
