@@ -7,23 +7,26 @@ on:
     branches: [ main, develop ]
 
 env:
-  # Test environment variables
+  # Global CI environment
   NODE_ENV: test
   FRONTEND_URL: http://localhost:3000
   AGENT_URL: http://localhost:3001
   AGENT_SERVICE_URL: http://localhost:3001
+  LOG_LEVEL: info
+  LANGGRAPH_PORT: 2024
+  LANGGRAPH_HOST: localhost
   
-  # Supabase test configuration (using test database)
+  # LangSmith configuration
+  LANGCHAIN_TRACING: true
+  LANGCHAIN_PROJECT: chef-chopsky-ci
+  LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+  
+  # Test database configuration (separate from staging)
   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
   
   # OpenAI API key for agent tests
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-  
-  # LangSmith configuration (optional)
-  LANGCHAIN_TRACING: true
-  LANGCHAIN_PROJECT: chef-chopsky-ci
-  LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
 
 jobs:
   # Code quality validation (fast feedback)
@@ -67,15 +70,9 @@ jobs:
     needs: code-quality
     
     env:
-      # Agent service environment variables
-      NODE_ENV: test
-      LOG_LEVEL: info
-      LANGSMITH_TRACING: true
-      LANGSMITH_PROJECT: chef-chopsky-ci
+      # Agent service environment variables (inherits global env)
       LANGGRAPH_PORT: 2024
       LANGGRAPH_HOST: localhost
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
     
     steps:
     - name: Setup Node.js Environment
@@ -152,7 +149,7 @@ jobs:
       STAGING_FRONTEND_URL: https://chef-chopsky-git-staging.vercel.app
       STAGING_AGENT_URL: https://chef-chopsky-staging.up.railway.app
       
-      # Staging Supabase configuration
+      # Staging Supabase configuration (separate from CI test database)
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}
       SUPABASE_SECRET_KEY: ${{ secrets.STAGING_SUPABASE_SECRET_KEY }}
@@ -161,9 +158,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.STAGING_OPENAI_API_KEY }}
       
       # LangSmith configuration for staging
-      LANGCHAIN_TRACING: true
       LANGCHAIN_PROJECT: chef-chopsky-staging
-      LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
     
     steps:
     - name: Setup Node.js Environment
