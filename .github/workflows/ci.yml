@@ -28,6 +28,7 @@ env:
 jobs:
   # Unit tests and linting (fast feedback)
   test:
+    name: Unit Tests & Build (Node 20)
     runs-on: ubuntu-latest
     
     strategy:
