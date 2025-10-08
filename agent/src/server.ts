@@ -312,12 +312,12 @@ app.post('/chat', (req, res) => {
     const timing_ms = Date.now() - startTime;
     console.error(`[${requestId}] 💥 Chat endpoint error after ${timing_ms}ms:`, error);
     
-      return res.status(500).json({
-        error: 'Agent processing failed',
-        message: config.nodeEnv === 'development' ? (error as Error).message : 'Something went wrong',
-        timing_ms
-      });
-    }
+    return res.status(500).json({
+      error: 'Agent processing failed',
+      message: config.nodeEnv === 'development' ? (error as Error).message : 'Something went wrong',
+      timing_ms
+    });
+  }
   })().catch((error) => {
     const timing_ms = Date.now() - startTime;
     console.error(`[${requestId}] 💥 Unhandled error after ${timing_ms}ms:`, error);
