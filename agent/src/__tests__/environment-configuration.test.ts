@@ -28,7 +28,7 @@ describe('Environment Configuration', () => {
       // Re-import config to get updated values - this will trigger validation
       jest.resetModules();
       
-      expect(async () => {
+      await expect(async () => {
         await import('../config/index.js');
       }).rejects.toThrow('Production safety guard: Invalid API key in production environment');
     });
@@ -41,7 +41,7 @@ describe('Environment Configuration', () => {
       // Re-import config to get updated values - this will trigger validation
       jest.resetModules();
       
-      expect(async () => {
+      await expect(async () => {
         await import('../config/index.js');
       }).rejects.toThrow('Production safety guard: Invalid retriever in production environment');
     });
