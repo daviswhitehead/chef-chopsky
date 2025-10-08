@@ -315,7 +315,8 @@ const isTestMode = () => {
 };
 
 // Production safety check - fail loudly if trying to use mock in production
-if (process.env.NODE_ENV === 'production' && isTestMode()) {
+// BUT allow CI builds to proceed (Next.js sets NODE_ENV=production during build)
+if (process.env.NODE_ENV === 'production' && isTestMode() && !process.env.CI) {
   console.error('🚨 CRITICAL ERROR: Cannot use mock database in production!');
   console.error('🚨 Production environment requires real Supabase configuration');
   console.error('🚨 This is a CRITICAL configuration error that must be fixed immediately.');
