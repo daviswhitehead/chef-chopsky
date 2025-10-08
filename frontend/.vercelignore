@@ -1,0 +1,6 @@
+# Ignore deployments for development branches
+cursor/*
+feat/*
+feature/*
+debug/*
+test/*
