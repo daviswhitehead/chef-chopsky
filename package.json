@@ -38,13 +38,24 @@
     "supabase:reset": "cd frontend && supabase db reset",
     "supabase:status": "cd frontend && supabase status",
     "supabase:env:copy": "./scripts/supabase-get-credentials.sh",
-    "mcp:browser-tools-server": "npx @agentdeskai/browsertools-mcp@latest"
+    "mcp:browser-tools-server": "npx @agentdeskai/browsertools-mcp@latest",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.3"
   },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=8.0.0"
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,jsx,ts,tsx}": [
+      "eslint --fix"
+    ],
+    "agent/src/**/*.{js,ts}": [
+      "eslint --fix"
+    ]
   }
 }

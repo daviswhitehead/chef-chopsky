@@ -306,6 +306,14 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
     curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xz
     sudo mv supabase /usr/local/bin/
     ```
+- **GitHub Actions Workflow - ESLint No Case Declarations**: When using `const` declarations directly in case blocks without wrapping them in braces, ESLint's `no-case-declarations` rule will be violated, causing the Code Quality job to fail. Fix this by adding braces around the case blocks.
+    - Example:
+    ```javascript
+     switch (provider) {
+      case "openai": {
+       // Dynamic import to avoid loading LangChain modules before env-loader
+       const { OpenAIEmbeddings } = await import("@langchain/openai");
+    ```
 
 ### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
 - **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
@@ -438,12 +446,4 @@ Triggers:
 - PR(agent/main|master): pull requests that touch agent/ and target main/master (test-agent workflow)
 - Push(main/develop): direct pushes to main or develop
 - Push(staging): pushes to staging
-- Push(feat/*): pushes to feature branches (feat/* or feature/*)
-- Schedule: hourly cron health checks
-- Manual: workflow_dispatch buttons
-
-Checks vs Triggers
-
-| Check type                               | PR(main/ develop) | PR(agent/ main|master) | Push(main/ develop) | Push(staging) | Push(feat/*) | Schedule | Manual |
-|------------------------------------------|-------------------:|-----------------------:|---------------------:|--------------:|-------------:|---------:|-------:|
-| Linting (repo-wide)                      | ✓ (CI/validate)    | –                      | ✓ (CI)               | ✓ (validate)  |
+- Push(feat/*): pushes to feature branches (feat/* or feature/*
