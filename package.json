@@ -52,10 +52,10 @@
   },
   "lint-staged": {
     "frontend/**/*.{js,jsx,ts,tsx}": [
-      "eslint --fix"
+      "cd frontend && npx eslint --fix"
     ],
     "agent/src/**/*.{js,ts}": [
-      "eslint --fix"
+      "cd agent && npx eslint --fix"
     ]
   }
 }
