@@ -45,6 +45,7 @@ Edit your environment file and replace placeholder values with actual configurat
 ### 3. Environment-Specific Notes
 
 #### Local Development (`env.local.example`)
+- **Uses Local Supabase CLI** - See [SUPABASE_LOCAL_DEVELOPMENT.md](./SUPABASE_LOCAL_DEVELOPMENT.md) for setup
 - Uses localhost URLs for services
 - Enables debug mode and detailed logging
 - Uses memory-based retriever for simplicity

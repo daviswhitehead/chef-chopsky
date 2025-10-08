@@ -1,5 +1,5 @@
 // Service health check utilities for integration tests
-import { Logger } from '../e2e/fixtures/logger';
+import { Logger } from '../../e2e/fixtures/logger';
 
 export interface ServiceConfig {
   name: string;

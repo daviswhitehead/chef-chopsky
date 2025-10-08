@@ -31,13 +31,17 @@
     "dev:clean": "./scripts/start-dev.sh",
     "setup": "./scripts/setup-environment.sh",
     "setup:env": "./scripts/setup-environment.sh",
+    "supabase:start": "cd frontend && supabase start",
+    "supabase:stop": "cd frontend && supabase stop",
+    "supabase:reset": "cd frontend && supabase db reset",
+    "supabase:status": "cd frontend && supabase status",
     "mcp:browser-tools-server": "npx @agentdeskai/browsertools-mcp@latest"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=20.0.0",
     "npm": ">=8.0.0"
   }
 }

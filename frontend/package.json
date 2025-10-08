@@ -39,7 +39,11 @@
     "env:sync:from-file": "../scripts/sync-vercel-env.sh --file frontend/.env.production",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:all:with-network": "npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:e2e:network",
-    "test:langsmith": "jest --config jest.integration.config.js tests/integration/langsmith-tracing.test.ts"
+    "test:langsmith": "jest --config jest.integration.config.js tests/integration/langsmith-tracing.test.ts",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "supabase:status": "supabase status"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
