@@ -12,43 +12,38 @@ describe('Environment Configuration', () => {
       delete process.env.OPENAI_API_KEY;
       delete process.env.RETRIEVER_PROVIDER;
       
+      // Set a valid API key for tests to prevent validation errors
+      process.env.OPENAI_API_KEY = 'sk-test-key-for-testing';
+      
       // Import the validation function for testing
       jest.resetModules();
       const configModule = await import('../config/index.js');
       validateConfig = configModule.validateConfig;
     });
 
-    it('should fail fast in production with invalid API key', () => {
+    it('should fail fast in production with invalid API key', async () => {
       process.env.NODE_ENV = 'production';
       process.env.OPENAI_API_KEY = 'test-key';
       
-      // Mock process.exit to prevent actual exit
-      const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('process.exit called');
-      });
+      // Re-import config to get updated values - this will trigger validation
+      jest.resetModules();
       
-      expect(() => {
-        validateConfig();
-      }).toThrow('process.exit called');
-      
-      mockExit.mockRestore();
+      expect(async () => {
+        await import('../config/index.js');
+      }).rejects.toThrow('Production safety guard: Invalid API key in production environment');
     });
 
-    it('should fail fast in production with memory retriever', () => {
+    it('should fail fast in production with memory retriever', async () => {
       process.env.NODE_ENV = 'production';
       process.env.OPENAI_API_KEY = 'sk-real-key';
       process.env.RETRIEVER_PROVIDER = 'memory';
       
-      // Mock process.exit to prevent actual exit
-      const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('process.exit called');
-      });
+      // Re-import config to get updated values - this will trigger validation
+      jest.resetModules();
       
-      expect(() => {
-        validateConfig();
-      }).toThrow('process.exit called');
-      
-      mockExit.mockRestore();
+      expect(async () => {
+        await import('../config/index.js');
+      }).rejects.toThrow('Production safety guard: Invalid retriever in production environment');
     });
 
     it('should allow production with valid configuration', () => {
@@ -77,6 +72,9 @@ describe('Environment Configuration', () => {
       delete process.env.LANGCHAIN_INDEX_NAME;
       delete process.env.MONGO_NAMESPACE_PREFIX;
       delete process.env.APP_ENV;
+      
+      // Set a valid API key for tests to prevent validation errors
+      process.env.OPENAI_API_KEY = 'sk-test-key-for-testing';
     });
 
     it('should use environment variables for retriever configuration', async () => {
@@ -92,6 +90,14 @@ describe('Environment Configuration', () => {
     });
 
     it('should use defaults when environment variables are not set', async () => {
+      // Clear all environment variables to test defaults
+      delete process.env.RETRIEVER_PROVIDER;
+      delete process.env.EMBEDDING_MODEL;
+      delete process.env.LANGCHAIN_INDEX_NAME;
+      delete process.env.MONGO_NAMESPACE_PREFIX;
+      delete process.env.APP_ENV;
+      delete process.env.NODE_ENV;
+      
       // Re-import config to get default values
       jest.resetModules();
       const { config: defaultConfig } = await import('../config/index.js');
@@ -124,6 +130,11 @@ describe('Environment Configuration', () => {
   });
 
   describe('Configuration Integration', () => {
+    beforeEach(() => {
+      // Set a valid API key for tests to prevent validation errors
+      process.env.OPENAI_API_KEY = 'sk-test-key-for-testing';
+    });
+
     it('should include environment discriminator in searchKwargs', () => {
       const configuration = ensureConfiguration({
         configurable: {
@@ -142,6 +153,9 @@ describe('Environment Configuration', () => {
       
       // Re-import config to get updated values
       jest.resetModules();
+      
+      // Re-import the ensureConfiguration function to get updated config
+      const { ensureConfiguration } = await import('../retrieval_graph/configuration.js');
       
       const configuration = ensureConfiguration({
         configurable: {

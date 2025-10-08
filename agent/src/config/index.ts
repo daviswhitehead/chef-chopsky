@@ -78,6 +78,12 @@ function validateConfig() {
     console.error('🚨 Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
     console.error('🚨 This is a CRITICAL configuration error that must be fixed immediately.');
     console.error('🚨 Agent service will NOT start in production with invalid API key.');
+    
+    // In test environment, throw error instead of process.exit to avoid Jest worker issues
+    if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
+      throw new Error('Production safety guard: Invalid API key in production environment');
+    }
+    
     process.exit(1);
   }
   
@@ -90,6 +96,12 @@ function validateConfig() {
       console.error(`🚨 Valid production retrievers: ${validProductionRetrievers.join(', ')}`);
       console.error('🚨 Set RETRIEVER_PROVIDER to a production-ready option (pinecone, elastic, mongodb)');
       console.error('🚨 Default production retriever is pinecone');
+      
+      // In test environment, throw error instead of process.exit to avoid Jest worker issues
+      if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
+        throw new Error('Production safety guard: Invalid retriever in production environment');
+      }
+      
       process.exit(1);
     }
   }

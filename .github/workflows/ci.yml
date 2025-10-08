@@ -145,13 +145,15 @@ jobs:
         fi
         echo "✅ All services are ready!"
         
-    - name: Run integration tests
+    - name: Run agent integration tests
+      run: |
+        echo "🤖 Running agent integration tests..."
+        cd agent && npm run test:integration
+        
+    - name: Run frontend integration tests
       run: |
         echo "🧪 Running frontend integration tests..."
         cd frontend && npm run test:integration
-        
-        echo "🤖 Running agent integration tests..."
-        cd ../agent && npm run test:integration
         
     - name: Run E2E tests
       run: |
