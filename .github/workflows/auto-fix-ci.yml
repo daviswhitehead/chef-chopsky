@@ -1,18 +1,19 @@
 name: Auto Fix CI Failures (MVP)
 
-on:
-  workflow_run:
-    workflows: [CI, Test Chef Chopsky Agent]
-    types: [completed]
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: "PR number to analyze (optional)"
-        required: false
-      head_branch:
-        description: "Head branch name (optional)"
-        required: false
-      base_branch:
+# DISABLED: Only running ci.yml for now
+# on:
+#   workflow_run:
+#     workflows: [CI, Test Chef Chopsky Agent]
+#     types: [completed]
+#   workflow_dispatch:
+#     inputs:
+#       pr_number:
+#         description: "PR number to analyze (optional)"
+#         required: false
+#       head_branch:
+#         description: "Head branch name (optional)"
+#         required: false
+#       base_branch:
         description: "Base branch name (optional)"
         required: false
       run_id:

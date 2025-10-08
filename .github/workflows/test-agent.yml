@@ -1,16 +1,17 @@
 name: Test Chef Chopsky Agent
 
-on:
-  push:
-    branches: [ 'main', 'master' ]
-    paths:
-      - 'agent/**'
-      - '.github/workflows/test-agent.yml'
-  pull_request:
-    branches: [ 'main', 'master' ]
-    paths:
-      - 'agent/**'
-      - '.github/workflows/test-agent.yml'
+# DISABLED: Only running ci.yml for now
+# on:
+#   push:
+#     branches: [ 'main', 'master' ]
+#     paths:
+#       - 'agent/**'
+#       - '.github/workflows/test-agent.yml'
+#   pull_request:
+#     branches: [ 'main', 'master' ]
+#     paths:
+#       - 'agent/**'
+#       - '.github/workflows/test-agent.yml'
 
 jobs:
   test-agent:

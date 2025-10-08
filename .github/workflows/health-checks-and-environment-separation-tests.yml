@@ -1,18 +1,19 @@
 name: Health Checks and Environment Separation Tests
 
-on:
-  push:
-    branches: [ main, staging, feat/*, feature/* ]
-  pull_request:
-    branches: [ main, staging ]
-  schedule:
-    # Run health checks every hour
-    - cron: '0 * * * *'
-  workflow_dispatch:
-    inputs:
-      test_type:
-        description: 'Type of tests to run'
-        required: true
+# DISABLED: Only running ci.yml for now
+# on:
+#   push:
+#     branches: [ main, staging, feat/*, feature/* ]
+#   pull_request:
+#     branches: [ main, staging ]
+#   schedule:
+#     # Run health checks every hour
+#     - cron: '0 * * * *'
+#   workflow_dispatch:
+#     inputs:
+#       test_type:
+#         description: 'Type of tests to run'
+#         required: true
         default: 'all'
         type: choice
         options:

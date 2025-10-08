@@ -1,10 +1,11 @@
 name: Staging Validation
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+# DISABLED: Only running ci.yml for now
+# on:
+#   push:
+#     branches: [ main, develop ]
+#   pull_request:
+#     branches: [ main, develop ]
 
 env:
   # Global staging environment

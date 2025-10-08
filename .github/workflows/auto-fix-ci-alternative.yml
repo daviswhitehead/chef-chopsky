@@ -1,11 +1,12 @@
 name: Auto Fix CI Failures (Alternative)
 
+# DISABLED: Only running ci.yml for now
 # This version uses pull_request trigger instead of workflow_run
 # so it can work from any branch
-on:
-  pull_request:
-    types: [opened, synchronize]
-    branches: [main, develop]
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
+#     branches: [main, develop]
 
 jobs:
   check-ci-status:

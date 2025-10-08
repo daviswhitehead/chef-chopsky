@@ -285,6 +285,16 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
     ```
     - The local action (`.github/actions/setup-node/action.yml`) should NOT include `actions/checkout@v4` to avoid duplication and conflicts. The `actions/checkout@v4` step must be called in the CI workflow BEFORE the local action.
     - The local action (`.github/actions/setup-node/action.yml`) MUST include `actions/setup-node@v4` and `npm run install:all`.
+- **GitHub Actions CI Build Errors**: When the Next.js build fails in the CI environment due to missing Supabase environment variables, the following steps should be taken:
+    - Update `frontend/lib/supabase.ts` to replace assertion operators (`!`) with fallback values. Use placeholder values like `https://placeholder.supabase.co` and `placeholder_key` for CI builds.
+    - Add CI-specific environment variables to the `.github/workflows/ci.yml` workflow file. These include:
+        - `NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co`
+        - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder_key`
+        - `SUPABASE_SECRET_KEY: placeholder_secret`
+        - `AGENT_SERVICE_URL: http://localhost:3001`
+        - `NEXT_PUBLIC_APP_ENV: ci`
+        - `APP_ENV: ci`
+    - Ensure that the production safety guards and mock mode detection still work as intended.
 
 ### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
 - **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
@@ -434,9 +444,4 @@ Checks vs Triggers
 | Integration tests – Agent                | ✓ (CI integration) | ✓ (in test-agent)      | ✓ (CI integration)   | ✓ (validate)  | ✓ (CI)      | –       | –     |
 | E2E tests – Playwright (frontend)        | ✓ (CI integration) | –                      | ✓ (CI integration)   | ✓ (post-deploy)| ✓ (CI)     | –       | –     |
 | High‑value integration (fast critical)   | ✓                  | –                      | ✓                    | –             | ✓            | –       | –     |
-| Security audit (npm audit)               | ✓                  | –                      | ✓                    | ✓ (validate)  | ✓            | –       | –     |
-| Health checks (remote prod/staging)      | ✓ (PR to main/stg) | –                      | ✓ (push main/stg)    | ✓             | ✓            | ✓       | ✓     |
-| Environment separation (remote)          | ✓ (manual mode)    | –                      | –                    | –             | –            | ✓ (if selected) | ✓ (if selected) |
-| Production tests (guards, keys, retriever)| ✓ (PR to main/stg) | –                     | ✓ (push main/stg)    | –             | –            | ✓       | ✓     |
-| Staging tests (env validity/retriever)   | ✓ (PR to main/stg) | –                      | ✓ (push main/stg)    | –             | –            | ✓       | ✓     |
-| Deploy Agent to Staging (Railway)        | ✓ (PR to staging/main) | –                   | –                    | ✓             | ✓            | –
+| Security audit (npm audit)               | ✓                  | –                      | ✓                    | ✓ (validate)  |

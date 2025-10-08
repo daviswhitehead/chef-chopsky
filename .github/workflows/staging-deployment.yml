@@ -1,18 +1,19 @@
 name: Staging Deployment
 
-on:
-  push:
-    branches: [ staging, feat/*, feature/* ]
-  pull_request:
-    branches: [ staging, main ]
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to deploy to staging'
-        required: true
-        default: 'staging'
-        type: string
-      force_deploy:
+# DISABLED: Only running ci.yml for now
+# on:
+#   push:
+#     branches: [ staging, feat/*, feature/* ]
+#   pull_request:
+#     branches: [ staging, main ]
+#   workflow_dispatch:
+#     inputs:
+#       branch:
+#         description: 'Branch to deploy to staging'
+#         required: true
+#         default: 'staging'
+#         type: string
+#       force_deploy:
         description: 'Force deployment even if tests fail'
         required: false
         default: false
