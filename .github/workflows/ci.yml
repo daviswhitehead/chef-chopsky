@@ -9,9 +9,6 @@ on:
 env:
   # Global CI environment
   NODE_ENV: test
-  FRONTEND_URL: http://localhost:3000
-  AGENT_URL: http://localhost:3001
-  AGENT_SERVICE_URL: http://localhost:3001
   LOG_LEVEL: info
   LANGGRAPH_PORT: 2024
   LANGGRAPH_HOST: localhost
@@ -184,7 +181,7 @@ jobs:
       SUPABASE_SECRET_KEY: ${{ secrets.STAGING_SUPABASE_SECRET_KEY }}
       
       # OpenAI API key for staging tests
-      OPENAI_API_KEY: ${{ secrets.STAGING_OPENAI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       
       # LangSmith configuration for staging
       LANGCHAIN_PROJECT: chef-chopsky-staging
