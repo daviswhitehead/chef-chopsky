@@ -2,7 +2,7 @@
   "workspace_id": "6d92-9e31-ca6b-0c1c",
   "workspace_id_at": "2025-10-06T21:18:43.720Z",
   "project_name": "chef-chopsky",
-  "cloud_sync": false,
+  "cloud_sync": true,
   "git_id": "0fff-0e29-6a5d-34c6",
   "git_id_at": "2025-10-06T21:18:43.721Z"
 }
