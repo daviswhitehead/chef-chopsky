@@ -52,10 +52,14 @@
   },
   "lint-staged": {
     "frontend/**/*.{js,jsx,ts,tsx}": [
-      "cd frontend && npx eslint --fix"
+      "cd frontend && npx eslint --fix",
+      "cd frontend && npx eslint",
+      "cd frontend && npx tsc --noEmit"
     ],
     "agent/src/**/*.{js,ts}": [
-      "cd agent && npx eslint --fix"
+      "cd agent && npx eslint --fix",
+      "cd agent && npx eslint",
+      "cd agent && npx tsc --noEmit"
     ]
   }
 }
