@@ -21,6 +21,14 @@ env:
   # OpenAI API key for agent tests
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   
+  # Frontend build environment variables (for CI builds)
+  NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder_key
+  SUPABASE_SECRET_KEY: placeholder_secret
+  AGENT_SERVICE_URL: http://localhost:3001
+  NEXT_PUBLIC_APP_ENV: ci
+  APP_ENV: ci
+  
   # Note: Supabase credentials are set dynamically after starting local Supabase CLI
 
 jobs:

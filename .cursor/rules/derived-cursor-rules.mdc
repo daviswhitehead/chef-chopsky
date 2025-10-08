@@ -271,8 +271,20 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
 - The composite action approach should be used to eliminate duplication in GitHub Actions workflows, creating reusable actions to maintain job independence, faster CI, consistency and easy maintenance.
 - **GitHub Actions Checkout Step:** When using local actions in GitHub Actions workflows, always include an `actions/checkout` step before running the local action to ensure that the repository code is available.
     - The `actions/checkout` step MUST be included in the `ci.yml` workflow before running local actions like `setup-node`. This ensures that the workflow has access to the necessary files in the repository.
-- **GitHub Actions Setup Node.js Environment:** When setting up the Node.js environment in GitHub Actions workflows, always use the standard `actions/setup-node@v4` action instead of a local action.
-    - Always include `cache: 'npm'` to improve workflow performance.
+- **GitHub Actions Setup Node.js Environment:** When setting up the Node.js environment in GitHub Actions workflows, always use a local action that includes `actions/checkout@v4`, sets up Node.js with `actions/setup-node@v4`, and installs all dependencies using `npm run install:all`.
+    - The local action should be placed in `.github/actions/setup-node/action.yml`.
+    - The CI workflow (`ci.yml`) should call the local action as follows:
+    ```yaml
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js Environment
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20.x'
+    ```
+    - The local action (`.github/actions/setup-node/action.yml`) should NOT include `actions/checkout@v4` to avoid duplication and conflicts. The `actions/checkout@v4` step must be called in the CI workflow BEFORE the local action.
+    - The local action (`.github/actions/setup-node/action.yml`) MUST include `actions/setup-node@v4` and `npm run install:all`.
 
 ### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
 - **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
@@ -427,5 +439,4 @@ Checks vs Triggers
 | Environment separation (remote)          | ✓ (manual mode)    | –                      | –                    | –             | –            | ✓ (if selected) | ✓ (if selected) |
 | Production tests (guards, keys, retriever)| ✓ (PR to main/stg) | –                     | ✓ (push main/stg)    | –             | –            | ✓       | ✓     |
 | Staging tests (env validity/retriever)   | ✓ (PR to main/stg) | –                      | ✓ (push main/stg)    | –             | –            | ✓       | ✓     |
-| Deploy Agent to Staging (Railway)        | ✓ (PR to staging/main) | –                   | –                    | ✓             | ✓            | –       | ✓     |
-| Deploy Frontend to
+| Deploy Agent to Staging (Railway)        | ✓ (PR to staging/main) | –                   | –                    | ✓             | ✓            | –
