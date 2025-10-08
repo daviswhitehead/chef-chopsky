@@ -30,6 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
     - name: Setup Node.js Environment
       uses: ./.github/actions/setup-node
       with:
@@ -70,6 +73,9 @@ jobs:
       LANGGRAPH_HOST: localhost
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
     - name: Setup Node.js Environment
       uses: ./.github/actions/setup-node
       with:
@@ -169,6 +175,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
     - name: Setup Node.js Environment
       uses: ./.github/actions/setup-node
       with:

@@ -127,7 +127,7 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
 - Only make calls to external APIs when necessary.
 - Always use a secure HTTPS connection.
 - Never include secrets or API keys in the URL.
-- Use the appropriate HTTP method (e.g., `GET`, `POST`, `PUT`, `DELETE`).
+- Use the appropriate HTTP method (e.g., `GET`, ``POST`, `PUT`, `DELETE`).
 - Handle errors gracefully.
 
 ### CREATING EXECUTABLE SCRIPTS
@@ -269,6 +269,10 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
 - After consolidating to Node.js 20.x, the CI workflow should be updated to reflect this change.
 - The "test (20.x)" check in `.github/workflows/ci.yml` should be renamed to `Unit Tests & Build (Node 20)` for a more descriptive name.
 - The composite action approach should be used to eliminate duplication in GitHub Actions workflows, creating reusable actions to maintain job independence, faster CI, consistency and easy maintenance.
+- **GitHub Actions Checkout Step:** When using local actions in GitHub Actions workflows, always include an `actions/checkout` step before running the local action to ensure that the repository code is available.
+    - The `actions/checkout` step MUST be included in the `ci.yml` workflow before running local actions like `setup-node`. This ensures that the workflow has access to the necessary files in the repository.
+- **GitHub Actions Setup Node.js Environment:** When setting up the Node.js environment in GitHub Actions workflows, always use the standard `actions/setup-node@v4` action instead of a local action.
+    - Always include `cache: 'npm'` to improve workflow performance.
 
 ### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
 - **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
