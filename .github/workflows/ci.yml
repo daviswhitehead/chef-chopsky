@@ -21,9 +21,10 @@ env:
   LANGCHAIN_PROJECT: chef-chopsky-ci
   LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
   
-  # Test database configuration (separate from staging)
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+  # Local Supabase CLI configuration (Docker-based)
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_LOCAL_PUBLISHABLE_KEY }}
+  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_LOCAL_SECRET_KEY }}
   
   # OpenAI API key for agent tests
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -80,6 +81,17 @@ jobs:
       with:
         node-version: '20.x'
       
+    - name: Install Supabase CLI
+      run: |
+        echo "📦 Installing Supabase CLI..."
+        npm install -g supabase@latest
+        
+    - name: Start Local Supabase
+      run: |
+        echo "🚀 Starting local Supabase (Docker-based)..."
+        cd frontend && supabase start
+        echo "✅ Local Supabase started successfully"
+        
     - name: Install Playwright browsers
       run: cd frontend && npx playwright install --with-deps chromium
       
@@ -125,6 +137,9 @@ jobs:
         # Ensure cleanup
         pkill -f 'next dev' || true
         pkill -f 'tsx watch' || true
+        
+        echo "🛑 Stopping local Supabase..."
+        cd frontend && supabase stop || true
         
     - name: Upload test results
       if: always()
