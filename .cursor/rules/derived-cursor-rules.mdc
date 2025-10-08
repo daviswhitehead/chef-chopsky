@@ -295,6 +295,7 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
         - `NEXT_PUBLIC_APP_ENV: ci`
         - `APP_ENV: ci`
     - Ensure that the production safety guards and mock mode detection still work as intended.
+- **Disabling GitHub Actions Workflows:** To temporarily disable GitHub Actions workflows, comment out the `on:` section in the workflow file. This prevents the workflow from running on push/PR events while debugging or developing. Remember to re-enable the workflow by uncommenting the `on:` section when finished.
 
 ### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
 - **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
@@ -442,6 +443,4 @@ Checks vs Triggers
 | Unit tests – Agent                       | ✓                  | ✓                      | ✓                    | ✓             | ✓            | –       | –     |
 | Integration tests – Frontend             | ✓ (CI integration) | –                      | ✓ (CI integration)   | ✓ (validate)  | ✓ (CI)      | –       | –     |
 | Integration tests – Agent                | ✓ (CI integration) | ✓ (in test-agent)      | ✓ (CI integration)   | ✓ (validate)  | ✓ (CI)      | –       | –     |
-| E2E tests – Playwright (frontend)        | ✓ (CI integration) | –                      | ✓ (CI integration)   | ✓ (post-deploy)| ✓ (CI)     | –       | –     |
-| High‑value integration (fast critical)   | ✓                  | –                      | ✓                    | –             | ✓            | –       | –     |
-| Security audit (npm audit)               | ✓                  | –                      | ✓                    | ✓ (validate)  |
+| E2E tests – Playwright (frontend)        | ✓ (CI integration) | –                      | ✓ (CI integration)   | ✓ (post-deploy)| ✓ (CI)     | –

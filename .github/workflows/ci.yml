@@ -92,7 +92,10 @@ jobs:
     - name: Install Supabase CLI
       run: |
         echo "📦 Installing Supabase CLI..."
-        npm install -g supabase@latest
+        # Install using the recommended method for CI
+        curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xz
+        sudo mv supabase /usr/local/bin/
+        supabase --version
         
     - name: Start Local Supabase
       run: |
