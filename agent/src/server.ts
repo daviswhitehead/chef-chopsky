@@ -317,15 +317,7 @@ app.post('/chat', (req, res) => {
       timing_ms
     });
   }
-  })().catch((error) => {
-    const timing_ms = Date.now() - startTime;
-    console.error(`[${requestId}] 💥 Unhandled error after ${timing_ms}ms:`, error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Something went wrong',
-      timing_ms
-    });
-  });
+  })();
 });
 
 // Error handling middleware
