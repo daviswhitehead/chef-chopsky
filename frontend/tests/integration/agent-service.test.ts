@@ -69,7 +69,7 @@ describe('Agent Service Integration Tests', () => {
           expect(response.status).toBe(400);
           const errorData = await response.json();
           expect(errorData.error).toBeDefined();
-          expect(errorData.error).toContain('conversation_id');
+          expect(errorData.message).toContain('conversation_id');
         } else {
           Logger.info('✅ Missing conversation_id error handling (service down expected)');
           const expectedStatuses = getExpectedStatusCodes(false);
@@ -101,7 +101,7 @@ describe('Agent Service Integration Tests', () => {
           expect(response.status).toBe(400);
           const errorData = await response.json();
           expect(errorData.error).toBeDefined();
-          expect(errorData.error).toContain('messages');
+          expect(errorData.message).toContain('messages');
         } else {
           Logger.info('✅ Missing messages error handling (service down expected)');
         }
