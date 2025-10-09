@@ -8,6 +8,11 @@ const nextConfig = {
   ...(process.env.NODE_ENV === 'development' && {
     serverExternalPackages: [],
   }),
+  // Disable static generation in CI to avoid Html import issues
+  ...(process.env.CI === 'true' && {
+    output: 'standalone',
+    trailingSlash: false,
+  }),
 }
 
 // Fix SSL certificate issues in development
