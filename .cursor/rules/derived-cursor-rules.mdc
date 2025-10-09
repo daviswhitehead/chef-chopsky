@@ -256,6 +256,11 @@ globs: *
     *   Add Jest retry configuration for CI environments.
         *   Force verbose output in CI to see failed tests.
         *   Show individual test results.
+*   **If Supabase environment variables are empty** in E2E tests, ensure that the CI workflow:
+    *   Checks if Supabase is running (`supabase status`).
+    *   Starts Supabase if it's not running (`supabase start`).
+    *   Extracts Supabase credentials from the environment file (`/tmp/supabase.env`).
+    *   Sets fallback values for the environment variables if extraction fails.
 
 ## DEBUGGING
 
@@ -369,3 +374,21 @@ globs: *
             *   Show individual test results.
 *   **Agent Service Integration: Handling Missing conversation_id**: To accurately test error handling for missing `conversation_id` in chat requests, ensure that the error message assertion checks for "Network request failed" OR `"Invalid request"`. This accounts for variations in error messages based on the service status.
     *   To accurately test error handling for missing `conversation_id` in chat requests, ensure that the error message assertion checks for `"Network request failed"` OR `"Invalid request"`.
+*   **If Supabase environment variables are empty** in E2E tests, ensure that the CI workflow:
+    *   Checks if Supabase is running (`supabase status`).
+    *   Starts Supabase if it's not running (`supabase start`).
+    *   Extracts Supabase credentials from the environment file (`/tmp/supabase.env`).
+    *   Sets fallback values for the environment variables if extraction fails.
+
+*   **E2E Test Debugging: Handling textarea visibility issues**
+
+    To further debug E2E tests with textarea visibility issues, follow these debugging steps:
+    *   **Add comprehensive debugging to E2E tests**: This should include logging for textarea visibility, API calls, and render state.
+    *   **Add detailed logging to the conversation page**: This should include logging for API calls with status codes, environment variable logging, and timeout handling with fallback states.
+    *   **Add debug logging to the ChatInterface component**: This should include logging for render state, props, and state change tracking.
+    *   **Create a dedicated debug test for textarea visibility issues**.
+    *   **Capture Console Errors**: Monitor and log any errors output to the browser console during test execution.
+    *   **Monitor Network Errors**: Log any failed network requests (e.g., 500 errors) that might be preventing the textarea from rendering.
+    *   **Use Multiple Textarea Detection Strategies**: Try different locators to find the textarea, such as by placeholder text or CSS class.
+    *   **Validate Page State**: Check for loading states, error messages, and conversation data to understand if the page is loading correctly.
+    *   **Capture Screenshots**: Take screenshots during test execution to visually inspect the page and identify any rendering issues.

@@ -198,65 +198,81 @@ export class TestUtils {
    * Send a message in the chat interface
    */
   static async sendMessage(page: Page, message: string): Promise<void> {
-    console.log('🔍 Debugging sendMessage - checking page state...');
-    
-    // Debug: Check current URL
-    console.log('Current URL:', page.url());
+    // Force logging to appear in CI output
+    console.log('🔍 DEBUGGING: sendMessage called - checking page state...');
+    console.log('🔍 DEBUGGING: Current URL:', page.url());
     
     // Debug: Check for error messages
     const errorElements = await page.locator('[role="alert"], .error, .text-red-500').all();
-    console.log('Error elements found:', errorElements.length);
+    console.log('🔍 DEBUGGING: Error elements found:', errorElements.length);
     for (let i = 0; i < errorElements.length; i++) {
       const errorText = await errorElements[i].textContent();
-      console.log(`Error ${i + 1}:`, errorText);
+      console.log(`🔍 DEBUGGING: Error ${i + 1}:`, errorText);
     }
     
     // Debug: Check for loading states
     const loadingElements = await page.locator('.animate-spin, [class*="loading"]').all();
     const loadingTextElements = await page.locator('text=Loading').all();
-    console.log('Loading elements found:', loadingElements.length + loadingTextElements.length);
+    console.log('🔍 DEBUGGING: Loading elements found:', loadingElements.length + loadingTextElements.length);
     
     // Debug: Check for conversation elements
     const conversationElements = await page.locator('[data-testid="conversation"], .conversation').all();
-    console.log('Conversation elements found:', conversationElements.length);
+    console.log('🔍 DEBUGGING: Conversation elements found:', conversationElements.length);
     
     // Debug: Check for ChatInterface component
     const chatInterfaceElements = await page.locator('[data-testid="chat-interface"], .chat-interface').all();
-    console.log('ChatInterface elements found:', chatInterfaceElements.length);
+    console.log('🔍 DEBUGGING: ChatInterface elements found:', chatInterfaceElements.length);
     
     // Debug: Check all textarea elements on page
     const allTextareas = await page.locator('textarea').all();
-    console.log('Total textarea elements found:', allTextareas.length);
+    console.log('🔍 DEBUGGING: Total textarea elements found:', allTextareas.length);
+    
+    // Debug: Check page title and main content
+    const pageTitle = await page.title();
+    console.log('🔍 DEBUGGING: Page title:', pageTitle);
+    
+    const mainContent = await page.locator('main, [role="main"]').all();
+    console.log('🔍 DEBUGGING: Main content elements found:', mainContent.length);
+    
+    // Debug: Check for any h1 elements (conversation titles)
+    const h1Elements = await page.locator('h1').all();
+    console.log('🔍 DEBUGGING: H1 elements found:', h1Elements.length);
+    for (let i = 0; i < h1Elements.length; i++) {
+      const h1Text = await h1Elements[i].textContent();
+      console.log(`🔍 DEBUGGING: H1 ${i + 1}:`, h1Text);
+    }
     
     // Debug: Take screenshot for visual debugging
     await page.screenshot({ path: 'debug-sendmessage-before-textarea.png', fullPage: true });
+    console.log('🔍 DEBUGGING: Screenshot saved as debug-sendmessage-before-textarea.png');
     
     // Find the message input (textarea in ChatInterface)
     const messageInput = page.locator('textarea').first();
     
     // Debug: Check if textarea exists
     const textareaCount = await messageInput.count();
-    console.log('Textarea count:', textareaCount);
+    console.log('🔍 DEBUGGING: Textarea count:', textareaCount);
     
     if (textareaCount === 0) {
-      console.error('❌ CRITICAL: No textarea found! ChatInterface is not rendering.');
-      console.error('❌ Possible causes:');
-      console.error('  - API errors preventing conversation loading');
-      console.error('  - Invalid Supabase credentials');
-      console.error('  - Agent service connectivity issues');
-      console.error('  - Component rendering errors');
+      console.error('❌ CRITICAL DEBUGGING: No textarea found! ChatInterface is not rendering.');
+      console.error('❌ CRITICAL DEBUGGING: Possible causes:');
+      console.error('❌ CRITICAL DEBUGGING:   - API errors preventing conversation loading');
+      console.error('❌ CRITICAL DEBUGGING:   - Invalid Supabase credentials');
+      console.error('❌ CRITICAL DEBUGGING:   - Agent service connectivity issues');
+      console.error('❌ CRITICAL DEBUGGING:   - Component rendering errors');
       
       // Debug: Check console errors
       const consoleErrors: string[] = [];
       page.on('console', msg => {
         if (msg.type() === 'error') {
           consoleErrors.push(msg.text());
+          console.log('🔍 DEBUGGING: Console error:', msg.text());
         }
       });
       
       // Wait a bit to collect console errors
       await page.waitForTimeout(2000);
-      console.log('Console errors:', consoleErrors);
+      console.log('🔍 DEBUGGING: Console errors collected:', consoleErrors);
       
       throw new Error('ChatInterface not rendering - no textarea found');
     }

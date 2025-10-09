@@ -38,7 +38,7 @@ env:
 jobs:
   # Code quality validation (fast feedback)
   code-quality:
-    name: "Code Quality: Lint, Tests, Build"
+    name: "Code Quality: Lint, Unit Tests, Build"
     runs-on: ubuntu-latest
     
     steps:
@@ -76,8 +76,8 @@ jobs:
         retention-days: 7
 
   # Integration and E2E tests with service orchestration
-  integration-tests:
-    name: Integration Tests
+  integration-tests-agent:
+    name: "Integration Tests: Agent"
     runs-on: ubuntu-latest
     # Run in parallel with code-quality to reduce total wall time
     
@@ -274,8 +274,8 @@ jobs:
           frontend/coverage/integration/
         retention-days: 7
 
-  frontend-integration-tests:
-    name: Frontend Integration Tests
+  integration-tests-frontend:
+    name: "Integration Tests: Frontend"
     runs-on: ubuntu-latest
     needs: code-quality
     
@@ -500,7 +500,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [ '1/3', '2/3', '3/3' ]
-    needs: [code-quality, integration-tests, frontend-integration-tests]
+    needs: [code-quality, integration-tests-agent, integration-tests-frontend]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -568,10 +568,61 @@ jobs:
       run: |
         echo "🔑 Extracting Supabase credentials..."
         cd frontend
+        
+        # Check if Supabase is running
+        if ! supabase status > /dev/null 2>&1; then
+          echo "❌ Supabase is not running, starting it..."
+          supabase start
+          sleep 10
+        fi
+        
+        # Extract credentials with error handling
+        echo "📋 Supabase status:"
+        supabase status
+        
+        echo "📄 Generating environment file..."
         supabase status -o env > /tmp/supabase.env
-        echo "NEXT_PUBLIC_SUPABASE_URL=$(grep NEXT_PUBLIC_SUPABASE_URL /tmp/supabase.env | cut -d'=' -f2)" >> $GITHUB_ENV
-        echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$(grep NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY /tmp/supabase.env | cut -d'=' -f2)" >> $GITHUB_ENV
-        echo "SUPABASE_SECRET_KEY=$(grep SUPABASE_SECRET_KEY /tmp/supabase.env | cut -d'=' -f2)" >> $GITHUB_ENV
+        
+        echo "📋 Generated environment file contents:"
+        cat /tmp/supabase.env
+        
+        # Extract credentials with fallbacks
+        SUPABASE_URL=$(grep NEXT_PUBLIC_SUPABASE_URL /tmp/supabase.env | cut -d'=' -f2 || echo "")
+        SUPABASE_KEY=$(grep NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY /tmp/supabase.env | cut -d'=' -f2 || echo "")
+        SUPABASE_SECRET=$(grep SUPABASE_SECRET_KEY /tmp/supabase.env | cut -d'=' -f2 || echo "")
+        
+        echo "🔍 Extracted credentials:"
+        echo "  URL: ${SUPABASE_URL:0:20}..."
+        echo "  Key: ${SUPABASE_KEY:0:20}..."
+        echo "  Secret: ${SUPABASE_SECRET:0:20}..."
+        
+        # Set environment variables with validation
+        if [ -n "$SUPABASE_URL" ]; then
+          echo "NEXT_PUBLIC_SUPABASE_URL=$SUPABASE_URL" >> $GITHUB_ENV
+          echo "✅ NEXT_PUBLIC_SUPABASE_URL set"
+        else
+          echo "❌ Failed to extract NEXT_PUBLIC_SUPABASE_URL"
+          echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321" >> $GITHUB_ENV
+          echo "⚠️ Using fallback URL"
+        fi
+        
+        if [ -n "$SUPABASE_KEY" ]; then
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$SUPABASE_KEY" >> $GITHUB_ENV
+          echo "✅ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY set"
+        else
+          echo "❌ Failed to extract NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=placeholder" >> $GITHUB_ENV
+          echo "⚠️ Using fallback key"
+        fi
+        
+        if [ -n "$SUPABASE_SECRET" ]; then
+          echo "SUPABASE_SECRET_KEY=$SUPABASE_SECRET" >> $GITHUB_ENV
+          echo "✅ SUPABASE_SECRET_KEY set"
+        else
+          echo "❌ Failed to extract SUPABASE_SECRET_KEY"
+          echo "SUPABASE_SECRET_KEY=placeholder" >> $GITHUB_ENV
+          echo "⚠️ Using fallback secret"
+        fi
 
     - name: Install Playwright browsers
       run: cd frontend && npx playwright install --with-deps chromium
@@ -582,22 +633,22 @@ jobs:
         sleep 5
         timeout 120s node scripts/health-check.js
 
-    - name: Validate OpenAI API Key
+    - name: Validate Environment Variables
       run: |
-        echo "🔑 Validating OpenAI API key..."
+        echo "🔑 Validating environment variables..."
+        
+        # Validate OpenAI API Key
         if [ -z "$OPENAI_API_KEY" ]; then
           echo "❌ OPENAI_API_KEY is not set"
           exit 1
         fi
         
-        # Check if API key looks valid (starts with sk-)
         if [[ ! "$OPENAI_API_KEY" =~ ^sk- ]]; then
           echo "❌ OPENAI_API_KEY does not appear to be valid (should start with 'sk-')"
           echo "Current key format: ${OPENAI_API_KEY:0:10}..."
           exit 1
         fi
         
-        # Check key length (should be around 50+ characters)
         if [ ${#OPENAI_API_KEY} -lt 40 ]; then
           echo "❌ OPENAI_API_KEY appears to be too short (${#OPENAI_API_KEY} characters)"
           exit 1
@@ -605,9 +656,92 @@ jobs:
         
         echo "✅ OpenAI API key validation passed"
         echo "Key format: ${OPENAI_API_KEY:0:10}... (${#OPENAI_API_KEY} characters)"
+        
+        # Validate Supabase Environment Variables
+        echo "🔍 Validating Supabase environment variables..."
+        echo "NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:0:30}..."
+        echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:0:30}..."
+        echo "SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:0:30}..."
+        
+        if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ "$NEXT_PUBLIC_SUPABASE_URL" = "placeholder" ]; then
+          echo "❌ NEXT_PUBLIC_SUPABASE_URL is not properly set"
+          exit 1
+        fi
+        
+        if [ -z "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ] || [ "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" = "placeholder" ]; then
+          echo "❌ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is not properly set"
+          exit 1
+        fi
+        
+        if [ -z "$SUPABASE_SECRET_KEY" ] || [ "$SUPABASE_SECRET_KEY" = "placeholder" ]; then
+          echo "❌ SUPABASE_SECRET_KEY is not properly set"
+          exit 1
+        fi
+        
+        echo "✅ All environment variables validated successfully"
+
+    - name: Verify Services Before E2E Tests
+      run: |
+        echo "🔍 DEBUGGING: Verifying services before E2E tests..."
+        
+        # Check frontend service
+        echo "Checking frontend service..."
+        for i in {1..5}; do
+          if curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ | grep -q "200"; then
+            echo "✅ Frontend service is running (attempt $i)"
+            break
+          else
+            echo "❌ Frontend service not ready (attempt $i), waiting 3s..."
+            sleep 3
+            if [ $i -eq 5 ]; then
+              echo "💥 Frontend service failed to start after 5 attempts"
+              exit 1
+            fi
+          fi
+        done
+        
+        # Check agent service
+        echo "Checking agent service..."
+        for i in {1..5}; do
+          if curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health | grep -q "200"; then
+            echo "✅ Agent service is running (attempt $i)"
+            break
+          else
+            echo "❌ Agent service not ready (attempt $i), waiting 3s..."
+            sleep 3
+            if [ $i -eq 5 ]; then
+              echo "💥 Agent service failed to start after 5 attempts"
+              exit 1
+            fi
+          fi
+        done
+        
+        # Check Supabase
+        echo "Checking Supabase..."
+        cd frontend
+        if supabase status > /dev/null 2>&1; then
+          echo "✅ Supabase is running"
+          supabase status
+        else
+          echo "❌ Supabase is not running"
+          exit 1
+        fi
+        
+        echo "✅ All services verified and ready for E2E tests"
 
     - name: Run Playwright E2E shard
       run: |
+        echo "🔍 DEBUGGING: Environment variables before E2E tests:"
+        echo "NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:0:50}..."
+        echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:0:50}..."
+        echo "SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:0:50}..."
+        echo "OPENAI_API_KEY: ${OPENAI_API_KEY:0:20}..."
+        echo "AGENT_SERVICE_URL: $AGENT_SERVICE_URL"
+        echo "NEXT_PUBLIC_APP_ENV: $NEXT_PUBLIC_APP_ENV"
+        echo "APP_ENV: $APP_ENV"
+        echo "NODE_ENV: $NODE_ENV"
+        echo "CI: $CI"
+        
         cd frontend && npx playwright test --shard ${{ matrix.shard }}
 
     - name: Stop services
@@ -624,7 +758,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: e2e-${{ matrix.shard }}
+        name: e2e-shard-${{ matrix.shard }}
         path: |
           frontend/playwright-report/
           frontend/test-results/
