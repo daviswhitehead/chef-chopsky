@@ -1,9 +1,9 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node", // Use Node.js environment for integration tests to avoid CORS issues
+  rootDir: ".", // Use current working directory instead of __dirname
   roots: ["<rootDir>"],
   moduleDirectories: ["node_modules", "<rootDir>"],
-  // Remove rootDir: __dirname to avoid CI path resolution issues
   testMatch: ["**/tests/integration/**/*.test.ts", "**/tests/integration/**/*.test.tsx"],
   transform: {
     "^.+\\.tsx?$": ["ts-jest", { 
