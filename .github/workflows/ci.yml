@@ -76,8 +76,8 @@ jobs:
         retention-days: 7
 
   # Integration and E2E tests with service orchestration
-  integration-e2e:
-    name: Integration & E2E Tests
+  integration-tests:
+    name: Integration Tests
     runs-on: ubuntu-latest
     # Run in parallel with code-quality to reduce total wall time
     

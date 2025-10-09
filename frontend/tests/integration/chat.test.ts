@@ -83,7 +83,7 @@ describe('/api/ai/chat', () => {
     })
 
     const response: any = await POST(request as any)
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(502)
   })
 
   it('should call agent service and persist messages', async () => {
