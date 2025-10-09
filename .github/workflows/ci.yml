@@ -127,14 +127,12 @@ jobs:
     - name: Build applications
       run: npm run build
       
-    - name: Start services
+    - name: Run integration and E2E tests
       run: |
         echo "🚀 Starting services for integration and E2E tests..."
         ./scripts/start-services.sh &
         echo "Services started in background"
         
-    - name: Wait for services to be ready
-      run: |
         echo "⏳ Waiting for services to be ready..."
         timeout 120s node scripts/health-check.js
         if [ $? -ne 0 ]; then
@@ -145,18 +143,12 @@ jobs:
         fi
         echo "✅ All services are ready!"
         
-    - name: Run agent integration tests
-      run: |
         echo "🤖 Running agent integration tests..."
         cd agent && npm run test:integration
         
-    - name: Run frontend integration tests
-      run: |
         echo "🧪 Running frontend integration tests..."
         cd frontend && npm run test:integration
         
-    - name: Run E2E tests
-      run: |
         echo "🎭 Running E2E tests..."
         cd frontend && npm run test:e2e
         
