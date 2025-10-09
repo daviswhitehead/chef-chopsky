@@ -1,8 +1,8 @@
 // CRITICAL: Load environment variables FIRST, before any LangChain imports
 import './env-loader.js';
 
-import * as express from 'express';
-import * as cors from 'cors';
+import express from 'express';
+import cors from 'cors';
 import { config, validateConfig } from './config/index.js';
 import { graph } from './retrieval_graph/graph.js';
 import { ensureConfiguration } from './retrieval_graph/configuration.js';
@@ -67,14 +67,14 @@ function generateMockResponse(userMessage: string): string {
  * This service runs separately from the frontend and handles AI processing.
  */
 
-const app = express.default();
+const app = express();
 
 // Environment validation is now handled in config/index.ts
 console.log('🔧 Agent Service Startup Validation...');
 console.log('✅ Environment validation complete');
 
 // Middleware
-app.use(cors.default({
+app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? process.env.FRONTEND_URL || 'http://localhost:3000'
     : '*', // Allow all origins in development for testing
@@ -307,7 +307,6 @@ app.post('/chat', (req, res) => {
       assistant_message: assistantMessage,
       timing_ms
     });
-
   } catch (error) {
     const timing_ms = Date.now() - startTime;
     console.error(`[${requestId}] 💥 Chat endpoint error after ${timing_ms}ms:`, error);
