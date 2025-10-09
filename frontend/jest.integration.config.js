@@ -6,7 +6,7 @@ module.exports = {
   moduleDirectories: ["node_modules", "<rootDir>"],
   testMatch: ["**/tests/integration/**/*.test.ts", "**/tests/integration/**/*.test.tsx"],
   transform: {
-    "^.+\\.tsx?$": ["ts-jest", { 
+    "^.+\\.tsx?$": [require.resolve("ts-jest"), { 
       tsconfig: "tsconfig.json",
       jsx: "react-jsx"
     }]
