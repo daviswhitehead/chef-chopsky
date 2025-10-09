@@ -29,12 +29,17 @@ export default function ConversationPage() {
     if (!mounted) return; // Don't run on server side
 
     const loadConversation = async () => {
-      console.log('Loading conversation via API:', conversationId);
+      console.log('🔄 Loading conversation via API:', conversationId);
+      console.log('🔄 Current environment:', {
+        NODE_ENV: process.env.NODE_ENV,
+        NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
+        CI: process.env.CI
+      });
 
       // Add a timeout to prevent hanging
       let timeoutTriggered = false;
       const timeoutId = setTimeout(() => {
-        console.log('API call timeout, creating mock conversation');
+        console.log('⏰ API call timeout, creating mock conversation');
         timeoutTriggered = true;
         setLoading(false);
         setConversation({
@@ -54,6 +59,7 @@ export default function ConversationPage() {
         const abortOnTimeout = setTimeout(() => controller.abort(), 2800);
 
         // Fetch conversation from internal API
+        console.log('🌐 Fetching conversation from API...');
         const convRes = await fetch(`/api/conversations/${conversationId}`, {
           method: 'GET',
           signal: controller.signal
@@ -61,13 +67,24 @@ export default function ConversationPage() {
         clearTimeout(abortOnTimeout);
 
         if (timeoutTriggered) {
-          console.log('Timeout already triggered, ignoring API result');
+          console.log('⏰ Timeout already triggered, ignoring API result');
           clearTimeout(timeoutId);
           return;
         }
 
+        console.log('🌐 Conversation API response:', {
+          status: convRes.status,
+          statusText: convRes.statusText,
+          ok: convRes.ok,
+          url: convRes.url
+        });
+
         if (!convRes.ok) {
-          console.warn('Conversation fetch failed:', convRes.status);
+          console.error('❌ Conversation fetch failed:', {
+            status: convRes.status,
+            statusText: convRes.statusText,
+            url: convRes.url
+          });
           clearTimeout(timeoutId);
           setConversation(null);
           setMessages([]);
@@ -75,21 +92,42 @@ export default function ConversationPage() {
           return;
         }
         const convData: Conversation = await convRes.json();
+        console.log('✅ Conversation data loaded:', {
+          id: convData.id,
+          title: convData.title,
+          status: convData.status
+        });
 
         // Fetch messages
+        console.log('🌐 Fetching messages from API...');
         const msgsRes = await fetch(`/api/conversations/${conversationId}/messages`, {
           method: 'GET'
         });
+        console.log('🌐 Messages API response:', {
+          status: msgsRes.status,
+          statusText: msgsRes.statusText,
+          ok: msgsRes.ok,
+          url: msgsRes.url
+        });
+        
         let messagesData: Message[] = [];
         if (msgsRes.ok) {
           messagesData = await msgsRes.json();
+          console.log('✅ Messages data loaded:', {
+            count: messagesData.length,
+            messageIds: messagesData.map(m => m.id)
+          });
         } else {
-          console.warn('Messages fetch failed:', msgsRes.status);
+          console.warn('⚠️ Messages fetch failed:', {
+            status: msgsRes.status,
+            statusText: msgsRes.statusText
+          });
         }
 
         clearTimeout(timeoutId);
         setConversation(convData);
         setMessages(messagesData || []);
+        console.log('✅ Conversation page state updated');
       } catch (error) {
         console.error('Error loading conversation via API:', error);
         if (!timeoutTriggered) {

@@ -23,6 +23,17 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { showError, showSuccess, showWarning } = useToast();
 
+  // Debug logging for ChatInterface rendering
+  useEffect(() => {
+    console.log('🎯 ChatInterface rendered:', {
+      conversationId,
+      userId,
+      initialMessagesCount: initialMessages.length,
+      isLoading,
+      inputValue: inputValue.length > 0 ? `${inputValue.substring(0, 20)}...` : 'empty'
+    });
+  }, [conversationId, userId, initialMessages.length, isLoading, inputValue]);
+
   // Update messages when initialMessages prop changes
   useEffect(() => {
     setMessages(initialMessages);

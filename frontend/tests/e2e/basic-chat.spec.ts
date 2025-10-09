@@ -82,7 +82,102 @@ test.describe('Basic Chat Functionality', () => {
     await submitButton.click();
     await page.waitForURL(/\/conversations\/[a-f0-9-]+/, { timeout: 10000 });
 
-    // Now test sending a message
+    // Enhanced debugging for textarea visibility
+    console.log('🔍 Debugging textarea visibility...');
+    console.log('Current URL:', page.url());
+    
+    // Wait for page to fully load
+    await page.waitForLoadState('networkidle');
+    
+    // Check if conversation page loaded properly
+    const conversationTitle = page.locator('h1').first();
+    const titleVisible = await conversationTitle.isVisible();
+    console.log('Conversation title visible:', titleVisible);
+    if (titleVisible) {
+      const titleText = await conversationTitle.textContent();
+      console.log('Conversation title text:', titleText);
+    }
+    
+    // Check for any error messages
+    const errorElements = await page.locator('[role="alert"], .error, .text-red-500').all();
+    console.log('Error elements found:', errorElements.length);
+    for (let i = 0; i < errorElements.length; i++) {
+      const errorText = await errorElements[i].textContent();
+      console.log(`Error ${i + 1}:`, errorText);
+    }
+    
+    // Check for loading states
+    const loadingElements = await page.locator('.animate-spin, [class*="loading"]').all();
+    const loadingTextElements = await page.locator('text=Loading').all();
+    console.log('Loading elements found:', loadingElements.length + loadingTextElements.length);
+    
+    // Check console errors
+    const consoleErrors: string[] = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+    
+    // Wait a bit for any console errors to accumulate
+    await page.waitForTimeout(2000);
+    console.log('Console errors:', consoleErrors);
+    
+    // Check network requests for API failures
+    const networkErrors: string[] = [];
+    page.on('response', response => {
+      if (!response.ok()) {
+        networkErrors.push(`${response.status()} ${response.url()}`);
+      }
+    });
+    
+    // Try to find textarea with multiple strategies
+    console.log('🔍 Looking for textarea...');
+    
+    // Strategy 1: Direct textarea selector
+    const textarea1 = page.locator('textarea').first();
+    const textarea1Visible = await textarea1.isVisible();
+    console.log('Textarea (strategy 1) visible:', textarea1Visible);
+    
+    // Strategy 2: Textarea in ChatInterface component
+    const textarea2 = page.locator('.card textarea').first();
+    const textarea2Visible = await textarea2.isVisible();
+    console.log('Textarea (strategy 2) visible:', textarea2Visible);
+    
+    // Strategy 3: Textarea with placeholder
+    const textarea3 = page.locator('textarea[placeholder*="Chef Chopsky"]').first();
+    const textarea3Visible = await textarea3.isVisible();
+    console.log('Textarea (strategy 3) visible:', textarea3Visible);
+    
+    // Strategy 4: Any textarea anywhere
+    const allTextareas = await page.locator('textarea').all();
+    console.log('Total textareas found:', allTextareas.length);
+    for (let i = 0; i < allTextareas.length; i++) {
+      const visible = await allTextareas[i].isVisible();
+      const placeholder = await allTextareas[i].getAttribute('placeholder');
+      console.log(`Textarea ${i + 1}: visible=${visible}, placeholder="${placeholder}"`);
+    }
+    
+    // Check if ChatInterface component is rendered
+    const chatInterface = page.locator('.card').first();
+    const chatInterfaceVisible = await chatInterface.isVisible();
+    console.log('ChatInterface card visible:', chatInterfaceVisible);
+    if (chatInterfaceVisible) {
+      const cardContent = await chatInterface.textContent();
+      console.log('ChatInterface card content preview:', cardContent?.substring(0, 200));
+    }
+    
+    // Check for conversation not found state
+    const notFoundText = page.locator('text=Conversation not found');
+    const notFoundVisible = await notFoundText.isVisible();
+    console.log('Conversation not found visible:', notFoundVisible);
+    
+    // Log network errors if any
+    if (networkErrors.length > 0) {
+      console.log('Network errors:', networkErrors);
+    }
+    
+    // Now test sending a message - use the most likely textarea
     const messageInput = page.locator('textarea').first();
     await expect(messageInput).toBeVisible();
 

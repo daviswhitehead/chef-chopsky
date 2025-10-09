@@ -201,6 +201,28 @@ jobs:
         echo "  - Frontend: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 'unreachable')"
         echo "  - Agent Health: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health || echo 'unreachable')"
         
+        echo "🔑 Validating OpenAI API key..."
+        if [ -z "$OPENAI_API_KEY" ]; then
+          echo "❌ OPENAI_API_KEY is not set"
+          exit 1
+        fi
+        
+        # Check if API key looks valid (starts with sk-)
+        if [[ ! "$OPENAI_API_KEY" =~ ^sk- ]]; then
+          echo "❌ OPENAI_API_KEY does not appear to be valid (should start with 'sk-')"
+          echo "Current key format: ${OPENAI_API_KEY:0:10}..."
+          exit 1
+        fi
+        
+        # Check key length (should be around 50+ characters)
+        if [ ${#OPENAI_API_KEY} -lt 40 ]; then
+          echo "❌ OPENAI_API_KEY appears to be too short (${#OPENAI_API_KEY} characters)"
+          exit 1
+        fi
+        
+        echo "✅ OpenAI API key validation passed"
+        echo "Key format: ${OPENAI_API_KEY:0:10}... (${#OPENAI_API_KEY} characters)"
+        
         echo "🤖 Running agent integration tests..."
         cd agent && npm run test:integration
         AGENT_TEST_EXIT_CODE=$?
@@ -332,6 +354,30 @@ jobs:
         ./scripts/start-services.sh &
         sleep 5
         timeout 120s node scripts/health-check.js
+
+    - name: Validate OpenAI API Key
+      run: |
+        echo "🔑 Validating OpenAI API key..."
+        if [ -z "$OPENAI_API_KEY" ]; then
+          echo "❌ OPENAI_API_KEY is not set"
+          exit 1
+        fi
+        
+        # Check if API key looks valid (starts with sk-)
+        if [[ ! "$OPENAI_API_KEY" =~ ^sk- ]]; then
+          echo "❌ OPENAI_API_KEY does not appear to be valid (should start with 'sk-')"
+          echo "Current key format: ${OPENAI_API_KEY:0:10}..."
+          exit 1
+        fi
+        
+        # Check key length (should be around 50+ characters)
+        if [ ${#OPENAI_API_KEY} -lt 40 ]; then
+          echo "❌ OPENAI_API_KEY appears to be too short (${#OPENAI_API_KEY} characters)"
+          exit 1
+        fi
+        
+        echo "✅ OpenAI API key validation passed"
+        echo "Key format: ${OPENAI_API_KEY:0:10}... (${#OPENAI_API_KEY} characters)"
 
     - name: Run Playwright E2E shard
       run: |
