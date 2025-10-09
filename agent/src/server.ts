@@ -1,8 +1,8 @@
 // CRITICAL: Load environment variables FIRST, before any LangChain imports
 import './env-loader.js';
 
-import express from 'express';
-import cors from 'cors';
+import * as express from 'express';
+import * as cors from 'cors';
 import { config, validateConfig } from './config/index.js';
 import { graph } from './retrieval_graph/graph.js';
 import { ensureConfiguration } from './retrieval_graph/configuration.js';
@@ -67,14 +67,14 @@ function generateMockResponse(userMessage: string): string {
  * This service runs separately from the frontend and handles AI processing.
  */
 
-const app = express();
+const app = express.default();
 
 // Environment validation is now handled in config/index.ts
 console.log('🔧 Agent Service Startup Validation...');
 console.log('✅ Environment validation complete');
 
 // Middleware
-app.use(cors({
+app.use(cors.default({
   origin: process.env.NODE_ENV === 'production' 
     ? process.env.FRONTEND_URL || 'http://localhost:3000'
     : '*', // Allow all origins in development for testing
