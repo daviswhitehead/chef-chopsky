@@ -22,15 +22,17 @@ module.exports = {
   // Don't clear mocks between tests - integration tests may need persistent state
   clearMocks: false,
   restoreMocks: false,
-  // More verbose in CI for better debugging
-  verbose: process.env.CI ? true : false,
+  // Force verbose output in CI to see failed tests
+  verbose: true,
+  // Show individual test results
+  reporters: process.env.CI ? [
+    'default',
+    ['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }]
+  ] : ['default'],
   // Integration tests should fail fast if services aren't available
   bail: false,
-  // Retry failed tests in CI (Jest 27+ feature)
-  ...(process.env.CI && { 
-    retryTimes: 1,
-    retryDelay: 1000
-  }),
+  // Force Jest to show all test results
+  collectCoverage: false,
   // Add global setup for integration tests
   globalSetup: "<rootDir>/tests/integration/global-setup.js",
   globalTeardown: "<rootDir>/tests/integration/global-teardown.js"
