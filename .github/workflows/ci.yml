@@ -128,7 +128,9 @@ jobs:
       run: cd frontend && npx playwright install --with-deps chromium
       
     - name: Build applications
-      run: npm run build
+      run: |
+        echo "🔨 Building applications with NODE_ENV=production..."
+        NODE_ENV=production npm run build
       
     - name: Run integration and E2E tests
       run: |
