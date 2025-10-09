@@ -123,25 +123,57 @@ export async function POST(request: NextRequest) {
 
     console.log(`[${requestId}] 🤖 Calling agent service with ${filtered.length} messages`);
     const agentStartTime = Date.now();
-    
-           const agentResponse = await fetch(`${AGENT_SERVICE_URL}/chat`, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({
-               conversation_id: conversationId,
-               messages: filtered,
-               client_metadata: {
-                 user_id: userId ?? null,
-                 source: 'frontend',
-                 user_agent: request.headers.get('user-agent') || 'unknown'
-               }
-             }),
-             // Use centralized timeout configuration
-             signal: AbortSignal.timeout(getEnvironmentTimeouts().API_ROUTE)
-           })
-    
+
+    // Perform the agent fetch with a single retry on transient errors
+    async function fetchAgentOnce(): Promise<Response> {
+      return await fetch(`${AGENT_SERVICE_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          messages: filtered,
+          client_metadata: {
+            user_id: userId ?? null,
+            source: 'frontend',
+            user_agent: request.headers.get('user-agent') || 'unknown'
+          }
+        }),
+        // Use centralized timeout configuration; do not assume it's always set
+        signal: AbortSignal.timeout(getEnvironmentTimeouts().API_ROUTE || 15000)
+      })
+    }
+
+    let agentResponse: Response | undefined
+    try {
+      agentResponse = await fetchAgentOnce()
+    } catch (err: any) {
+      // Retry once on common transient errors
+      const transient = err?.name === 'AbortError' || err?.code === 'ECONNREFUSED' || err?.code === 'ENOTFOUND' || err?.message?.includes('fetch failed')
+      if (transient) {
+        // small backoff
+        await new Promise(r => setTimeout(r, 200))
+        try {
+          agentResponse = await fetchAgentOnce()
+        } catch (err2) {
+          const agentDurationErr = Date.now() - agentStartTime;
+          console.error(`[${requestId}] 💥 Agent fetch failed after retry in ${agentDurationErr}ms:`, err2)
+        }
+      } else {
+        const agentDurationErr = Date.now() - agentStartTime;
+        console.error(`[${requestId}] 💥 Agent fetch failed (non-transient) in ${agentDurationErr}ms:`, err)
+      }
+    }
+
     const agentDuration = Date.now() - agentStartTime;
-    console.log(`[${requestId}] ⏱️ Agent service responded in ${agentDuration}ms with status ${agentResponse.status}`);
+    if (agentResponse) {
+      console.log(`[${requestId}] ⏱️ Agent service responded in ${agentDuration}ms with status ${agentResponse.status}`);
+    } else {
+      console.error(`[${requestId}] 💥 Agent service did not return a response after ${agentDuration}ms`)
+      return NextResponse.json(
+        { error: 'Agent unavailable', message: 'Failed to reach agent service' },
+        { status: 502 }
+      )
+    }
 
     if (!agentResponse.ok) {
       const err = await safeJson(agentResponse)

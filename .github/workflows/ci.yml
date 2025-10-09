@@ -79,7 +79,7 @@ jobs:
   integration-e2e:
     name: Integration & E2E Tests
     runs-on: ubuntu-latest
-    needs: code-quality
+    # Run in parallel with code-quality to reduce total wall time
     
     env:
       # Agent service environment variables (inherits global env)
@@ -94,6 +94,14 @@ jobs:
       uses: ./.github/actions/setup-node
       with:
         node-version: '20.x'
+
+    - name: Cache npm
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          npm-${{ runner.os }}-
       
     - name: Install Supabase CLI
       run: |
@@ -126,13 +134,18 @@ jobs:
         echo "SUPABASE_SECRET_KEY=$SUPABASE_SECRET_KEY" >> $GITHUB_ENV
         echo "✅ Environment variables set"
         
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-1.55.0
+        restore-keys: |
+          playwright-${{ runner.os }}-
+
     - name: Install Playwright browsers
       run: cd frontend && npx playwright install --with-deps chromium
       
-    - name: Build applications
-      run: |
-        echo "🔨 Building applications with NODE_ENV=production..."
-        NODE_ENV=production npm run build
+    # Skip rebuilding here; dev servers are used for integration/E2E
       
     - name: Run integration and E2E tests
       run: |
