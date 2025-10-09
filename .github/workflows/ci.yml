@@ -8,7 +8,7 @@ on:
 
 env:
   # Global CI environment
-  NODE_ENV: test
+  NODE_ENV: development
   CI: true
   LOG_LEVEL: info
   LANGGRAPH_PORT: 2024
@@ -22,9 +22,8 @@ env:
   # OpenAI API key for agent tests
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   
-  # Ensure agent runs in development mode for CI (not test mode)
-  # This allows mock mode warnings but doesn't fail on invalid API keys
-  AGENT_NODE_ENV: development
+  # Use development mode for integration tests to allow real API calls
+  # Test mode skips validation and uses mocks, which breaks integration tests
   
   # Frontend build environment variables (for CI builds)
   NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
