@@ -128,6 +128,7 @@ app.post('/chat', (req, res) => {
   
   console.log(`[${requestId}] 🚀 POST /chat - Request started at ${new Date().toISOString()}`);
   
+  // Handle the async operation properly to avoid floating promise
   (async () => {
     try {
     // Validate request
@@ -317,7 +318,19 @@ app.post('/chat', (req, res) => {
       timing_ms
     });
   }
-  })();
+  })().catch((error) => {
+    const timing_ms = Date.now() - startTime;
+    console.error(`[${requestId}] 💥 Unhandled promise rejection after ${timing_ms}ms:`, error);
+    
+    // Only send response if it hasn't been sent yet
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Agent processing failed',
+        message: config.nodeEnv === 'development' ? (error as Error).message : 'Something went wrong',
+        timing_ms
+      });
+    }
+  });
 });
 
 // Error handling middleware
