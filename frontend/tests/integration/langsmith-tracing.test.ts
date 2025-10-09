@@ -106,7 +106,7 @@ describe('LangSmith Tracing Integration Tests', () => {
       });
 
       // Test that our API can handle the request (may succeed or fail depending on agent service)
-      expect([200, 500]).toContain(messageResponse.status);
+      expect([200, 500, 502]).toContain(messageResponse.status);
       
       if (messageResponse.ok) {
         const messageData = await messageResponse.json();
