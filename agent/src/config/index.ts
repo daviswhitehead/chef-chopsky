@@ -18,7 +18,7 @@ export const config = {
   langsmithProject: process.env.LANGCHAIN_PROJECT || 'chef chopsky',
   
   // Environment settings
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv: process.env.AGENT_NODE_ENV || process.env.NODE_ENV || 'development',
   logLevel: process.env.LOG_LEVEL || 'info',
   
   // LangGraph specific settings
