@@ -307,11 +307,16 @@ export class DatabaseService {
 // Use mock database for testing when Supabase is not properly configured
 // NEVER use mock database in production - fail loudly instead
 const isTestMode = () => {
+  // In CI builds, use mock database for build process but allow real database for runtime
+  if (process.env.CI === 'true') {
+    return true; // Always use mock in CI for build safety
+  }
+  
   return process.env.NODE_ENV === 'test' || 
-         process.env.CI === 'true' || 
          !process.env.NEXT_PUBLIC_SUPABASE_URL || 
          process.env.NEXT_PUBLIC_SUPABASE_URL.includes('test.supabase.co') ||
-         process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project-ref');
+         process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project-ref') ||
+         process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder.supabase.co');
 };
 
 // Production safety check - fail loudly if trying to use mock in production
