@@ -172,16 +172,19 @@ jobs:
         cd agent && npm run test:integration
         AGENT_TEST_EXIT_CODE=$?
         echo "Agent tests completed with exit code: $AGENT_TEST_EXIT_CODE"
+        cd ..  # Return to root directory
         
         echo "🧪 Running frontend integration tests..."
         cd frontend && npm run test:integration
         FRONTEND_TEST_EXIT_CODE=$?
         echo "Frontend tests completed with exit code: $FRONTEND_TEST_EXIT_CODE"
+        cd ..  # Return to root directory
         
         echo "🎭 Running E2E tests..."
         cd frontend && npm run test:e2e
         E2E_TEST_EXIT_CODE=$?
         echo "E2E tests completed with exit code: $E2E_TEST_EXIT_CODE"
+        cd ..  # Return to root directory
         
         echo "📊 Final Test Summary:"
         echo "  - Agent Integration Tests: $([ $AGENT_TEST_EXIT_CODE -eq 0 ] && echo '✅ PASSED' || echo '❌ FAILED')"
