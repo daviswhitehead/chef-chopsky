@@ -12,6 +12,8 @@ const nextConfig = {
   ...(process.env.CI === 'true' && {
     output: 'standalone',
     trailingSlash: false,
+    // Use separate build directory for CI
+    distDir: '.next-ci',
   }),
 }
 
