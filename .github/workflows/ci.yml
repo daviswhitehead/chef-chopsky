@@ -147,7 +147,7 @@ jobs:
       
     # Skip rebuilding here; dev servers are used for integration/E2E
       
-    - name: Run integration and E2E tests
+    - name: Run integration tests
       run: |
         echo "🚀 Starting services for integration and E2E tests..."
         echo "📊 CI Environment Info:"
@@ -193,19 +193,12 @@ jobs:
         echo "Frontend tests completed with exit code: $FRONTEND_TEST_EXIT_CODE"
         cd ..  # Return to root directory
         
-        echo "🎭 Running E2E tests..."
-        cd frontend && npm run test:e2e
-        E2E_TEST_EXIT_CODE=$?
-        echo "E2E tests completed with exit code: $E2E_TEST_EXIT_CODE"
-        cd ..  # Return to root directory
-        
         echo "📊 Final Test Summary:"
         echo "  - Agent Integration Tests: $([ $AGENT_TEST_EXIT_CODE -eq 0 ] && echo '✅ PASSED' || echo '❌ FAILED')"
         echo "  - Frontend Integration Tests: $([ $FRONTEND_TEST_EXIT_CODE -eq 0 ] && echo '✅ PASSED' || echo '❌ FAILED')"
-        echo "  - E2E Tests: $([ $E2E_TEST_EXIT_CODE -eq 0 ] && echo '✅ PASSED' || echo '❌ FAILED')"
         
         # Exit with error if any test suite failed
-        if [ $AGENT_TEST_EXIT_CODE -ne 0 ] || [ $FRONTEND_TEST_EXIT_CODE -ne 0 ] || [ $E2E_TEST_EXIT_CODE -ne 0 ]; then
+        if [ $AGENT_TEST_EXIT_CODE -ne 0 ] || [ $FRONTEND_TEST_EXIT_CODE -ne 0 ]; then
           echo "❌ One or more test suites failed"
           exit 1
         fi
@@ -233,6 +226,94 @@ jobs:
           frontend/test-results/
           frontend/playwright-report/
           frontend/coverage/integration/
+        retention-days: 7
+
+  e2e:
+    name: E2E (shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [ '1/3', '2/3', '3/3' ]
+    needs: code-quality
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js Environment
+      uses: ./.github/actions/setup-node
+      with:
+        node-version: '20.x'
+
+    - name: Cache npm
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          npm-${{ runner.os }}-
+
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-1.55.0
+        restore-keys: |
+          playwright-${{ runner.os }}-
+
+    - name: Install Supabase CLI
+      run: |
+        echo "📦 Installing Supabase CLI..."
+        curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xz
+        sudo mv supabase /usr/local/bin/
+        supabase --version
+
+    - name: Start Local Supabase
+      run: |
+        echo "🚀 Starting local Supabase (Docker-based)..."
+        cd frontend && supabase start
+        echo "✅ Local Supabase started successfully"
+
+    - name: Extract Supabase Credentials
+      run: |
+        echo "🔑 Extracting Supabase credentials..."
+        cd frontend
+        supabase status -o env > /tmp/supabase.env
+        echo "NEXT_PUBLIC_SUPABASE_URL=$(grep NEXT_PUBLIC_SUPABASE_URL /tmp/supabase.env | cut -d'=' -f2)" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$(grep NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY /tmp/supabase.env | cut -d'=' -f2)" >> $GITHUB_ENV
+        echo "SUPABASE_SECRET_KEY=$(grep SUPABASE_SECRET_KEY /tmp/supabase.env | cut -d'=' -f2)" >> $GITHUB_ENV
+
+    - name: Install Playwright browsers
+      run: cd frontend && npx playwright install --with-deps chromium
+
+    - name: Start services
+      run: |
+        ./scripts/start-services.sh &
+        sleep 5
+        timeout 120s node scripts/health-check.js
+
+    - name: Run Playwright E2E shard
+      run: |
+        cd frontend && npx playwright test --shard ${{ matrix.shard }}
+
+    - name: Stop services
+      if: always()
+      run: |
+        echo "🛑 Stopping services..."
+        npm run stop:services || true
+        pkill -f 'next dev' || true
+        pkill -f 'tsx watch' || true
+        echo "🛑 Stopping local Supabase..."
+        cd frontend && supabase stop || true
+
+    - name: Upload shard artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: e2e-${{ matrix.shard }}
+        path: |
+          frontend/playwright-report/
+          frontend/test-results/
         retention-days: 7
 
   # Security and dependency check
