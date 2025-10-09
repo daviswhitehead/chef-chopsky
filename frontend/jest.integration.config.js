@@ -1,5 +1,5 @@
 module.exports = {
-  preset: "ts-jest",
+  // Remove preset and use explicit transformer instead
   testEnvironment: "node", // Use Node.js environment for integration tests to avoid CORS issues
   rootDir: ".", // Use current working directory instead of __dirname
   roots: ["<rootDir>"],
