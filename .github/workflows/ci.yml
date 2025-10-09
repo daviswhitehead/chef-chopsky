@@ -61,7 +61,9 @@ jobs:
         cd .. && cd agent && npm run test:unit
       
     - name: Build applications
-      run: npm run build
+      run: |
+        echo "🔨 Building applications with NODE_ENV=production..."
+        NODE_ENV=production npm run build
       
     - name: Upload test results
       if: always()

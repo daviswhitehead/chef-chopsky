@@ -27,7 +27,7 @@ globs: *
 *   **Feature Branch Staging Deployments**: The trigger for feature branch staging deployments uses the following logic:
     *   **Triggers**: The workflow is automatically triggered when code is pushed to any branch that starts with `feat/` or `feature/`.
     *   **URL Generation**: The deployment URL is created by taking the branch name (e.g., `feat/new-recipe-search`), replacing `/` with `-` (becomes `feat-new-recipe-search`), and creating the URL: `https://chef-chopsky-git-feat-new-recipe-search.vercel.app`.
-*   **Pre-Commit Hooks Implementation:** This project uses [Husky](https://typicode.github.io/husky/) and [lint-staged](https://github.com/okonet/lint-staged) to automatically run linting checks before commits.
+*   **Pre-Commit Hooks Implementation:** This project uses [Husky](https://typicode.github.com/husky/) and [lint-staged](https://github.com/okonet/lint-staged) to automatically run linting checks before commits.
     *   To setup:
         ```bash
         npm install
@@ -37,13 +37,16 @@ globs: *
         {
           "lint-staged": {
             "frontend/**/*.{js,jsx,ts,tsx}": [
-              "cd frontend && npx eslint --fix"
+              "cd frontend && npx eslint --fix",
+              "cd frontend && npx eslint",
+              "cd frontend && npx tsc --noEmit"
             ],
             "agent/src/**/*.{js,ts}": [
-              "cd agent && npx eslint --fix"
+              "cd agent && npx eslint --fix",
+              "cd agent && npx eslint",
+              "cd agent && npx tsc --noEmit"
             ]
           }
-        }
         ```
     *   The pre-commit hook script is in `.husky/pre-commit`:
         ```bash
@@ -80,13 +83,89 @@ globs: *
         2.  **Fix issues automatically** where possible:
             ```bash
             cd frontend && npx eslint --fix .
-            cd agent && npx eslint --fix src
+            cd agent && npx eslint src
             ```
         3.  **Fix remaining issues manually** based on the error messages
     *   If the pre-commit hook is slow:
         1.  Only stage the files you want to commit (avoid `git add .` for large changesets)
         2.  The hook only checks staged files, so committing smaller chunks will be faster
         3.  Consider increasing system resources if linting is consistently slow
+*   **Git Worktrees Setup**: Use Git worktrees to work on multiple branches simultaneously.
+    *   **Directory Structure**: Create a directory structure like this:
+        ```
+        /Users/daviswhitehead/Documents/chef-chopsky/          # Main repo (current branch)
+        /Users/daviswhitehead/Documents/chef-chopsky-worktrees/ # Worktrees directory
+        ├── main/                                              # Main branch worktree
+        ├── staging/                                           # Staging branch worktree
+        ├── feature-branch-1/                                 # Any feature branch
+        └── feature-branch-2/                                 # Another feature branch
+        ```
+    *   **Commands**:
+        ```bash
+        # 1. Create worktrees directory
+        mkdir -p /Users/daviswhitehead/Documents/chef-chopsky-worktrees
+
+        # 2. Navigate to main repo
+        cd /Users/daviswhitehead/Documents/chef-chopsky
+
+        # 3. Create worktrees (adjust branch names as needed)
+        git worktree add ../chef-chopsky-worktrees/main main
+        git worktree add ../chef-chopsky-worktrees/staging staging
+
+        # 4. Verify setup
+        git worktree list
+
+        # 5. Test a worktree
+        cd ../chef-chopsky-worktrees/main
+        git status
+        ```
+    *   **Working with Worktrees**:
+        *   To work on a specific branch:
+            ```bash
+            # Navigate to the worktree directory
+            cd /Users/daviswhitehead/Documents/chef-chopsky-worktrees/main
+
+            # Work normally - git commands work as expected
+            git status
+            git add .
+            git commit -m "Your changes"
+            git push origin main
+            ```
+        *   To create a new branch in a worktree:
+            ```bash
+            # From any worktree directory
+            git checkout -b new-feature-branch
+            git push -u origin new-feature-branch
+            ```
+    *   **Managing Worktrees**:
+        *   Remove a worktree when done:
+            ```bash
+            # From the main repo directory
+            cd /Users/daviswhitehead/Documents/chef-chopsky/
+
+            # Remove worktree (this will delete the directory)
+            git worktree remove ../chef-chopsky-worktrees/main
+            ```
+        *   Prune worktrees (clean up references to deleted directories):
+            ```bash
+            git worktree prune
+            ```
+    *   **IDE Setup Considerations**:
+        *   For Cursor/VS Code:
+            *   Open each worktree as a separate workspace.
+            *   Create workspace files for each worktree:
+                ```bash
+                # In each worktree directory
+                code .  # Opens that worktree in VS Code
+                ```
+    *   **Environment Considerations**:
+        *   Each worktree will need its own `.env` files.
+        *   Run different services in different worktrees simultaneously (e.g., frontend on port 3000, agent on port 3001 in one worktree, and different ports (3002, 3003) in another worktree).
+    *   **Recommended Workflow**:
+        1.  **Main repo**: Keep for your current branch.
+        2.  **Main worktree**: For stable main branch work.
+        3.  **Staging worktree**: For staging environment testing.
+        4.  **Feature worktrees**: For new feature development.
 
 ## DEBUGGING
 
@@ -191,7 +270,7 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
 - Only make calls to external APIs when necessary.
 - Always use a secure HTTPS connection.
 - Never include secrets or API keys in the URL.
-- Use the appropriate HTTP method (e.g., `GET`, ``POST`, `PUT`, `DELETE`).
+- Use the appropriate HTTP method (e.g., `GET`, `POST`, `PUT`, `DELETE`).
 - Handle errors gracefully.
 
 ### CREATING EXECUTABLE SCRIPTS
@@ -286,6 +365,12 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
 - Use cursor hooks to enforce project standards and prevent common errors.
 - Use cursor snippets to insert code templates.
 - Use cursor commands to automate repetitive tasks.
+- The `.cursorignore` file blocks `.env` files, but `.env.example` files are allowed with the `!.env.example` rule. To allow creating `.env.local.example`, `.env.staging.example`, and `.env.production.example`, add the following rules to the `.cursorignore` file:
+  ```
+  !.env.local.example
+  !.env.staging.example
+  !.env.production.example
+  ```
 
 ### AI DEVELOPMENT PLAYBOOK
 - Follow the AI development playbook for all AI-related tasks.
@@ -313,7 +398,6 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
         - Allows CI builds to proceed (CI=true)
         - Still blocks actual production deployments with mock config
         - Maintains security for real production environments
-- The agent integration tests must now properly mock the config validation to avoid early `process.exit` calls. The config validation should only run when the test is explicitly validating the configuration.
 
 ### ENVIRONMENT CONFIGURATION
 - When configuring environment-driven retriever and embedding:
@@ -375,6 +459,28 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
        const { OpenAIEmbeddings } = await import("@langchain/openai");
     ```
 - **GitHub Actions Workflow - CI Environment Variable:** CI environments must set `CI=true` to allow CI builds to proceed when production safety guards are enabled.
+- **GitHub Actions Workflow - Split Integration Tests:** The CI workflow must have separate steps for running frontend and agent integration tests, with the agent tests running first:
+    ```yaml
+     - name: Run agent integration tests
+       run: |
+         echo "🤖 Running agent integration tests..."
+         cd agent && npm run test:integration
+         
+     - name: Run frontend integration tests
+       run: |
+         echo "🧪 Running frontend integration tests..."
+         cd frontend && npm run test:integration
+    ```
+- **GitHub Actions Workflow - Consolidate CI Service Orchestration**: To prevent process isolation issues in CI, consolidate service startup, health check, and test execution into a single step.  This ensures that the services started in the CI environment remain available throughout the entire testing process.
+  - **Enhanced Debug Logging**:
+    - Add detailed environment info logging (Node/NPM versions, ports, working directory)
+    - Track service PIDs and exit codes for better debugging
+    - Add pre-test service status checks with HTTP response codes
+    - Enhanced service startup logging with directory verification
+    - Centralized service logs to `/tmp/chef-chopsky-services.log`
+    - Detailed test suite results with pass/fail status
+- **GitHub Actions Workflow - The pre-commit hook configuration should include running `eslint --fix` first, followed by `eslint` to catch non-fixable errors, ensuring all ESLint errors are caught before committing.** 
+- **GitHub Actions Workflow - The pre-commit hook configuration should also include a TypeScript compilation check (`tsc --noEmit`) to catch type errors.**
 
 ### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
 - **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
@@ -456,40 +562,4 @@ As an AI assistant, focus on creating a clear and maintainable structure for the
       *   Services: External (no local servers)
       *   Commands:
           *   `npm run test:e2e:production` - Run production E2E tests
-          *   `npm run test:e2e:production:headed` - Run in headed mode
-      *   Test Files:
-          *   `production-tests.spec.ts` - Production-specific tests
-          *   Uses `ProductionTestEnvironment` for setup
-  3.  CI/CD Environment (GitHub Actions)
-      *   File: `.github/workflows/ci.yml`
-      *   Base URL: `http://localhost:3000` (services started in CI)
-      *   Environment: Ubuntu runners with service orchestration
-      *   Service Orchestration:
-          *   Services are started via `start-services.sh`
-          *   Health checks ensure services are ready
-          *   Tests run against localhost services in CI
-- Tests automatically detect their environment through:
-    1.  CI Environment Variable:
-    2.  Base URL Configuration:
-    3.  Service Health Checks:
-- E2E tests automatically detect their environment through:
-    1.  Configuration file used (`playwright.config.ts` vs `playwright.production.config.ts`)
-    2.  Command executed (`test:e2e` vs `test:e2e:production`)
-    3.  CI environment detection (`process.env.CI`)
-- When running E2E tests locally, they should use as "real" code and tools as possible. For example, local E2E tests should use a real Supabase backend and Langsmith. To achieve this:
-  - Keep using the current hosted Supabase setup for E2E tests initially. This provides real database operations immediately without additional setup.
-  - Implement Local Supabase CLI tasks for a better local
-
-### GITHUB CHECKS EXPLAINED
-
-This document provides plain English explanations of the GitHub workflow files, their triggers, checks, importance, and priority.
-
-| Workflow File                                      | Triggers                                                                                                                                                                                                                                   | What It Does                                                                                                                                      | Checks                                                                                                                                                                                                                   | Why Important                                                                                                                                                  | Priority |
-| :------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------- |
-| `ci.yml`                                           | `pull_request` (on every pull request); `push` (on every push to any branch)                                                                                                                                                             | Runs core continuous integration checks to validate code quality and compatibility.                                                               | `CI / Code Quality: Lint, Tests, Build`: Runs linters, unit and integration tests, and builds using Node.js 20.x. `CI / security`: Scans code for security vulnerabilities. | Ensures the codebase is stable, secure, and compatible with Node.js 20.x. Catches basic issues early.                                       | High     |
-| `test-agent.yml`                                     | `pull_request` (on every pull request)                                                                                                                                                                                                     | Runs tests specifically for the Chef Chopsky Agent service (the AI backend).                                                                      | `Test Chef Chopsky Agent / test-agent`: Executes all tests for the agent service.                                                                                                                               | Verifies the AI backend is functioning correctly and there are no regressions in functionality.                                                           | High     |
-| `health-checks-and-environment-separation-tests.yml` | `pull_request` (on every pull request)                                                                                                                                                                                                     | Validates the health and environment isolation of different deployment environments.                                                                | `Health Checks and Environment Separation Tests / health-checks`: Tests that all services are running and responding to health check endpoints. `Health Checks and Environment Separation Tests / environment-separation`: Verifies that different environments are properly isolated. | Ensures services are running and environments are correctly configured, preventing cross-contamination and promoting stability.                              | Medium   |
-| `staging-deployment.yml`                             | `push` (on branches that start with `feat/` or `feature/`)                                                                                                                                                                                  | Deploys the application to the staging environment for testing and validation of new features.                                                    | `Staging Deployment / validate`: Validates the staging environment configuration and setup. `Staging Deployment / deploy-agent`: Deploys the agent service to staging. `Staging Deployment / deploy-frontend`: Deploys the frontend to staging. `Staging Deployment / post-deployment-tests`: Runs tests after deployment. | Provides a realistic testing environment for new features before they are released to production. Ensures that deployments are automated and reliable. | Medium   |
-| `production-deployment.yml`                          | Manual trigger (workflow_dispatch)                                                                                                                                                                                                   | Manually deploys the application to the production environment after thorough testing and validation.                                               | `Vercel – chef-chopsky-production`: Attempts to deploy the application to the production environment on Vercel.                                                                                               | Releases a stable and validated version of the application to end-users.                                                                                   | High     |
-| `pr-validation.yml`                                  | `pull_request` (on every pull request)                                                                                                                                                                                                     | Runs basic validations to ensure code quality and security before merging a pull request.                                                              | `CI / security`: Scans code for security vulnerabilities. `CI / Code Quality: Lint, Tests, Build`: Runs linters, unit and integration tests using Node.js 20.x.      | Catches basic issues early and prevents broken code from being merged into the main branch.                                                                   | High     |
-| `deployment-monitoring.yml`                           | `workflow
+          *
