@@ -105,12 +105,16 @@ jobs:
     
     - name: Install dependencies
       run: |
-        echo "📦 Installing dependencies..."
-        npm install
-        cd frontend && npm install
-        cd ../agent && npm install
+        echo "📦 Installing dependencies with npm ci..."
+        npm ci
+        cd frontend && npm ci
+        cd ../agent && npm ci
         cd ..
         echo "✅ Dependencies installed"
+        
+        echo "🔍 Verifying ts-jest installation..."
+        cd frontend && npm list ts-jest
+        echo "✅ ts-jest verification complete"
       
     - name: Setup Supabase CLI
       uses: supabase/setup-cli@v1
@@ -225,27 +229,7 @@ jobs:
         
         echo "🤖 Running agent integration tests..."
         cd agent && npm run test:integration
-        AGENT_TEST_EXIT_CODE=$?
-        echo "Agent tests completed with exit code: $AGENT_TEST_EXIT_CODE"
-        cd ..  # Return to root directory
-        
-        echo "🧪 Running frontend integration tests..."
-        cd frontend && npm run test:integration
-        FRONTEND_TEST_EXIT_CODE=$?
-        echo "Frontend tests completed with exit code: $FRONTEND_TEST_EXIT_CODE"
-        cd ..  # Return to root directory
-        
-        echo "📊 Final Test Summary:"
-        echo "  - Agent Integration Tests: $([ $AGENT_TEST_EXIT_CODE -eq 0 ] && echo '✅ PASSED' || echo '❌ FAILED')"
-        echo "  - Frontend Integration Tests: $([ $FRONTEND_TEST_EXIT_CODE -eq 0 ] && echo '✅ PASSED' || echo '❌ FAILED')"
-        
-        # Exit with error if any test suite failed
-        if [ $AGENT_TEST_EXIT_CODE -ne 0 ] || [ $FRONTEND_TEST_EXIT_CODE -ne 0 ]; then
-          echo "❌ One or more test suites failed"
-          exit 1
-        fi
-        
-        echo "🎉 All test suites passed successfully!"
+        echo "✅ Agent integration tests completed"
         
     - name: Stop services
       if: always()
@@ -263,11 +247,172 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: integration-e2e-results
+        name: agent-integration-test-results
         path: |
           frontend/test-results/
           frontend/playwright-report/
           frontend/coverage/integration/
+        retention-days: 7
+
+  frontend-integration-tests:
+    name: Frontend Integration Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    
+    env:
+      LANGGRAPH_PORT: 2024
+      LANGGRAPH_HOST: localhost
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js Environment
+      uses: ./.github/actions/setup-node
+      with:
+        node-version: '20.x'
+
+    - name: Cache npm
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          npm-${{ runner.os }}-
+    
+    - name: Install dependencies
+      run: |
+        echo "📦 Installing dependencies with npm ci..."
+        npm ci
+        cd frontend && npm ci
+        cd ../agent && npm ci
+        cd ..
+        echo "✅ Dependencies installed"
+        
+        echo "🔍 Verifying ts-jest installation..."
+        cd frontend && npm list ts-jest
+        echo "✅ ts-jest verification complete"
+      
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: latest
+        
+    - name: Start Local Supabase
+      run: |
+        echo "🚀 Starting local Supabase (Docker-based)..."
+        cd frontend 
+        # Add retry logic for Docker pulls
+        for i in {1..3}; do
+          echo "Attempt $i to start Supabase..."
+          if supabase start; then
+            echo "✅ Local Supabase started successfully"
+            break
+          else
+            echo "❌ Attempt $i failed, waiting 10s before retry..."
+            sleep 10
+            if [ $i -eq 3 ]; then
+              echo "💥 All attempts failed, exiting"
+              exit 1
+            fi
+          fi
+        done
+        
+    - name: Extract Supabase Credentials
+      run: |
+        echo "🔑 Extracting Supabase credentials..."
+        cd frontend
+        supabase status -o env > /tmp/supabase.env
+        echo "📋 Supabase credentials extracted to /tmp/supabase.env"
+        
+    - name: Set Environment Variables
+      run: |
+        echo "🔧 Setting environment variables from Supabase..."
+        cd frontend
+        export $(cat /tmp/supabase.env | xargs)
+        echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" >> $GITHUB_ENV
+        echo "SUPABASE_SECRET_KEY=$SUPABASE_SECRET_KEY" >> $GITHUB_ENV
+        echo "✅ Environment variables set"
+        
+    - name: Run frontend integration tests
+      run: |
+        echo "🚀 Starting services for frontend integration tests..."
+        echo "📊 CI Environment Info:"
+        echo "  - Node Version: $(node --version)"
+        echo "  - NPM Version: $(npm --version)"
+        echo "  - Working Directory: $(pwd)"
+        echo "  - Available Ports: $(netstat -tuln | grep -E ':(3000|3001)' || echo 'Ports 3000, 3001 not in use')"
+        
+        ./scripts/start-services.sh &
+        SERVICES_PID=$!
+        echo "Services started in background (PID: $SERVICES_PID)"
+        
+        echo "⏳ Waiting for services to be ready..."
+        timeout 120s node scripts/health-check.js
+        HEALTH_CHECK_EXIT_CODE=$?
+        
+        if [ $HEALTH_CHECK_EXIT_CODE -ne 0 ]; then
+          echo "❌ Services failed to start within 120 seconds (exit code: $HEALTH_CHECK_EXIT_CODE)"
+          echo "📋 Checking service status..."
+          echo "  - Background processes:"
+          ps aux | grep -E "(next|tsx|start-services)" | grep -v grep || echo "No services found"
+          echo "  - Port usage:"
+          netstat -tuln | grep -E ':(3000|3001)' || echo 'Ports 3000, 3001 not in use'
+          echo "  - Service logs (last 20 lines):"
+          tail -20 /tmp/chef-chopsky-services.log 2>/dev/null || echo "No service logs found"
+          exit 1
+        fi
+        echo "✅ All services are ready!"
+        
+        echo "📊 Pre-test Service Status:"
+        echo "  - Frontend: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 'unreachable')"
+        echo "  - Agent Health: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health || echo 'unreachable')"
+        
+        echo "🔑 Validating OpenAI API key..."
+        if [ -z "$OPENAI_API_KEY" ]; then
+          echo "❌ OPENAI_API_KEY is not set"
+          exit 1
+        fi
+        
+        # Check if API key looks valid (starts with sk-)
+        if [[ ! "$OPENAI_API_KEY" =~ ^sk- ]]; then
+          echo "❌ OPENAI_API_KEY does not appear to be valid (should start with 'sk-')"
+          echo "Current key format: ${OPENAI_API_KEY:0:10}..."
+          exit 1
+        fi
+        
+        # Check key length (should be around 50+ characters)
+        if [ ${#OPENAI_API_KEY} -lt 40 ]; then
+          echo "❌ OPENAI_API_KEY appears to be too short (${#OPENAI_API_KEY} characters)"
+          exit 1
+        fi
+        
+        echo "✅ OpenAI API key validation passed"
+        echo "Key format: ${OPENAI_API_KEY:0:10}... (${#OPENAI_API_KEY} characters)"
+        
+        echo "🧪 Running frontend integration tests..."
+        cd frontend && npm run test:integration
+        echo "✅ Frontend integration tests completed"
+        
+    - name: Stop services
+      if: always()
+      run: |
+        echo "🛑 Stopping services..."
+        npm run stop:services || true
+        # Ensure cleanup
+        pkill -f 'next dev' || true
+        pkill -f 'tsx watch' || true
+        
+        echo "🛑 Stopping local Supabase..."
+        cd frontend && supabase stop || true
+        
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-integration-test-results
+        path: frontend/test-results/
         retention-days: 7
 
   e2e:
@@ -277,7 +422,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [ '1/3', '2/3', '3/3' ]
-    needs: code-quality
+    needs: [code-quality, integration-tests, frontend-integration-tests]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -297,12 +442,16 @@ jobs:
 
     - name: Install dependencies
       run: |
-        echo "📦 Installing dependencies..."
-        npm install
-        cd frontend && npm install
-        cd ../agent && npm install
+        echo "📦 Installing dependencies with npm ci..."
+        npm ci
+        cd frontend && npm ci
+        cd ../agent && npm ci
         cd ..
         echo "✅ Dependencies installed"
+        
+        echo "🔍 Verifying ts-jest installation..."
+        cd frontend && npm list ts-jest
+        echo "✅ ts-jest verification complete"
 
     - name: Cache Playwright browsers
       uses: actions/cache@v4
