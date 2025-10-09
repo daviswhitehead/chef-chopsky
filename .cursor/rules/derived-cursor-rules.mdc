@@ -27,7 +27,7 @@ globs: *
 *   **Feature Branch Staging Deployments**: The trigger for feature branch staging deployments uses the following logic:
     *   **Triggers**: The workflow is automatically triggered when code is pushed to any branch that starts with `feat/` or `feature/`.
     *   **URL Generation**: The deployment URL is created by taking the branch name (e.g., `feat/new-recipe-search`), replacing `/` with `-` (becomes `feat-new-recipe-search`), and creating the URL: `https://chef-chopsky-git-feat-new-recipe-search.vercel.app`.
-*   **Pre-Commit Hooks Implementation:** This project uses [Husky](https://typicode.github.com/husky/) and [lint-staged](https://github.com/okonet/lint-staged) to automatically run linting checks before commits.
+*   **Pre-Commit Hooks Implementation:** This project uses [Husky](https://typicode.github.com/husky/) and [lint-staged](https://github.com/okonet/lint-staged) to automatically run linting checks before commits. The pre-commit hook configuration should include running `eslint --fix` first, followed by `eslint` to catch non-fixable errors, ensuring all ESLint errors are caught before committing. The pre-commit hook configuration should also include a TypeScript compilation check (`tsc --noEmit`) to catch type errors.
     *   To setup:
         ```bash
         npm install
@@ -48,518 +48,324 @@ globs: *
             ]
           }
         ```
-    *   The pre-commit hook script is in `.husky/pre-commit`:
-        ```bash
-        #!/usr/bin/env sh
-        . "$(dirname -- "$0")/_/husky.sh"
+*   **CI Performance Improvements:**
+    *   **Caching:** Implement caching for npm dependencies, Playwright browsers, and Next.js build artifacts to reduce download and build times.
+        *   Use `actions/setup-node` cache: `cache: 'npm'` for root, `frontend/`, and `agent/` installs.  Key the cache using `cache-dependency-path` to invalidate the cache when dependencies change.
+        *   Cache Playwright browsers: `~/.cache/ms-playwright`. Key the cache using the Playwright version.
+        *   Cache Next.js build output (`.next` or `.next-ci`) keyed on lockfile + `next.config.js` + source hash. Avoid caching failed build outputs.
+    *   **Avoid Duplicate Builds**: Build once in the "Code Quality" job, then upload the build output. Download it in the "Integration & E2E" job instead of rebuilding.
+    *   **Parallelization:** Split integration and E2E tests into parallel jobs to reduce the overall CI time. Create an E2E job to run E2E tests using a matrix strategy to shard tests across workers. Ensure each shard discovers the same test files from the same cwd/config to guarantee a consistent and non-overlapping test split. Use Playwright's `--shard n/m` option to split the test set deterministically across workers.
+    *   **Test Scoping:** Implement test scoping to run only essential tests on pull requests and full tests on merges or scheduled builds.
+*   **Test Execution and Orchestration**
+    *   **Test Scoping**: Run unit and smoke integration tests on PRs; reserve full E2E tests for main/label.
+    *   **E2E Test Marking**: Mark heavy/slow tests with `@slow` and exclude them from PRs.
+    *   **Playwright WebServer**: Use Playwright's `webServer` to start and stop servers only for E2E tests, eliminating the need for separate scripts.
+    *   **Test Splitting**: Shard Playwright tests across 2-3 workers or use `--project` splits to reduce test time.
+*   **CI Time Optimization**
+    *   **Avoid Duplicate Builds**: Build once in the "Code Quality" job, then upload the build output. Download it in the "Integration & E2E" job instead of rebuilding.
+    *   **Supabase Startup**: Start Supabase once per job and tear down only at the job end. Avoid repeated `supabase status` calls; export the env once.
+*   **Pre-commit Hooks**:
+    *   Run `eslint --fix` first to auto-fix fixable issues.
+    *   Then run `eslint` to catch non-fixable errors.
+    *   Include a TypeScript compilation check (`tsc --noEmit`) to catch type errors.
+*   **Next.js Build Process**:
+    *   To address the Next.js build process and avoid the `Html should not be imported outside of pages/_document` error, the following configurations must be considered:
+        *   **NODE_ENV Consistency**: Use `NODE_ENV=production` specifically for the build step.
+        *   **Dynamic Rendering**: Apply `export const dynamic = 'force-dynamic'` to error pages to avoid static generation.
+        *   **Separate Build Directory**: Use a dedicated build directory (e.g., `.next-ci`) for CI builds to prevent conflicts.
+        * Custom Error Pages**: Removing custom error pages (`error.tsx` and `not-found.tsx`) may be necessary, allowing Next.js to handle them with its built-in functionality.
+*   **Harden frontend chat API**: guard fetch, safe logging, single retry on transient errors
+    *   When performing a fetch to the agent service, ensure the fetch is guarded with a try/catch, and the code performs safe logging.
+    *   Implement a single retry on transient errors like AbortError or ECONNREFUSED.
+        ```typescript
+         // Perform the agent fetch with a single retry on transient errors
+         async function fetchAgentOnce(): Promise<Response> {
+           return await fetch(`${AGENT_SERVICE_URL}/chat`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+               conversation_id: conversationId,
+               messages: filtered,
+               client_metadata: {
+                 user_id: userId ?? null,
+                 source: 'frontend',
+                 user_agent: request.headers.get('user-agent') || 'unknown'
+               }
+             }),
+             // Use centralized timeout configuration; do not assume it's always set
+             signal: AbortSignal.timeout(getEnvironmentTimeouts().API_ROUTE || 15000)
+           })
+         }
 
-        # Run lint-staged to check staged files
-        npx lint-staged
-        ```
-    *   To bypass the pre-commit hooks:
-        ```bash
-        git commit --no-verify -m "your message"
-        ```
-        *   **Warning**: Only use this in emergencies! It defeats the purpose of the pre-commit hooks and can lead to CI failures.
-    *   If the pre-commit hook isn't running:
-        1.  Make sure Husky is installed:
-            ```bash
-            npm install
-            ```
-        2.  Verify the hook is executable:
-            ```bash
-            ls -la .husky/pre-commit
-            ```
-        3.  Reinstall Husky:
-            ```bash
-            npm uninstall husky && npm install --save-dev husky
-            npx husky
-            ```
-    *   If you're getting linting errors:
-        1.  **Run linting manually** to see the full output:
-            ```bash
-            npm run lint
-            ```
-        2.  **Fix issues automatically** where possible:
-            ```bash
-            cd frontend && npx eslint --fix .
-            cd agent && npx eslint src
-            ```
-        3.  **Fix remaining issues manually** based on the error messages
-    *   If the pre-commit hook is slow:
-        1.  Only stage the files you want to commit (avoid `git add .` for large changesets)
-        2.  The hook only checks staged files, so committing smaller chunks will be faster
-        3.  Consider increasing system resources if linting is consistently slow
-*   **Git Worktrees Setup**: Use Git worktrees to work on multiple branches simultaneously.
-    *   **Directory Structure**: Create a directory structure like this:
-        ```
-        /Users/daviswhitehead/Documents/chef-chopsky/          # Main repo (current branch)
-        /Users/daviswhitehead/Documents/chef-chopsky-worktrees/ # Worktrees directory
-        ├── main/                                              # Main branch worktree
-        ├── staging/                                           # Staging branch worktree
-        ├── feature-branch-1/                                 # Any feature branch
-        └── feature-branch-2/                                 # Another feature branch
-        ```
-    *   **Commands**:
-        ```bash
-        # 1. Create worktrees directory
-        mkdir -p /Users/daviswhitehead/Documents/chef-chopsky-worktrees
+         let agentResponse: Response | undefined
+         try {
+           agentResponse = await fetchAgentOnce()
+         } catch (err: any) {
+           // Retry once on common transient errors
+           const transient = err?.name === 'AbortError' || err?.code === 'ECONNREFUSED' || err?.code === 'ENOTFOUND' || err?.message?.includes('fetch failed')
+           if (transient) {
+             // small backoff
+             await new Promise(r => setTimeout(r, 200))
+             try {
+               agentResponse = await fetchAgentOnce()
+             } catch (err2) {
+               const agentDurationErr = Date.now() - agentStartTime;
+               console.error(`[${requestId}] 💥 Agent fetch failed after retry in ${agentDurationErr}ms:`, err2)
+             }
+           } else {
+             const agentDurationErr = Date.now() - agentStartTime;
+             console.error(`[${requestId}] 💥 Agent fetch failed (non-transient) in ${agentDurationErr}ms:`, err)
+           }
+         }
+         if (agentResponse) {
+           console.log(`[${requestId}] ⏱️ Agent service responded in ${agentResponse.status}`);
+         } else {
+           console.error(`[${requestId}] 💥 Agent service did not return a response after ${agentDuration}ms`)
+           return NextResponse.json(
+             { error: 'Agent unavailable', message: 'Failed to reach agent service' },
+             { status: 502 }
+           )
+         }
 
-        # 2. Navigate to main repo
-        cd /Users/daviswhitehead/Documents/chef-chopsky
+         if (!agentResponse.ok) {
+           const err = await safeJson(agentResponse)
+           console.log(`[${requestId}] ❌ Agent service error:`, err);
 
-        # 3. Create worktrees (adjust branch names as needed)
-        git worktree add ../chef-chopsky-worktrees/main main
-        git worktree add ../chef-chopsky-worktrees/staging staging
+           // Persist error message to Supabase
+           console.log(`[${requestId}] 💾 Persisting error message to Supabase`);
+           try {
+             const errorPersistStart = Date.now();
+             const persistResponse = await supabaseClient
+               .from('conversation_messages')
+               .insert([
+                 {
+                   conversation_id: conversationId,
+                   role: 'system',
+                   content: `Agent service error: ${err?.message || 'Unknown error'}`,
+                   user_id: userId,
+                   source: 'system',
+                   created_at: new Date(),
+                   message_id: `error-${messageId}` // Unique ID for the error message
+                 }
+               ]);
+             if (persistResponse.error) {
+               console.error(`[${requestId}] ❌ Supabase persist error:`, persistResponse.error);
+             } else {
+               const persistDuration = Date.now() - errorPersistStart;
+               console.log(`[${requestId}] ✅ Error message persisted (duration: ${persistDuration}ms)`);
+             }
+           } catch (persistError) {
+             console.error(`[${requestId}] ❌ Error persisting assistant message:`, persistError);
+           }
+           return NextResponse.json({
+             error: 'Agent processing failed',
+             message: err?.message || 'Something went wrong',
+             timing_ms
+           }, { status: 500 });
+         }
+         const data = await agentResponse.json();
+         console.log(`[${requestId}] 🤖 Agent service returned data:`, data);
 
-        # 4. Verify setup
-        git worktree list
+         const assistantMessage = data.assistant_message;
 
-        # 5. Test a worktree
-        cd ../chef-chopsky-worktrees/main
-        git status
-        ```
-    *   **Working with Worktrees**:
-        *   To work on a specific branch:
-            ```bash
-            # Navigate to the worktree directory
-            cd /Users/daviswhitehead/Documents/chef-chopsky-worktrees/main
+         if (!assistantMessage) {
+           console.error(`[${requestId}] ❌ Agent service returned invalid data:`, data);
+           return res.status(500).json({
+             error: 'Agent processing failed',
+             message: 'Invalid agent response',
+             timing_ms
+           });
+         }
 
-            # Work normally - git commands work as expected
-            git status
-            git add .
-            git commit -m "Your changes"
-            git push origin main
-            ```
-        *   To create a new branch in a worktree:
-            ```bash
-            # From any worktree directory
-            git checkout -b new-feature-branch
-            git push -u origin new-feature-branch
-            ```
-    *   **Managing Worktrees**:
-        *   Remove a worktree when done:
-            ```bash
-            # From the main repo directory
-            cd /Users/daviswhitehead/Documents/chef-chopsky/
+         // Persist agent message to Supabase
+         console.log(`[${requestId}] 💾 Persisting assistant message to Supabase`);
+         try {
+           const persistStart = Date.now();
+           const persistResponse = await supabaseClient
+             .from('conversation_messages')
+             .insert([
+               {
+                 conversation_id: ConversationId,
+                 role: assistantMessage.role,
+                 content: assistantMessage.content,
+                 user_id: userId,
+                 created_at: new Date(assistantMessage.created_at ?? Date.now()),
+                 message_id: assistantMessage.id,
+                 source: 'agent',
+                 usage: assistantMessage.usage,
+                 model: assistantMessage.model,
+               }
+             ]);
 
-            # Remove worktree (this will delete the directory)
-            git worktree remove ../chef-chopsky-worktrees/main
-            ```
-        *   Prune worktrees (clean up references to deleted directories):
-            ```bash
-            git worktree prune
-            ```
-    *   **IDE Setup Considerations**:
-        *   For Cursor/VS Code:
-            *   Open each worktree as a separate workspace.
-            *   Create workspace files for each worktree:
-                ```bash
-                # In each worktree directory
-                code .  # Opens that worktree in VS Code
-                ```
-    *   **Environment Considerations**:
-        *   Each worktree will need its own `.env` files.
-        *   Run different services in different worktrees simultaneously (e.g., frontend on port 3000, agent on port 3001 in one worktree, and different ports (3002, 3003) in another worktree).
-    *   **Recommended Workflow**:
-        1.  **Main repo**: Keep for your current branch.
-        2.  **Main worktree**: For stable main branch work.
-        3.  **Staging worktree**: For staging environment testing.
-        4.  **Feature worktrees**: For new feature development.
+           if (persistResponse.error) {
+             console.error(`[${requestId}] ❌ Supabase persist error:`, persistResponse.error);
+           } else {
+             const persistDuration = Date.now() - persistStart;
+             console.log(`[${requestId}] ✅ Assistant message persisted (duration: ${persistDuration}ms)`);
+           }
+         } catch (persistError) {
+           console.error(`[${requestId}] ❌ Error persisting assistant message:`, persistError);
+         }
+
+         return res.json({
+           assistant_message: assistantMessage,
+           timing_ms
+         });
+       } catch (error) {
+         const timing_ms = Date.now() - startTime;
+         console.error(`[${requestId}] 💥 Chat endpoint error after ${timing_ms}ms:`, error);
+
+         return res.status(500).json({
+           error: 'Agent processing failed',
+           message: config.nodeEnv === 'development' ? (error as Error).message : 'Something went wrong',
+           timing_ms
+         });
+       }
+     })().catch((error) => {
+       const timing_ms = Date.now() - startTime;
+       console.error(`[${requestId}] 💥 Unhandled error after ${timing_ms}ms:`, error);
+
+       return res.status(500).json({
+         error: 'Internal server error',
+         message: 'Something went wrong',
+         timing_ms
+       });
+     });
+   });
+
+# CI Workflow Validations
+
+*   **OpenAI API Key Validation**: The CI workflow must validate the OpenAI API key before running tests. This ensures that tests are not run with an invalid or missing key, which can lead to test failures. The validation should include:
+    *   Checking if the `OPENAI_API_KEY` environment variable is set.
+    *   Checking if the API key starts with `sk-`.
+    *   Checking if the API key has a minimum length of 40 characters.
+    *   If any of these checks fail, the CI workflow should exit with an error.
+*   **CI Dependency Installation**: The CI workflow must use `npm ci` instead of `npm install` to ensure deterministic and clean installs using `package-lock.json`. After installing dependencies, it must verify that critical modules like `ts-jest` are correctly installed.
+*   **Jest ts-jest Module Resolution**: Jest in CI environments needs an absolute path to the `ts-jest` transformer. Use `require.resolve('ts-jest')` in the transform configuration to provide absolute path resolution for CI environments. This ensures that Jest can find the `ts-jest` module, as CI environments may have different module resolution than local development.
+*   **CI Service Readiness Verification**: Add additional service verification with retry logic in CI to ensure services are fully ready before running tests.
+    *   Implement a 5-attempt verification loop with 3-second intervals.
+    *   Use explicit HTTP status checks for both frontend (200) and agent (200).
+    *   Implement better error reporting when services aren't ready.
+*   **CI Test Retry Mechanism**: Implement a test retry mechanism for flaky integration tests.
+    *   Enable automatic retry for failed integration tests in CI.
+    *   Include a 5-second pause before retry to allow services to stabilize.
+    *   Log retry attempts and outcomes clearly.
+*   **Jest CI-Specific Configuration**: Configure Jest to be more resilient in CI environments.
+    *   Increase the test timeout in CI environments (e.g., 90s vs 60s).
+    *   Enable verbose logging in CI for better debugging.
+    *   Add Jest retry configuration for CI environments.
+        *   Force verbose output in CI to see failed tests.
+        *   Show individual test results.
 
 ## DEBUGGING
 
-*   **Staging vs Production Supabase Credentials:** If staging writes are appearing in production, it's likely that the Vercel environment variables for both staging and production are linked to the same Supabase project. The `NEXT_PUBLIC_SUPABASE_URL` and keys should be different for each environment. To fix this:
-    *   In Vercel, for the `chef-chopsky-staging` project, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to your STAGING project values and `SUPABASE_SECRET_KEY` to the STAGING service role key.
-    *   In Vercel, for the `chef-chopsky` (production) project, ensure those three env vars are production values only. The production Supabase project is actually `chef-chopsky-production`, not `chef-chopsky`.
-    *   Redeploy both projects after saving changes.
-
-## AI CODING ASSISTANT RULES
-
-### GENERAL BEHAVIOR
-- You are an expert software engineer.
-- Follow instructions precisely and completely.
-- Ask clarifying questions before proceeding if instructions are ambiguous.
-- Generate high-quality, well-documented code.
-- Adhere to project standards and best practices.
-- Focus on solving the user's problem efficiently and effectively.
-- Use the tools available to you to gather information and complete tasks.
-- Never expose secrets or API keys in the codebase or in any generated text.
-- Use `docs/` to learn about architectural decisions, API usage, and data models.
-- Use comments to explain complex code.
-- Use descriptive variable names.
-- Keep code DRY (Don't Repeat Yourself).
-- Acknowledge all steps.
-
-### TOOLS
-- You have access to the following tools:
-  - `codebase_search`: Search the codebase for relevant information.
-  - `file_read`: Read the content of a file.
-  - `file_write`: Write content to a file.
-  - `file_delete`: Delete a file.
-  - `mcp_cursor-playwright_browser_snapshot`: Take a screenshot of the browser.
-  - `mcp_cursor-playwright_browser_console_messages`: Returns all console messages.
-  - `mcp_cursor-playwright_browser_click`: Perform click on a web page
-  - `mcp_cursor-playwright_browser_type`: Type text into editable element
-  - `mcp_cursor-playwright_browser_wait_for`: Wait for text to appear or disappear or a specified time to pass
-  - `mcp_Railway_get-logs`: Get the logs of a Railway service.
-  - `mcp_Railway_list-variables`: List Railway environment variables.
-  - `mcp_Railway_check-railway-status`: Check if Railway CLI is installed and user is logged in.
-  - `mcp_Railway_set-variables`: Set environment variables for a Railway service.
-  - `run_terminal_cmd`: Execute a terminal command.
-  - `apply_patch`: Apply a patch to a file.
-  - `web_search`: Web search for relevant information (e.g., library documentation, usage examples).
-  - `list_dir`: List the files in a directory.
-  - `glob_file_search`: Search for files matching a glob pattern.
-  - `fetch_rules`: Fetch the active rules.
-  - `mcp_vercel_list_teams`: List the user's teams.
-  - `mcp_vercel_list_projects`: List all Vercel projects for a user.
-  - `mcp_vercel_get_project`: Get a specific project in Vercel.
-  - `mcp_vercel_get_deployment`: Get a specific deployment by ID or URL.
-  - `mcp_vercel_get_deployment_build_logs`: Get the build logs of a deployment by deployment ID or URL.
-  - `mcp_vercel_deploy_to_vercel`: Deploy the current project to Vercel
-  - `search_replace`: Performs a find and replace operation.
-  - `read_lints`: Reads linting errors in a file.
-  - `grep`: Searches for a pattern in a file or directory.
-  - `todo_write`: Write a todo list.
-
-### SECURITY
-- Never read or write `.env` files directly. This includes `.env.local`, `.env.production`, and `.env.staging`.
-- Never output the contents of `.env` files or any sensitive configuration files.
-- Instead, use the `codebase_search` tool to find relevant information and the `user` to provide the actual API keys or secrets.
-- When creating or modifying code, always use parameterized queries to prevent SQL injection attacks.
-- Sanitize user input to prevent XSS attacks.
-- When using external libraries, carefully review their documentation and security implications.
-
-### STRATEGIC ASSISTANT PROMPT
-
-Here is a strategic assistant prompt to consider:
-```
-As an AI assistant, focus on creating a clear and maintainable structure for the project, while making sure that the code meets security and data privacy standards. Be prepared to explain the reasoning behind any architectural decisions, and to suggest alternative approaches when necessary.
-```
-
-### CODEBASE SEARCH
-- When using `codebase_search`, be specific and descriptive in your search query.
-- Focus on finding relevant code snippets, data models, or architectural patterns.
-- Do not use `codebase_search` to find secrets or API keys.
-- If you can't find something with `codebase_search`, ask the user for more information or context.
-- Prefer searching specific files or directories over the entire codebase.
-
-### FILE READING & WRITING
-- When using `file_read`, be sure to specify the correct file path.
-- When using `file_write`, create a new file if necessary.
-- When modifying an existing file, be sure to preserve the original formatting and structure.
-- Before writing to a file, confirm that you have a clear understanding of the file's purpose and content.
-- If you're asked to write an executable script, be sure to set the correct permissions (e.g., `chmod +x`).
-
-### RUN TERMINAL COMMAND
-- Use the `run_terminal_cmd` tool to execute terminal commands.
-- Be careful when executing commands that could modify the system or data.
-- Always confirm with the user before executing destructive commands (e.g., deleting files, dropping databases).
-- Only run commands that are necessary to complete the task.
-- Do not run commands that could expose secrets or API keys.
-- Always run commands one at a time and do not chain them with `&&` or `||`.
-- When running commands, always specify the full absolute path to the command.
-
-### MULTI-TOOL USAGE
-- Chain multiple tools together to accomplish complex tasks.
-- For example, use `codebase_search` to find a file, then use `file_read` to read its content, and then use `file_write` to modify it.
-- Use `list_dir` to explore directory structures before attempting to read or write files.
-
-### EXTERNAL API CALLS
-- Only make calls to external APIs when necessary.
-- Always use a secure HTTPS connection.
-- Never include secrets or API keys in the URL.
-- Use the appropriate HTTP method (e.g., `GET`, `POST`, `PUT`, `DELETE`).
-- Handle errors gracefully.
-
-### CREATING EXECUTABLE SCRIPTS
-- When creating shell scripts, always include a shebang line (`#!/bin/bash`).
-- Make the script executable using `chmod +x`.
-- Use descriptive variable names.
-- Add comments to explain complex logic.
-- Test the script thoroughly before using it in production.
-
-### CODE COMMENTS
-- Add comments explaining the high-level purpose of functions, classes, and modules.
-- Explain complex logic or algorithms in detail.
-- Use comments to document the purpose of variables and constants.
-- Use comments to explain the expected input and output of functions.
-- Use comments to document any known limitations or issues.
-
-### CURSOR RULES
-- Adhere to all cursor rules and guidelines.
-- Use cursor hooks to enforce project standards and prevent common errors.
-- Use cursor snippets to insert code templates.
-- Use cursor commands to automate repetitive tasks.
-- The `.cursorignore` file blocks `.env` files, but `.env.example` files are allowed with the `!.env.example` rule. To allow creating `.env.local.example`, `.env.staging.example`, and `.env.production.example`, add the following rules to the `.cursorignore` file:
-  ```
-  !.env.local.example
-  !.env.staging.example
-  !.env.production.example
-  ```
-
-### AI DEVELOPMENT PLAYBOOK
-- Follow the AI development playbook for all AI-related tasks.
-- Use the appropriate AI models and tools for the task at hand.
-- Test AI models thoroughly and validate their performance.
-- Document all AI-related code and configurations.
-
-### DOCUMENTATION
-- Create documentation for all new code and features.
-- Update existing documentation when making changes.
-- Use a consistent documentation style.
-- Include examples and usage instructions.
-- Keep documentation up-to-date.
-
-### CODE CONTRIBUTIONS
-- All code contributions should follow the project's coding standards and style guidelines.
-- Code should be well-documented and easy to understand.
-- All code should be tested thoroughly before being submitted for review.
-- Code reviews should be completed in a timely manner.
-- All code contributions should be reviewed by at least one other developer before being merged into the main branch.
-
-### ENVIRONMENT MANAGEMENT
-- Never hardcode environment-specific values in the codebase.
-- Always use environment variables to configure the application.
-- Use a consistent naming convention for environment variables.
-- Document all environment variables in the `docs/` directory.
-- Use separate environment variables for local development, staging, and production.
-- Store secrets and API keys securely using a dedicated secrets management system.
-- Use a tool like `direnv` to manage environment variables during local development.
-- Implement a system for validating environment variables at startup.
-- Never store sensitive information in the codebase or in configuration files that are stored in the codebase.
-- Follow a 3-environment architecture: Development, Staging, and Production.
-
-### DEPLOYMENT AND INFRASTRUCTURE
-- Use Infrastructure-as-Code (IaC) tools to manage infrastructure.
-- Automate deployments using CI/CD pipelines.
-- Monitor application performance and health using monitoring tools.
-- Implement rollback procedures for failed deployments.
-- Use a tool like Terraform or CloudFormation to provision infrastructure.
-- Automate infrastructure provisioning and configuration.
-- Design for scalability and resilience.
-- Implement disaster recovery procedures.
-- Use a CDN to serve static assets.
-- Implement caching to improve performance.
-
-### PRODUCTION SAFETY RULES
-- Validate critical configuration on startup.
-- Fail loudly and immediately if production requirements are not met.
-- Never fall back to mock/test data in production environments.
-- Implement environment-specific validation.
-- Use different behaviors for development vs production.
-- Make production failures impossible to ignore.
-- To access your deployed frontend:
-  1. Visit the Vercel Dashboard
-  2. Navigate to your project
-  3. Click on the deployment to access it with proper authentication
-  4. Or disable protection if you want public access (in project settings)
-- To bypass this for testing:
-  1. Log into Vercel in your browser
-  2. Access through the dashboard
-  3. Or disable protection in project settings if you want public access
-
-### CURSOR RULES
-- Adhere to all cursor rules and guidelines.
-- Use cursor hooks to enforce project standards and prevent common errors.
-- Use cursor snippets to insert code templates.
-- Use cursor commands to automate repetitive tasks.
-- The `.cursorignore` file blocks `.env` files, but `.env.example` files are allowed with the `!.env.example` rule. To allow creating `.env.local.example`, `.env.staging.example`, and `.env.production.example`, add the following rules to the `.cursorignore` file:
-  ```
-  !.env.local.example
-  !.env.staging.example
-  !.env.production.example
-  ```
-
-### AI DEVELOPMENT PLAYBOOK
-- Follow the AI development playbook for all AI-related tasks.
-- Use the appropriate AI models and tools for the task at hand.
-- Test AI models thoroughly and validate their performance.
-- Document all AI-related code and configurations.
-
-### ENVIRONMENT VALIDATION AND PRODUCTION GUARDS
-- The agent service must implement environment validation at startup and production guards.
-- The agent service must fail fast in production if required keys are missing or placeholders.
-- The agent service must add clear console warnings in non-prod mock modes.
-- When the agent service is run in development mode with an invalid API key, it MUST show clear warnings about mock mode with helpful instructions
-- The agent service MUST show a warning and helpful instructions for setting the API key when running with an invalid API key in development mode.
-- The agent service MUST work normally without warnings with a valid API key.
-- The agent service MUST work in production with a valid API key.
-- Testing the production safety guards implementation MUST include the following:
-    - Missing API Key (Should Fail Fast)
-    - Invalid API Key in Production (Should Fail Fast)
-    - Placeholder API Key in Production (Should Show Warnings)
-    - Invalid API Key in Development (Should Show Warnings)
-    - Valid API Key (Should Work Normally)
-    - Production with Valid API Key (Should Work)
-- The Next.js build process runs in production mode regardless of the `NODE_ENV` environment variable. To allow CI builds to proceed, the production safety check must allow CI builds to proceed by adding a `!process.env.CI` condition.
-    - The production safety guard now:
-        - Allows CI builds to proceed (CI=true)
-        - Still blocks actual production deployments with mock config
-        - Maintains security for real production environments
-
-### ENVIRONMENT CONFIGURATION
-- When configuring environment-driven retriever and embedding:
-    - Read `RETRIEVER_PROVIDER` and `EMBEDDING_MODEL` from environment variables
-    - Set environment-specific defaults:
-        - Local/Development: `memory` retriever (fast, no external dependencies)
-        - Staging: `pinecone` retriever (production-ready)
-        - Production: `pinecone` retriever (production-ready vector store)
-- The `appEnv` configuration must be updated to properly handle staging.
-
-### ENVIRONMENT DISCRIMINATORS
-- The agent service must add environment discriminators to all vector stores, including Elastic and Pinecone filters.
-
-### GITHUB ACTIONS WORKFLOWS
-- When creating GitHub Actions workflows, the trigger for feature branch staging deployments uses the following logic:
-  - **Triggers**: The workflow is automatically triggered when code is pushed to any branch that starts with `feat/` or `feature/`.
-  - **URL Generation**: The deployment URL is created by taking the branch name (e.g., `feat/new-recipe-search`), replacing `/` with `-` (becomes `feat-new-recipe-search`), and creating the URL: `https://chef-chopsky-git-feat-new-recipe-search.vercel.app`.
-- After consolidating to Node.js 20.x, the CI workflow should be updated to reflect this change.
-- The "test (20.x)" check in `.github/workflows/ci.yml` should be renamed to `Unit Tests & Build (Node 20)` for a more descriptive name.
-- The composite action approach should be used to eliminate duplication in GitHub Actions workflows, creating reusable actions to maintain job independence, faster CI, consistency and easy maintenance.
-- **GitHub Actions Checkout Step:** When using local actions in GitHub Actions workflows, always include an `actions/checkout` step before running the local action to ensure that the repository code is available.
-    - The `actions/checkout` step MUST be included in the `ci.yml` workflow before running the local action.
-    - The local action MUST include `actions/setup-node@v4` and `npm run install:all`.
-    - The local action should NOT include `actions/checkout@v4` to avoid duplication and conflicts. The `actions/checkout@v4` step must be called in the CI workflow BEFORE the local action.
-- **GitHub Actions CI Build Errors**: When the Next.js build fails in the CI environment due to missing Supabase environment variables, the following steps should be taken:
-    - Update `frontend/lib/supabase.ts` to replace assertion operators (`!`) with fallback values. Use placeholder values like `https://placeholder.supabase.co` and `placeholder_key` for CI builds.
-    - Add CI-specific environment variables to the `.github/workflows/ci.yml` workflow file. These include:
-        - `NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co`
-        - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder_key`
-        - `SUPABASE_SECRET_KEY: placeholder_secret`
-        - `AGENT_SERVICE_URL: http://localhost:3001`
-        - `NEXT_PUBLIC_APP_ENV: ci`
-        - `APP_ENV: ci`
-    - Ensure that the production safety guards and mock mode detection still work as intended.
-- **Disabling GitHub Actions Workflows:** To temporarily disable GitHub Actions workflows, comment out the `on:` section in the workflow file. This prevents the workflow from running on push/PR events while debugging or developing. Remember to re-enable the workflow by uncommenting the `on:` section when finished.
-- **Supabase CLI Installation**: The recommended method for installing the Supabase CLI in CI environments is to download the pre-built binary using `curl`, extract it, and move it to `/usr/local/bin/`.
-    - Example:
-    ```bash
-    curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xz
-    sudo mv supabase /usr/local/bin/
-    supabase --version
-    ```
-- **GitHub Actions CI Workflow - Checkout and Local Action:** When using local actions in GitHub Actions workflows, always include an `actions/checkout` step before running the local action to ensure that the repository code is available.
-    - The `actions/checkout` step MUST be included in the `ci.yml` workflow before running the local action.
-    - The local action MUST include `actions/setup-node@v4` and `npm run install:all`.
-    - The local action should NOT include `actions/checkout@v4` to avoid duplication and conflicts. The `actions/checkout@v4` step must be called in the CI workflow BEFORE the local action.
-- **GitHub Actions Workflow - Correct Supabase CLI Binary for Linux**: The CI workflow must use the correct Supabase CLI binary for Linux (Ubuntu runners):
-    ```bash
-    # Install using the recommended method for CI (Linux binary for Ubuntu runners)
-    curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xz
-    sudo mv supabase /usr/local/bin/
-    ```
-- **GitHub Actions Workflow - ESLint No Case Declarations**: When using `const` declarations directly in case blocks without wrapping them in braces, ESLint's `no-case-declarations` rule will be violated, causing the Code Quality job to fail. Fix this by adding braces around the case blocks.
-    - Example:
-    ```javascript
-     switch (provider) {
-      case "openai": {
-       // Dynamic import to avoid loading LangChain modules before env-loader
-       const { OpenAIEmbeddings } = await import("@langchain/openai");
-    ```
-- **GitHub Actions Workflow - CI Environment Variable:** CI environments must set `CI=true` to allow CI builds to proceed when production safety guards are enabled.
-- **GitHub Actions Workflow - Split Integration Tests:** The CI workflow must have separate steps for running frontend and agent integration tests, with the agent tests running first:
-    ```yaml
-     - name: Run agent integration tests
-       run: |
-         echo "🤖 Running agent integration tests..."
-         cd agent && npm run test:integration
-         
-     - name: Run frontend integration tests
-       run: |
-         echo "🧪 Running frontend integration tests..."
-         cd frontend && npm run test:integration
-    ```
-- **GitHub Actions Workflow - Consolidate CI Service Orchestration**: To prevent process isolation issues in CI, consolidate service startup, health check, and test execution into a single step.  This ensures that the services started in the CI environment remain available throughout the entire testing process.
-  - **Enhanced Debug Logging**:
-    - Add detailed environment info logging (Node/NPM versions, ports, working directory)
-    - Track service PIDs and exit codes for better debugging
-    - Add pre-test service status checks with HTTP response codes
-    - Enhanced service startup logging with directory verification
-    - Centralized service logs to `/tmp/chef-chopsky-services.log`
-    - Detailed test suite results with pass/fail status
-- **GitHub Actions Workflow - The pre-commit hook configuration should include running `eslint --fix` first, followed by `eslint` to catch non-fixable errors, ensuring all ESLint errors are caught before committing.** 
-- **GitHub Actions Workflow - The pre-commit hook configuration should also include a TypeScript compilation check (`tsc --noEmit`) to catch type errors.**
-
-### RAILWAY CONFIGURATION AND ENVIRONMENT VARIABLES
-- **Separate Railway Projects for Environments:** Production and staging environments MUST use separate Railway projects to ensure complete isolation of configurations and data.
-- **Staging Environment Variables:** When configuring the staging environment in Railway:
-    - `LANGCHAIN_PROJECT` MUST be set to `chef-chopsky-staging`
-    - `APP_ENV` MUST be set to `staging`
-    - `NODE_ENV` MUST be set to `staging`
-    - `LANGCHAIN_INDEX_NAME` MUST be set to `chef-chopsky-staging`
-- **Railway Service Names:**
-    - The production Railway service is named `chef-chopsky-production`.
-    - A separate Railway service MUST be created for staging and named `chef-chopsky-staging`.
-
-### ENVIRONMENT FILES
-- When creating or updating environment files, ensure the following files exist and are up to date for both the `@frontend/` and `@agent/` directories:
-  - `.env.example`: Core template with essential variables needed across all environments.
-  - `.env.local.example`: Local development configuration
-  - `.env.staging.example`: Staging environment configuration
-  - `.env.production.example`: Production environment configuration
-
-### PINECONE ENVIRONMENT VARIABLE
-- The `PINECONE_ENVIRONMENT` variable specifies the environment for your Pinecone project. To find this value:
-    1. **Access the Pinecone Console**: Log in to your Pinecone account at [https://app.pinecone.io](https://app.pinecone.io).
-    2. **Navigate to the API Keys Section**: In the console, click on the "API Keys" tab on the left-hand side.
-    3. **Locate Your Environment**: Here, you'll find your API keys along with the corresponding environment for each key. The environment is typically a string like `us-east-1-aws` or `gcp-starter`.
-    4. **Serverless Pinecone Indexes**: If you're using a Serverless Pinecone index, the concept of "environment" has been replaced with "region." In this case, you should use the region value instead of the environment. For more details, refer to Pinecone's [Authentication Documentation](https://docs.pinecone.io/reference/api/authentication). If you're using a Serverless Pinecone index, you might not need `PINECONE_ENVIRONMENT` at all.
-    5. **Pod-based Pinecone Indexes**: For older, pod-based Pinecone indexes, you'll need both `PINECONE_API_KEY` and `PINECONE_ENVIRONMENT`. The environment corresponds to the cloud provider and region where your index is hosted.
-    6. **Example Values**: Your `.env.production.example` should look like:
-        ```bash
-        PINECONE_API_KEY=your_production_pinecone_api_key_here
-        PINECONE_ENVIRONMENT=us-east-1-aws  # or whatever your environment shows
-        ```
-    7. **Troubleshooting**:
-        - Make sure you're using the latest Pinecone SDK.
-        - Check if you're using Serverless indexes (which might not require environment).
-        - Contact Pinecone support if you're still having issues.
-
-### CURSOR RULES
-- The `.cursorignore` file blocks `.env` files, but `.env.example` files are allowed with the `!.env.example` rule. To allow creating `.env.local.example`, `.env.staging.example`, and `.env.production.example`, add the following rules to the `.cursorignore` file:
-  ```
-  !.env.local.example
-  !.env.staging.example
-  !.env.production.example
-  ```
-
-### TESTING
-- Before merging a pull request, run as many checks as possible locally against the branch and staging. This includes:
-    - Running agent tests that are failing in GitHub
-    - Running frontend tests (Node 20.x) that are failing
-    - Running health checks and environment separation tests
-    - Running staging deployment validation
-    - Running CI checks including security and integration tests
-    - Fixing any issues found during local testing.
-- When running agent tests locally, be aware that some tests are designed to trigger production safety guards when running with production configurations but invalid API keys. These "failing" tests are actually verifying that the guards are working correctly.
-- **90% of your integration tests should use REAL SERVICES.**
-- Mock only:
-    - External services (LangSmith, third-party APIs).
-    - React components (for unit testing).
-    - Services that are intentionally unavailable in the test environment.
-- Never mock:
-    - Your own database operations
-    - Your own API endpoints
-    - Your own service communication
-    - Core business logic
-- **For E2E tests**
-  - They are configured to run in **multiple environments** with different configurations:
-  1.  LOCAL Environment
-      *   File: `playwright.config.ts`
-      *   Base URL: `http://localhost:3000`
-      *   Agent URL: `http://localhost:3001`
-      *   Services: Auto-started via `webServer` configuration
-      *   Commands:
-          *   `npm run test:e2e` - Run E2E tests locally
-          *   `npm run test:e2e:ui` - Run with Playwright UI
-          *   `npm run test:e2e:headed` - Run in headed mode
-  2.  PRODUCTION Environment
-      *   File: `playwright.production.config.ts`
-      *   Base URL: `https://chef-chopsky-production.vercel.app`
-      *   Agent URL: `https://chef-chopsky-production.up.railway.app`
-      *   Services: External (no local servers)
-      *   Commands:
-          *   `npm run test:e2e:production` - Run production E2E tests
-          *
+*   The pre-commit hooks should include a comprehensive linting process.
+    *   First, run `eslint --fix` to automatically fix fixable issues.
+    *   Then, run `eslint` to catch non-fixable errors, such as floating promises.
+    *   Include a TypeScript compilation check (`tsc --noEmit`) to catch type errors.
+*   When debugging CI pipelines, be aware of process isolation issues. Ensure that background processes started in one CI step are available in subsequent steps.
+*   The pre-commit hooks are designed to run on staged files that match specific patterns. Ensure that all relevant files are staged before committing.
+*   When troubleshooting integration test failures, consider the test environment and configuration.
+    *   Be mindful of the differences between test, development, and production environments.
+    *   Ensure that all necessary environment variables are set correctly.
+    *   Check for any hardcoded configurations that may conflict with the test environment.
+*   When pre-commit hooks fail, it could be due to differences in ESLint configurations, missing rules, or the pre-commit hook scope.
+*   To test and validate pre-commit hooks, run linting and TypeScript compilation locally to ensure that all checks pass before committing.
+*   It's crucial to have a valid OpenAI API key in CI for integration tests. If the API key is invalid, the agent might run in mock mode and the tests will fail because they expect real responses.
+*   When using `expect(async () => { ... }).rejects.toThrow()`, ensure that the promise is awaited. For example, use `await expect(async () => { ... }).rejects.toThrow()`.
+*   The root cause of failing integration tests can often be traced back to malformed asynchronous functions. This can lead to uncaught exceptions and unexpected behavior.
+    *   Always ensure that try-catch blocks are correctly structured and that asynchronous functions are properly awaited.
+*   It's crucial to test in an environment that closely mirrors the CI environment, especially regarding environment variables.
+*   When pre-commit hooks fail to catch errors, consider:
+    *   ESLint configuration differences
+    *   Missing rules
+    *   Pre-commit hook scope
+    *   That `eslint --fix` only fixes fixable errors, not all ESLint errors
+*   When diagnosing CI integration test failures:
+    *   Review test logs for specific error messages and stack traces
+    *   Check service status and connectivity
+    *   Consider process isolation and timing issues
+    *   Verify environment variable configurations
+    *   Distinguish between test setup issues and application code errors
+*   If pre-commit hooks don't catch all errors, consider that the CI environment might have stricter ESLint rules enabled than your local environment, or that the rule might not be enabled in your local ESLint config, or that the rule might not be enabled in your local ESLint config, or that `eslint --fix` only fixes fixable errors, not all ESLint errors.
+*   If integration tests fail in CI, and the error is `Preset ts-jest not found relative to rootDir`, this is likely due to:
+    *   Missing `ts-jest` in CI dependencies.
+    *   A different `node_modules` structure in CI compared to the local environment.
+    *   A working directory or path resolution mismatch within the CI environment.
+    *   To resolve this:
+        *   The `preset` is required, but the explicit `transform` configuration should be present and correctly configured.
+        *   **Set `rootDir: "."` in `jest.integration.config.js`** so Jest uses the current working directory.
+        *   This bypasses Jest's preset resolution mechanism entirely.
+        *   Jest will then use the direct `ts-jest` transformer without trying to resolve a preset, avoiding module resolution issues and maintaining the same TypeScript processing.
+*   If integration tests are failing with the message "Module ts-jest in the transform option was not found.", this indicates a problem with module resolution. To resolve this:
+    *   The `preset` is required, but the explicit `transform` configuration should be present and correctly configured.
+    *   **Set `rootDir: "."` in `jest.integration.config.js`** so Jest uses the current working directory.
+    *   This bypasses Jest's preset resolution mechanism entirely.
+    *   Jest will then use the direct `ts-jest` transformer, avoiding module resolution issues.
+*   If integration tests are failing with the message "Module ts-jest in the transform option was not found.", and setting `rootDir` to `.` does not resolve the issue, and the error persists, it indicates that Jest needs an absolute path to the `ts-jest` transformer in CI. To resolve this:
+    *   Replace `'ts-jest'` string with `require.resolve('ts-jest')` in the transform configuration.
+    *   This provides absolute path resolution for CI environments.
+    *   This ensures that Jest can find the `ts-jest` module, as CI environments may have different module resolution than local development.
+*   If E2E tests fail with the error `expect(locator).toBeVisible() failed` for a textarea, consider these potential causes:
+    *   The API is returning 500 errors, preventing the chat interface from loading.
+    *   An invalid OpenAI API key is being used, resulting in a 401 error.
+    *   The chat interface is failing to load for other reasons.
+*   When E2E tests fail because the textarea isn't found, check for:
+    *   500 errors from the API
+    *   Invalid OpenAI API key (401 error)
+    *   General chat interface loading failures
+*   When debugging E2E tests and the textarea is not rendering, consider the following:
+    *   **API Errors**: Conversation/messages endpoints might be returning failures.
+    *   **Invalid OpenAI API Key**: The agent service might be returning 401 responses.
+    *   **Service Connectivity**: The agent service might not be responding.
+    *   **Database Issues**: There might be Supabase connection problems.
+*   To further debug E2E tests with textarea visibility issues, follow these debugging steps:
+    *   **Add comprehensive debugging to E2E tests**: This should include logging for textarea visibility, API calls, and render state.
+    *   **Add detailed logging to the conversation page**: This should include logging for API calls with status codes, environment variable logging, and timeout handling with fallback states.
+    *   **Add debug logging to the ChatInterface component**: This should include logging for render state, props, and state change tracking.
+    *   **Create a dedicated debug test for textarea visibility issues**.
+    *   **Capture Console Errors**: Monitor and log any errors output to the browser console during test execution.
+    *   **Monitor Network Errors**: Log any failed network requests (e.g., 500 errors) that might be preventing the textarea from rendering.
+    *   **Use Multiple Textarea Detection Strategies**: Try different locators to find the textarea, such as by placeholder text or CSS class.
+    *   **Validate Page State**: Check for loading states, error messages, and conversation data to understand if the page is loading correctly.
+    *   **Capture Screenshots**: Take screenshots during test execution to visually inspect the page and identify any rendering issues.
+*   When debugging Playwright tests, an error such as `locator.all: Unexpected token "=" while parsing css selector ".animate-spin, [class*="loading"], text=Loading". Did you mean to CSS.escape it?` indicates a syntax error in the CSS selector. To resolve this, correct the selector syntax. For example, use separate locators for text-based elements instead of combining them in a single selector.
+*   To systematically address module resolution issues in CI environments:
+    *   **Use `npm ci` instead of `npm install`**: This ensures deterministic, clean installs using `package-lock.json`.
+    *   **Add dependency verification steps**: After installing dependencies, verify that critical modules like `ts-jest` are correctly installed.
+    *   **Consider absolute path resolution**: If module resolution continues to fail, use `require.resolve()` to provide absolute paths to modules in configuration files.
+*   To improve CI performance, consider parallelizing integration tests by splitting them into separate jobs.
+    *   Example: Create separate jobs for agent and frontend integration tests.
+    *   Ensure that the E2E job depends on both integration test jobs to avoid running E2E tests before integration tests have passed.
+*   To further improve CI resilience for frontend integration tests:
+    *   Add additional service verification with retry logic in CI to ensure services are fully ready before running tests.
+        *   Implement a 5-attempt verification loop with 3-second intervals.
+        *   Use explicit HTTP status checks for both frontend (200) and agent (200).
+        *   Implement better error reporting when services aren't ready.
+    *   Implement a test retry mechanism for flaky integration tests.
+        *   Enable automatic retry for failed integration tests in CI.
+        *   Include a 5-second pause before retry to allow services to stabilize.
+        *   Log retry attempts and outcomes clearly.
+    *   Configure Jest to be more resilient in CI environments.
+        *   Increase the test timeout in CI environments (e.g., 90s vs 60s).
+        *   Enable verbose logging in CI for better debugging.
+        *   Add Jest retry configuration for CI environments.
+            *   Force verbose output in CI to see failed tests.
+            *   Show individual test results.
+*   If one integration test consistently fails in CI but passes locally, consider:
+    *   Adding additional service verification with retry logic in CI to ensure services are fully ready before running tests.
+        *   Implement a 5-attempt verification loop with 3-second intervals.
+        *   Use explicit HTTP status checks for both frontend (200) and agent (200).
+        *   Implement better error reporting when services aren't ready.
+    *   Implementing a test retry mechanism for flaky integration tests.
+        *   Enable automatic retry for failed integration tests in CI.
+        *   Include a 5-second pause before retry to allow services to stabilize.
+        *   Log retry attempts and outcomes clearly.
+    *   Configuring Jest to be more resilient in CI environments.
+        *   Increase the test timeout in CI environments (e.g., 90s vs 60s).
+        *   Enable verbose logging in CI for better debugging.
+        *   Add Jest retry configuration for CI environments.
+            *   Force verbose output in CI to see failed tests.
+            *   Show individual test results.
+*   **Agent Service Integration: Handling Missing conversation_id**: To accurately test error handling for missing `conversation_id` in chat requests, ensure that the error message assertion checks for "Network request failed" OR `"Invalid request"`. This accounts for variations in error messages based on the service status.
+    *   To accurately test error handling for missing `conversation_id` in chat requests, ensure that the error message assertion checks for `"Network request failed"` OR `"Invalid request"`.

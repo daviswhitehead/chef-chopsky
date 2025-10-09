@@ -201,6 +201,26 @@ jobs:
         fi
         echo "✅ All services are ready!"
         
+        # Additional CI-specific service verification
+        echo "🔍 Performing additional CI service verification..."
+        for i in {1..5}; do
+          echo "Verification attempt $i/5..."
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 'unreachable')
+          AGENT_STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health || echo 'unreachable')
+          
+          if [ "$FRONTEND_STATUS" = "200" ] && [ "$AGENT_STATUS" = "200" ]; then
+            echo "✅ Services verified and ready for integration tests"
+            break
+          else
+            echo "⚠️ Services not fully ready: Frontend=$FRONTEND_STATUS, Agent=$AGENT_STATUS"
+            if [ $i -eq 5 ]; then
+              echo "❌ Services still not ready after 5 verification attempts"
+              exit 1
+            fi
+            sleep 3
+          fi
+        done
+        
         echo "📊 Pre-test Service Status:"
         echo "  - Frontend: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 'unreachable')"
         echo "  - Agent Health: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health || echo 'unreachable')"
@@ -392,8 +412,64 @@ jobs:
         echo "Key format: ${OPENAI_API_KEY:0:10}... (${#OPENAI_API_KEY} characters)"
         
         echo "🧪 Running frontend integration tests..."
-        cd frontend && npm run test:integration
-        echo "✅ Frontend integration tests completed"
+        cd frontend && npm run test:integration 2>&1 | tee /tmp/integration-test-output.log
+        FRONTEND_TEST_EXIT_CODE=$?
+        
+        # Capture detailed test results for debugging
+        echo "📊 Test Results Analysis:"
+        echo "Exit code: $FRONTEND_TEST_EXIT_CODE"
+        
+        # Extract failed test information
+        if [ $FRONTEND_TEST_EXIT_CODE -ne 0 ]; then
+          echo "❌ Tests failed - analyzing output..."
+          
+          # Look for specific test failures
+          FAILED_TESTS=$(grep -E "✕|FAIL|Error:" /tmp/integration-test-output.log | head -10)
+          if [ -n "$FAILED_TESTS" ]; then
+            echo "🔍 Failed test details:"
+            echo "$FAILED_TESTS"
+          fi
+          
+          # Look for timeout errors
+          TIMEOUT_ERRORS=$(grep -i "timeout" /tmp/integration-test-output.log)
+          if [ -n "$TIMEOUT_ERRORS" ]; then
+            echo "⏰ Timeout errors detected:"
+            echo "$TIMEOUT_ERRORS"
+          fi
+          
+          # Look for assertion failures
+          ASSERTION_ERRORS=$(grep -i "expect\|assertion\|failed" /tmp/integration-test-output.log | head -5)
+          if [ -n "$ASSERTION_ERRORS" ]; then
+            echo "❌ Assertion failures:"
+            echo "$ASSERTION_ERRORS"
+          fi
+          
+          # Show last 20 lines of test output for context
+          echo "📋 Last 20 lines of test output:"
+          tail -20 /tmp/integration-test-output.log
+          
+          # Try to identify the failing test by running individual test files
+          echo "🔍 Attempting to isolate the failing test..."
+          echo "Running individual test files to identify the failure..."
+          
+          # List all test files
+          TEST_FILES=$(find tests/integration -name "*.test.ts" -o -name "*.test.tsx" | sort)
+          echo "Found test files:"
+          echo "$TEST_FILES"
+          
+          # Run each test file individually to find the failing one
+          for test_file in $TEST_FILES; do
+            echo "Running individual test: $test_file"
+            if npm run test:integration -- --testPathPattern="$test_file" 2>&1 | tee "/tmp/test-$(basename "$test_file").log"; then
+              echo "✅ $test_file passed"
+            else
+              echo "❌ $test_file FAILED"
+              echo "Failure details:"
+              cat "/tmp/test-$(basename "$test_file").log"
+              break
+            fi
+          done
+        fi
         
     - name: Stop services
       if: always()
@@ -412,7 +488,9 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: frontend-integration-test-results
-        path: frontend/test-results/
+        path: |
+          frontend/test-results/
+          /tmp/integration-test-output.log
         retention-days: 7
 
   e2e:
