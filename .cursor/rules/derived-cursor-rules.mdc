@@ -393,3 +393,65 @@ globs: *
     *   **Use Multiple Textarea Detection Strategies**: Try different locators to find the textarea, such as by placeholder text or CSS class.
     *   **Validate Page State**: Check for loading states, error messages, and conversation data to understand if the page is loading correctly.
     *   **Capture Screenshots**: Take screenshots during test execution to visually inspect the page and identify any rendering issues.
+*   **Playwright Console Logging**: Playwright suppresses console logs by default. Use the `--reporter=line` flag to enable console output in CI.
+*   **E2E Test Structure**: Favour creating conversations first, and navigating to them. Avoid navigating to `/conversations/new` or `/conversations/${randomId}` directly. Instead, use `testEnv.createTestConversation()` to create a conversation via API, then navigate to `/conversations/${conversationId}` with the real ID.
+
+## DEBUGGING
+
+*   The pre-commit hooks should include a comprehensive linting process.
+    *   First, run `eslint --fix` to automatically fix fixable issues.
+    *   Then, run `eslint` to catch non-fixable errors, such as floating promises.
+    *   Include a TypeScript compilation check (`tsc --noEmit`) to catch type errors.
+*   When debugging CI pipelines, be aware of process isolation issues. Ensure that background processes started in one CI step are available in subsequent steps.
+*   The pre-commit hooks are designed to run on staged files that match specific patterns. Ensure that all relevant files are staged before committing.
+*   When troubleshooting integration test failures, consider the test environment and configuration.
+    *   Be mindful of the differences between test, development, and production environments.
+    *   Ensure that all necessary environment variables are set correctly.
+    *   Check for any hardcoded configurations that may conflict with the test environment.
+*   When pre-commit hooks fail, it could be due to differences in ESLint configurations, missing rules, or the pre-commit hook scope.
+*   To test and validate pre-commit hooks, run linting and TypeScript compilation locally to ensure that all checks pass before committing.
+*   It's crucial to have a valid OpenAI API key in CI for integration tests. If the API key is invalid, the agent might run in mock mode and the tests will fail because they expect real responses.
+*   When using `expect(async () => { ... }).rejects.toThrow()`, ensure that the promise is awaited. For example, use `await expect(async () => { ... }).rejects.toThrow()`.
+*   The root cause of failing integration tests can often be traced back to malformed asynchronous functions. This can lead to uncaught exceptions and unexpected behavior.
+    *   Always ensure that try-catch blocks are correctly structured and that asynchronous functions are properly awaited.
+*   It's crucial to test in an environment that closely mirrors the CI environment, especially regarding environment variables.
+*   When pre-commit hooks fail to catch errors, consider:
+    *   ESLint configuration differences
+    *   Missing rules
+    *   Pre-commit hook scope
+    *   That `eslint --fix` only fixes fixable errors, not all ESLint errors
+*   When diagnosing CI integration test failures:
+    *   Review test logs for specific error messages and stack traces
+    *   Check service status and connectivity
+    *   Consider process isolation and timing issues
+    *   Verify environment variable configurations
+    *   Distinguish between test setup issues and application code errors
+*   If pre-commit hooks don't catch all errors, consider that the CI environment might have stricter ESLint rules enabled than your local environment, or that the rule might not be enabled in your local ESLint config, or that the rule might not be enabled in your local ESLint config, or that `eslint --fix` only fixes fixable errors, not all ESLint errors.
+*   If integration tests fail in CI, and the error is `Preset ts-jest not found relative to rootDir`, this is likely due to:
+    *   Missing `ts-jest` in CI dependencies.
+    *   A different `node_modules` structure in CI compared to the local environment.
+    *   A working directory or path resolution mismatch within the CI environment.
+    *   To resolve this:
+        *   The `preset` is required, but the explicit `transform` configuration should be present and correctly configured.
+        *   **Set `rootDir: "."` in `jest.integration.config.js`** so Jest uses the current working directory.
+        *   This bypasses Jest's preset resolution mechanism entirely.
+        *   Jest will then use the direct `ts-jest` transformer without trying to resolve a preset, avoiding module resolution issues and maintaining the same TypeScript processing.
+*   If integration tests are failing with the message "Module ts-jest in the transform option was not found.", this indicates a problem with module resolution. To resolve this:
+    *   The `preset` is required, but the explicit `transform` configuration should be present and correctly configured.
+    *   **Set `rootDir: "."` in `jest.integration.config.js`** so Jest uses the current working directory.
+    *   This bypasses Jest's preset resolution mechanism entirely.
+    *   Jest will then use the direct `ts-jest` transformer, avoiding module resolution issues.
+*   If integration tests are failing with the message "Module ts-jest in the transform option was not found.", and setting `rootDir` to `.` does not resolve the issue, and the error persists, it indicates that Jest needs an absolute path to the `ts-jest` transformer in CI. To resolve this:
+    *   Replace `'ts-jest'` string with `require.resolve('ts-jest')` in the transform configuration.
+    *   This provides absolute path resolution for CI environments.
+    *   This ensures that Jest can find the `ts-jest` module, as CI environments may have different module resolution than local development.
+*   If E2E tests fail with the error `expect(locator).toBeVisible() failed` for a textarea, consider these potential causes:
+    *   The API is returning 500 errors, preventing the chat interface from loading.
+    *   An invalid OpenAI API key is being used, resulting in a 401 error.
+    *   The chat interface is failing to load for other reasons.
+*   When E2E tests fail because the textarea isn't found, check for:
+    *   500 errors from the API
+    *   Invalid OpenAI API key (401 error)
+    *   General chat interface loading failures
+*   When debugging E2E tests and the textarea is not rendering, consider the following:
+    *   **API Errors**: Conversation/messages endpoints

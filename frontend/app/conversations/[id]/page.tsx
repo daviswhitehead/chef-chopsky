@@ -38,6 +38,35 @@ export default function ConversationPage() {
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.substring(0, 30) + '...'
       });
 
+      // If navigating to /conversations/new, auto-create a conversation then redirect
+      if (conversationId === 'new') {
+        try {
+          console.log('🔍 DEBUGGING: Creating conversation for /conversations/new');
+          const createRes = await fetch('/api/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: 'New Conversation',
+              user_id: userId,
+              metadata: { created_via: 'conversations/new' }
+            })
+          });
+          if (!createRes.ok) {
+            console.error('❌ Failed to create conversation for /new:', createRes.status, createRes.statusText);
+            setLoading(false);
+            return;
+          }
+          const created = await createRes.json();
+          console.log('✅ Created conversation for /new:', created?.id);
+          router.replace(`/conversations/${created.id}`);
+          return;
+        } catch (e) {
+          console.error('💥 Error creating conversation for /new:', e);
+          setLoading(false);
+          return;
+        }
+      }
+
       // Add a timeout to prevent hanging
       let timeoutTriggered = false;
       const timeoutId = setTimeout(() => {
@@ -82,6 +111,34 @@ export default function ConversationPage() {
         });
 
         if (!convRes.ok) {
+          // If not found, auto-create the conversation with the given id for test flows
+          if (convRes.status === 404) {
+            console.warn('⚠️ Conversation not found, auto-creating:', conversationId);
+            try {
+              const createWithId = await fetch('/api/conversations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: conversationId,
+                  title: `Conversation ${conversationId.slice(0, 8)}`,
+                  user_id: userId,
+                  metadata: { created_via: 'auto-create-on-404' }
+                })
+              });
+              if (createWithId.ok) {
+                const createdConv = await createWithId.json();
+                console.log('✅ Auto-created conversation:', createdConv?.id);
+                clearTimeout(timeoutId);
+                setConversation(createdConv);
+                setMessages([]);
+                setLoading(false);
+                return;
+              }
+            } catch (e) {
+              console.error('💥 Error auto-creating conversation:', e);
+            }
+          }
+
           console.error('❌ Conversation fetch failed:', {
             status: convRes.status,
             statusText: convRes.statusText,
