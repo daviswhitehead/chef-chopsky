@@ -286,7 +286,7 @@ jobs:
         
         # Test frontend connectivity
         for i in {1..5}; do
-          if curl -s http://localhost:3000/ > /dev/null 2>&1; then
+          if curl -s "$FRONTEND_URL/" > /dev/null 2>&1; then
             echo "✅ Frontend connectivity verified (attempt $i)"
             FRONTEND_OK=true
             break
@@ -305,7 +305,7 @@ jobs:
         
         # Test agent connectivity
         for i in {1..5}; do
-          if curl -s http://localhost:3001/health > /dev/null 2>&1; then
+          if curl -s "$AGENT_SERVICE_URL/health" > /dev/null 2>&1; then
             echo "✅ Agent connectivity verified (attempt $i)"
             AGENT_OK=true
             break
