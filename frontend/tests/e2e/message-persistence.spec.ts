@@ -33,9 +33,6 @@ test.describe('Message Persistence', () => {
     // Wait for user message to appear (deterministic UI signal)
     await TestUtils.waitForMessage(page, TEST_SCENARIOS.SIMPLE_MESSAGE);
 
-    // Wait for the user message element to be fully rendered with its styling
-    await page.waitForSelector('[class*="bg-chef-500"]', { timeout: 5000 });
-
     // Verify message appears in chat history
     const userMessage = page.locator(`text=${TEST_SCENARIOS.SIMPLE_MESSAGE}`).first();
     await expect(userMessage).toBeVisible();
@@ -116,12 +113,12 @@ test.describe('Message Persistence', () => {
     const userMessage = page.locator(`text=${TEST_SCENARIOS.SIMPLE_MESSAGE}`).first();
     await expect(userMessage).toBeVisible();
 
-    // Wait for the user message element to be fully rendered with its styling
-    await page.waitForSelector('[class*="bg-chef-500"]', { timeout: 5000 });
+    // Wait for stable user bubble hook instead of style class
+    await page.waitForSelector('[data-testid="message-user"]', { timeout: 10000 });
 
-    // Verify message roles are correct
-    const userMessages = page.locator('[class*="bg-chef-500"]');
-    const assistantMessages = page.locator('[class*="bg-gray-100"]');
+    // Verify message roles are correct via stable hooks
+    const userMessages = page.locator('[data-testid="message-user"]');
+    const assistantMessages = page.locator('[data-testid="message-assistant"]');
     
     const userCount = await userMessages.count();
     const assistantCount = await assistantMessages.count();

@@ -325,6 +325,13 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
+              data-testid={
+                message.role === 'user'
+                  ? 'message-user'
+                  : message.metadata?.error
+                  ? 'message-error'
+                  : 'message-assistant'
+              }
               className={`max-w-[70%] rounded-lg px-4 py-2 ${
                 message.role === 'user'
                   ? 'bg-chef-500 text-white'
