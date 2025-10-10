@@ -1,0 +1,635 @@
+name: Health Checks and Environment Separation Tests
+
+# DISABLED: Only running ci.yml for now
+# on:
+#   push:
+#     branches: [ main, staging, feat/*, feature/* ]
+#   pull_request:
+#     branches: [ main, staging ]
+#   schedule:
+#     # Run health checks every hour
+#     - cron: '0 * * * *'
+#   workflow_dispatch:
+#     inputs:
+#       test_type:
+#         description: 'Type of tests to run'
+#         required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - health-checks
+          - environment-separation
+          - production-only
+          - staging-only
+
+env:
+  # Test configuration
+  TEST_TIMEOUT: 30000
+  RETRY_ATTEMPTS: 3
+  RETRY_DELAY: 5000
+  
+  # Service URLs
+  PRODUCTION_FRONTEND: https://chef-chopsky-production.vercel.app
+  PRODUCTION_AGENT: https://chef-chopsky-production.up.railway.app
+  STAGING_FRONTEND: https://chef-chopsky-git-staging.vercel.app
+  STAGING_AGENT: https://chef-chopsky-staging.up.railway.app
+  
+  # Test data
+  TEST_USER_ID: test-user-123
+  TEST_CONVERSATION_ID: test-conversation-456
+
+jobs:
+  # Health checks for all environments
+  health-checks:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'health-checks' || github.event_name == 'schedule'
+    
+    strategy:
+      matrix:
+        environment: [production, staging]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../agent && npm ci
+        
+    - name: Test ${{ matrix.environment }} frontend health
+      id: frontend-health
+      run: |
+        echo "🔍 Testing ${{ matrix.environment }} frontend health..."
+        
+        if [ "${{ matrix.environment }}" == "production" ]; then
+          URL="${{ env.PRODUCTION_FRONTEND }}"
+        else
+          URL="${{ env.STAGING_FRONTEND }}"
+        fi
+        
+        # Test frontend accessibility
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+        RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$URL" || echo "0")
+        
+        echo "frontend-status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+        echo "frontend-time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+        
+        if [ "$HTTP_STATUS" == "200" ]; then
+          echo "✅ ${{ matrix.environment }} frontend is healthy (${RESPONSE_TIME}s)"
+          echo "frontend-healthy=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ ${{ matrix.environment }} frontend is unhealthy (HTTP $HTTP_STATUS)"
+          echo "frontend-healthy=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Test ${{ matrix.environment }} agent health
+      id: agent-health
+      run: |
+        echo "🔍 Testing ${{ matrix.environment }} agent health..."
+        
+        if [ "${{ matrix.environment }}" == "production" ]; then
+          URL="${{ env.PRODUCTION_AGENT }}"
+        else
+          URL="${{ env.STAGING_AGENT }}"
+        fi
+        
+        # Test agent health endpoint
+        HEALTH_RESPONSE=$(curl -s "$URL/health" || echo '{"status":"error"}')
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/health" || echo "000")
+        RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$URL/health" || echo "0")
+        
+        echo "agent-status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+        echo "agent-time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+        echo "agent-response=$HEALTH_RESPONSE" >> $GITHUB_OUTPUT
+        
+        # Parse health response
+        HEALTH_STATUS=$(echo "$HEALTH_RESPONSE" | jq -r '.status' 2>/dev/null || echo "unknown")
+        SERVICE_NAME=$(echo "$HEALTH_RESPONSE" | jq -r '.service' 2>/dev/null || echo "unknown")
+        ENVIRONMENT=$(echo "$HEALTH_RESPONSE" | jq -r '.environment' 2>/dev/null || echo "unknown")
+        
+        echo "health-status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
+        echo "service-name=$SERVICE_NAME" >> $GITHUB_OUTPUT
+        echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+        
+        if [ "$HTTP_STATUS" == "200" ] && [ "$HEALTH_STATUS" == "ok" ]; then
+          echo "✅ ${{ matrix.environment }} agent is healthy (${RESPONSE_TIME}s)"
+          echo "agent-healthy=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ ${{ matrix.environment }} agent is unhealthy (HTTP $HTTP_STATUS, Status: $HEALTH_STATUS)"
+          echo "agent-healthy=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Test ${{ matrix.environment }} database connectivity
+      id: database-health
+      run: |
+        echo "🔍 Testing ${{ matrix.environment }} database connectivity..."
+        
+        if [ "${{ matrix.environment }}" == "production" ]; then
+          FRONTEND_URL="${{ env.PRODUCTION_FRONTEND }}"
+        else
+          FRONTEND_URL="${{ env.STAGING_FRONTEND }}"
+        fi
+        
+        # Test database connectivity through frontend
+        DB_TEST_RESPONSE=$(curl -s "$FRONTEND_URL/api/health" || echo '{"status":"error"}')
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL/api/health" || echo "000")
+        
+        echo "db-status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+        echo "db-response=$DB_TEST_RESPONSE" >> $GITHUB_OUTPUT
+        
+        if [ "$HTTP_STATUS" == "200" ]; then
+          echo "✅ ${{ matrix.environment }} database is accessible"
+          echo "db-healthy=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ ${{ matrix.environment }} database is not accessible (HTTP $HTTP_STATUS)"
+          echo "db-healthy=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Validate ${{ matrix.environment }} environment configuration
+      id: env-validation
+      run: |
+        echo "🔍 Validating ${{ matrix.environment }} environment configuration..."
+        
+        if [ "${{ matrix.environment }}" == "production" ]; then
+          AGENT_URL="${{ env.PRODUCTION_AGENT }}"
+        else
+          AGENT_URL="${{ env.STAGING_AGENT }}"
+        fi
+        
+        # Test environment configuration endpoint
+        CONFIG_RESPONSE=$(curl -s "$AGENT_URL/config" || echo '{"error":"unavailable"}')
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$AGENT_URL/config" || echo "000")
+        
+        echo "config-status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+        echo "config-response=$CONFIG_RESPONSE" >> $GITHUB_OUTPUT
+        
+        if [ "$HTTP_STATUS" == "200" ]; then
+          # Parse configuration
+          NODE_ENV=$(echo "$CONFIG_RESPONSE" | jq -r '.nodeEnv' 2>/dev/null || echo "unknown")
+          APP_ENV=$(echo "$CONFIG_RESPONSE" | jq -r '.appEnv' 2>/dev/null || echo "unknown")
+          RETRIEVER_PROVIDER=$(echo "$CONFIG_RESPONSE" | jq -r '.retrieverProvider' 2>/dev/null || echo "unknown")
+          
+          echo "node-env=$NODE_ENV" >> $GITHUB_OUTPUT
+          echo "app-env=$APP_ENV" >> $GITHUB_OUTPUT
+          echo "retriever-provider=$RETRIEVER_PROVIDER" >> $GITHUB_OUTPUT
+          
+          # Validate environment-specific configuration
+          if [ "${{ matrix.environment }}" == "production" ]; then
+            if [ "$APP_ENV" == "production" ] && [ "$RETRIEVER_PROVIDER" != "memory" ]; then
+              echo "✅ Production environment configuration is valid"
+              echo "env-valid=true" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Production environment configuration is invalid (APP_ENV: $APP_ENV, RETRIEVER: $RETRIEVER_PROVIDER)"
+              echo "env-valid=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            if [ "$APP_ENV" == "staging" ] || [ "$APP_ENV" == "local" ]; then
+              echo "✅ Staging environment configuration is valid"
+              echo "env-valid=true" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Staging environment configuration is invalid (APP_ENV: $APP_ENV)"
+              echo "env-valid=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+        else
+          echo "❌ Environment configuration endpoint not accessible (HTTP $HTTP_STATUS)"
+          echo "env-valid=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create health check summary
+      run: |
+        echo "## 🏥 ${{ matrix.environment }} Health Check Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Service Health" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend**: ${{ steps.frontend-health.outputs.frontend-status }} (${{ steps.frontend-health.outputs.frontend-time }}s)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Agent**: ${{ steps.agent-health.outputs.agent-status }} (${{ steps.agent-health.outputs.agent-time }}s)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Database**: ${{ steps.database-health.outputs.db-status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Health Status" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend**: ${{ steps.frontend-health.outputs.frontend-healthy }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Agent**: ${{ steps.agent-health.outputs.agent-healthy }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Database**: ${{ steps.database-health.outputs.db-healthy }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ steps.env-validation.outputs.env-valid }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "- **Node Environment**: ${{ steps.env-validation.outputs.node-env }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **App Environment**: ${{ steps.env-validation.outputs.app-env }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Retriever Provider**: ${{ steps.env-validation.outputs.retriever-provider }}" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Fail if health checks fail
+      if: steps.frontend-health.outputs.frontend-healthy == 'false' || steps.agent-health.outputs.agent-healthy == 'false' || steps.database-health.outputs.db-healthy == 'false' || steps.env-validation.outputs.env-valid == 'false'
+      run: |
+        echo "❌ Health checks failed for ${{ matrix.environment }} environment"
+        echo "Frontend: ${{ steps.frontend-health.outputs.frontend-healthy }}"
+        echo "Agent: ${{ steps.agent-health.outputs.agent-healthy }}"
+        echo "Database: ${{ steps.database-health.outputs.db-healthy }}"
+        echo "Environment: ${{ steps.env-validation.outputs.env-valid }}"
+        exit 1
+
+  # Environment separation tests
+  environment-separation:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'environment-separation'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../agent && npm ci
+        
+    - name: Test environment isolation
+      id: env-isolation
+      run: |
+        echo "🔍 Testing environment isolation..."
+        
+        # Test that production and staging use different configurations
+        PROD_CONFIG=$(curl -s "${{ env.PRODUCTION_AGENT }}/config" || echo '{"error":"unavailable"}')
+        STAGING_CONFIG=$(curl -s "${{ env.STAGING_AGENT }}/config" || echo '{"error":"unavailable"}')
+        
+        echo "prod-config=$PROD_CONFIG" >> $GITHUB_OUTPUT
+        echo "staging-config=$STAGING_CONFIG" >> $GITHUB_OUTPUT
+        
+        # Parse configurations
+        PROD_APP_ENV=$(echo "$PROD_CONFIG" | jq -r '.appEnv' 2>/dev/null || echo "unknown")
+        STAGING_APP_ENV=$(echo "$STAGING_CONFIG" | jq -r '.appEnv' 2>/dev/null || echo "unknown")
+        PROD_RETRIEVER=$(echo "$PROD_CONFIG" | jq -r '.retrieverProvider' 2>/dev/null || echo "unknown")
+        STAGING_RETRIEVER=$(echo "$STAGING_CONFIG" | jq -r '.retrieverProvider' 2>/dev/null || echo "unknown")
+        
+        echo "prod-app-env=$PROD_APP_ENV" >> $GITHUB_OUTPUT
+        echo "staging-app-env=$STAGING_APP_ENV" >> $GITHUB_OUTPUT
+        echo "prod-retriever=$PROD_RETRIEVER" >> $GITHUB_OUTPUT
+        echo "staging-retriever=$STAGING_RETRIEVER" >> $GITHUB_OUTPUT
+        
+        # Validate environment separation
+        if [ "$PROD_APP_ENV" == "production" ] && [ "$STAGING_APP_ENV" == "staging" ]; then
+          echo "✅ Environment separation is valid"
+          echo "env-separated=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Environment separation is invalid (Prod: $PROD_APP_ENV, Staging: $STAGING_APP_ENV)"
+          echo "env-separated=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Test data isolation
+      id: data-isolation
+      run: |
+        echo "🔍 Testing data isolation..."
+        
+        # Test that production and staging use different vector stores
+        PROD_INDEX=$(curl -s "${{ env.PRODUCTION_AGENT }}/config" | jq -r '.langchainIndexName' 2>/dev/null || echo "unknown")
+        STAGING_INDEX=$(curl -s "${{ env.STAGING_AGENT }}/config" | jq -r '.langchainIndexName' 2>/dev/null || echo "unknown")
+        
+        echo "prod-index=$PROD_INDEX" >> $GITHUB_OUTPUT
+        echo "staging-index=$STAGING_INDEX" >> $GITHUB_OUTPUT
+        
+        # Validate index separation
+        if [ "$PROD_INDEX" != "$STAGING_INDEX" ] && [ "$PROD_INDEX" != "unknown" ] && [ "$STAGING_INDEX" != "unknown" ]; then
+          echo "✅ Data isolation is valid (different indexes)"
+          echo "data-isolated=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Data isolation is invalid (same indexes: $PROD_INDEX == $STAGING_INDEX)"
+          echo "data-isolated=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Test retriever configuration
+      id: retriever-config
+      run: |
+        echo "🔍 Testing retriever configuration..."
+        
+        # Test that production uses production-ready retrievers
+        PROD_RETRIEVER="${{ steps.env-isolation.outputs.prod-retriever }}"
+        STAGING_RETRIEVER="${{ steps.env-isolation.outputs.staging-retriever }}"
+        
+        # Validate production retriever
+        if [ "$PROD_RETRIEVER" == "pinecone" ] || [ "$PROD_RETRIEVER" == "elastic" ] || [ "$PROD_RETRIEVER" == "mongodb" ]; then
+          echo "✅ Production retriever is production-ready ($PROD_RETRIEVER)"
+          echo "prod-retriever-valid=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Production retriever is not production-ready ($PROD_RETRIEVER)"
+          echo "prod-retriever-valid=false" >> $GITHUB_OUTPUT
+        fi
+        
+        # Validate staging retriever
+        if [ "$STAGING_RETRIEVER" == "pinecone" ] || [ "$STAGING_RETRIEVER" == "memory" ]; then
+          echo "✅ Staging retriever is valid ($STAGING_RETRIEVER)"
+          echo "staging-retriever-valid=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Staging retriever is invalid ($STAGING_RETRIEVER)"
+          echo "staging-retriever-valid=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Test environment discriminators
+      id: env-discriminators
+      run: |
+        echo "🔍 Testing environment discriminators..."
+        
+        # Test that environment discriminators are properly set
+        PROD_ENV_DISCRIMINATOR=$(curl -s "${{ env.PRODUCTION_AGENT }}/config" | jq -r '.envDiscriminator' 2>/dev/null || echo "unknown")
+        STAGING_ENV_DISCRIMINATOR=$(curl -s "${{ env.STAGING_AGENT }}/config" | jq -r '.envDiscriminator' 2>/dev/null || echo "unknown")
+        
+        echo "prod-discriminator=$PROD_ENV_DISCRIMINATOR" >> $GITHUB_OUTPUT
+        echo "staging-discriminator=$STAGING_ENV_DISCRIMINATOR" >> $GITHUB_OUTPUT
+        
+        # Validate discriminators
+        if [ "$PROD_ENV_DISCRIMINATOR" == "production" ] && [ "$STAGING_ENV_DISCRIMINATOR" == "staging" ]; then
+          echo "✅ Environment discriminators are valid"
+          echo "discriminators-valid=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Environment discriminators are invalid (Prod: $PROD_ENV_DISCRIMINATOR, Staging: $STAGING_ENV_DISCRIMINATOR)"
+          echo "discriminators-valid=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create environment separation summary
+      run: |
+        echo "## 🔒 Environment Separation Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Environment Isolation" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production App Env**: ${{ steps.env-isolation.outputs.prod-app-env }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Staging App Env**: ${{ steps.env-isolation.outputs.staging-app-env }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Isolation Valid**: ${{ steps.env-isolation.outputs.env-separated }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Data Isolation" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production Index**: ${{ steps.data-isolation.outputs.prod-index }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Staging Index**: ${{ steps.data-isolation.outputs.staging-index }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Data Isolated**: ${{ steps.data-isolation.outputs.data-isolated }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Retriever Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production Retriever**: ${{ steps.env-isolation.outputs.prod-retriever }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Staging Retriever**: ${{ steps.env-isolation.outputs.staging-retriever }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production Valid**: ${{ steps.retriever-config.outputs.prod-retriever-valid }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Staging Valid**: ${{ steps.retriever-config.outputs.staging-retriever-valid }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Environment Discriminators" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production Discriminator**: ${{ steps.env-discriminators.outputs.prod-discriminator }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Staging Discriminator**: ${{ steps.env-discriminators.outputs.staging-discriminator }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Discriminators Valid**: ${{ steps.env-discriminators.outputs.discriminators-valid }}" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Fail if environment separation fails
+      if: steps.env-isolation.outputs.env-separated == 'false' || steps.data-isolation.outputs.data-isolated == 'false' || steps.retriever-config.outputs.prod-retriever-valid == 'false' || steps.retriever-config.outputs.staging-retriever-valid == 'false' || steps.env-discriminators.outputs.discriminators-valid == 'false'
+      run: |
+        echo "❌ Environment separation tests failed"
+        echo "Environment Isolation: ${{ steps.env-isolation.outputs.env-separated }}"
+        echo "Data Isolation: ${{ steps.data-isolation.outputs.data-isolated }}"
+        echo "Production Retriever Valid: ${{ steps.retriever-config.outputs.prod-retriever-valid }}"
+        echo "Staging Retriever Valid: ${{ steps.retriever-config.outputs.staging-retriever-valid }}"
+        echo "Discriminators Valid: ${{ steps.env-discriminators.outputs.discriminators-valid }}"
+        exit 1
+
+  # Production-specific tests
+  production-tests:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'production-only' || github.event_name == 'schedule'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../agent && npm ci
+        
+    - name: Test production environment validation
+      id: prod-validation
+      run: |
+        echo "🔍 Testing production environment validation..."
+        
+        # Test that production cannot run with placeholder API keys
+        PROD_CONFIG=$(curl -s "${{ env.PRODUCTION_AGENT }}/config" || echo '{"error":"unavailable"}')
+        OPENAI_KEY_STATUS=$(echo "$PROD_CONFIG" | jq -r '.openaiKeyStatus' 2>/dev/null || echo "unknown")
+        
+        echo "openai-key-status=$OPENAI_KEY_STATUS" >> $GITHUB_OUTPUT
+        
+        if [ "$OPENAI_KEY_STATUS" == "valid" ]; then
+          echo "✅ Production OpenAI API key is valid"
+          echo "prod-api-key-valid=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Production OpenAI API key is invalid ($OPENAI_KEY_STATUS)"
+          echo "prod-api-key-valid=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Test production retriever validation
+      id: prod-retriever-validation
+      run: |
+        echo "🔍 Testing production retriever validation..."
+        
+        # Test that production uses production-ready retrievers
+        PROD_CONFIG=$(curl -s "${{ env.PRODUCTION_AGENT }}/config" || echo '{"error":"unavailable"}')
+        RETRIEVER_PROVIDER=$(echo "$PROD_CONFIG" | jq -r '.retrieverProvider' 2>/dev/null || echo "unknown")
+        
+        echo "retriever-provider=$RETRIEVER_PROVIDER" >> $GITHUB_OUTPUT
+        
+        if [ "$RETRIEVER_PROVIDER" == "pinecone" ] || [ "$RETRIEVER_PROVIDER" == "elastic" ] || [ "$RETRIEVER_PROVIDER" == "mongodb" ]; then
+          echo "✅ Production retriever is production-ready ($RETRIEVER_PROVIDER)"
+          echo "prod-retriever-valid=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Production retriever is not production-ready ($RETRIEVER_PROVIDER)"
+          echo "prod-retriever-valid=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Test production environment guards
+      id: prod-guards
+      run: |
+        echo "🔍 Testing production environment guards..."
+        
+        # Test that production environment guards are active
+        PROD_CONFIG=$(curl -s "${{ env.PRODUCTION_AGENT }}/config" || echo '{"error":"unavailable"}')
+        PRODUCTION_GUARDS=$(echo "$PROD_CONFIG" | jq -r '.productionGuards' 2>/dev/null || echo "unknown")
+        
+        echo "production-guards=$PRODUCTION_GUARDS" >> $GITHUB_OUTPUT
+        
+        if [ "$PRODUCTION_GUARDS" == "active" ]; then
+          echo "✅ Production environment guards are active"
+          echo "prod-guards-active=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Production environment guards are not active ($PRODUCTION_GUARDS)"
+          echo "prod-guards-active=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create production test summary
+      run: |
+        echo "## 🏭 Production Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Production Validation" >> $GITHUB_STEP_SUMMARY
+        echo "- **API Key Valid**: ${{ steps.prod-validation.outputs.prod-api-key-valid }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Retriever Valid**: ${{ steps.prod-retriever-validation.outputs.prod-retriever-valid }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Guards Active**: ${{ steps.prod-guards.outputs.prod-guards-active }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Production Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "- **Retriever Provider**: ${{ steps.prod-retriever-validation.outputs.retriever-provider }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production Guards**: ${{ steps.prod-guards.outputs.production-guards }}" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Fail if production tests fail
+      if: steps.prod-validation.outputs.prod-api-key-valid == 'false' || steps.prod-retriever-validation.outputs.prod-retriever-valid == 'false' || steps.prod-guards.outputs.prod-guards-active == 'false'
+      run: |
+        echo "❌ Production tests failed"
+        echo "API Key Valid: ${{ steps.prod-validation.outputs.prod-api-key-valid }}"
+        echo "Retriever Valid: ${{ steps.prod-retriever-validation.outputs.prod-retriever-valid }}"
+        echo "Guards Active: ${{ steps.prod-guards.outputs.prod-guards-active }}"
+        exit 1
+
+  # Staging-specific tests
+  staging-tests:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'staging-only'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../agent && npm ci
+        
+    - name: Test staging environment validation
+      id: staging-validation
+      run: |
+        echo "🔍 Testing staging environment validation..."
+        
+        # Test that staging environment is properly configured
+        STAGING_CONFIG=$(curl -s "${{ env.STAGING_AGENT }}/config" || echo '{"error":"unavailable"}')
+        APP_ENV=$(echo "$STAGING_CONFIG" | jq -r '.appEnv' 2>/dev/null || echo "unknown")
+        
+        echo "app-env=$APP_ENV" >> $GITHUB_OUTPUT
+        
+        if [ "$APP_ENV" == "staging" ]; then
+          echo "✅ Staging environment is properly configured"
+          echo "staging-env-valid=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Staging environment is not properly configured ($APP_ENV)"
+          echo "staging-env-valid=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Test staging retriever configuration
+      id: staging-retriever-config
+      run: |
+        echo "🔍 Testing staging retriever configuration..."
+        
+        # Test that staging uses appropriate retriever
+        STAGING_CONFIG=$(curl -s "${{ env.STAGING_AGENT }}/config" || echo '{"error":"unavailable"}')
+        RETRIEVER_PROVIDER=$(echo "$STAGING_CONFIG" | jq -r '.retrieverProvider' 2>/dev/null || echo "unknown")
+        
+        echo "retriever-provider=$RETRIEVER_PROVIDER" >> $GITHUB_OUTPUT
+        
+        if [ "$RETRIEVER_PROVIDER" == "pinecone" ] || [ "$RETRIEVER_PROVIDER" == "memory" ]; then
+          echo "✅ Staging retriever is valid ($RETRIEVER_PROVIDER)"
+          echo "staging-retriever-valid=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Staging retriever is invalid ($RETRIEVER_PROVIDER)"
+          echo "staging-retriever-valid=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create staging test summary
+      run: |
+        echo "## 🧪 Staging Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Staging Validation" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment Valid**: ${{ steps.staging-validation.outputs.staging-env-valid }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Retriever Valid**: ${{ steps.staging-retriever-config.outputs.staging-retriever-valid }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Staging Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "- **App Environment**: ${{ steps.staging-validation.outputs.app-env }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Retriever Provider**: ${{ steps.staging-retriever-config.outputs.retriever-provider }}" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Fail if staging tests fail
+      if: steps.staging-validation.outputs.staging-env-valid == 'false' || steps.staging-retriever-config.outputs.staging-retriever-valid == 'false'
+      run: |
+        echo "❌ Staging tests failed"
+        echo "Environment Valid: ${{ steps.staging-validation.outputs.staging-env-valid }}"
+        echo "Retriever Valid: ${{ steps.staging-retriever-config.outputs.staging-retriever-valid }}"
+        exit 1
+
+  # Test summary and notifications
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [health-checks, environment-separation, production-tests, staging-tests]
+    if: always()
+    
+    steps:
+    - name: Create test summary
+      run: |
+        echo "## 🧪 Health Checks and Environment Separation Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Health Checks**: ${{ needs.health-checks.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment Separation**: ${{ needs.environment-separation.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production Tests**: ${{ needs.production-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Staging Tests**: ${{ needs.staging-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Overall Status" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ needs.health-checks.result }}" == "success" ] && [ "${{ needs.environment-separation.result }}" == "success" ] && [ "${{ needs.production-tests.result }}" == "success" ] && [ "${{ needs.staging-tests.result }}" == "success" ]; then
+          echo "✅ **All tests passed successfully**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Some tests failed**" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Test Coverage" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Health checks for all environments" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Environment separation validation" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Production environment validation" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Staging environment validation" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Data isolation verification" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Retriever configuration validation" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Environment discriminator validation" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Send test notifications
+      if: env.ALERT_WEBHOOK_URL != ''
+      run: |
+        if [ "${{ needs.health-checks.result }}" == "success" ] && [ "${{ needs.environment-separation.result }}" == "success" ] && [ "${{ needs.production-tests.result }}" == "success" ] && [ "${{ needs.staging-tests.result }}" == "success" ]; then
+          STATUS="success"
+          MESSAGE="✅ All health checks and environment separation tests passed"
+          COLOR="good"
+        else
+          STATUS="failure"
+          MESSAGE="❌ Some health checks and environment separation tests failed"
+          COLOR="danger"
+        fi
+        
+        curl -X POST "${{ env.ALERT_WEBHOOK_URL }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "text": "'"$MESSAGE"'",
+            "attachments": [{
+              "color": "'"$COLOR"'",
+              "fields": [
+                {"title": "Health Checks", "value": "${{ needs.health-checks.result }}", "short": true},
+                {"title": "Environment Separation", "value": "${{ needs.environment-separation.result }}", "short": true},
+                {"title": "Production Tests", "value": "${{ needs.production-tests.result }}", "short": true},
+                {"title": "Staging Tests", "value": "${{ needs.staging-tests.result }}", "short": true},
+                {"title": "Workflow", "value": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow>", "short": false}
+              ]
+            }]
+          }'

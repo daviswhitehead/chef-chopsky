@@ -1,5 +1,11 @@
 import { ServiceLifecycleManager } from './service-lifecycle-manager';
 import { Logger } from '../e2e/fixtures/logger';
+import { 
+  checkAgentServiceStatus, 
+  getExpectedStatusCodes, 
+  getExpectedErrorMessage,
+  logServiceStatus 
+} from './test-utils';
 
 const AGENT_URL = process.env.AGENT_URL || 'http://localhost:3001';
 const AGENT_CWD = 'agent';
@@ -44,6 +50,9 @@ describe('Agent Service Integration Tests', () => {
     it('should handle missing conversation_id in chat requests', async () => {
       Logger.info('🧪 Testing missing conversation_id error handling...');
       
+      const serviceStatus = await checkAgentServiceStatus();
+      logServiceStatus('Agent', serviceStatus);
+      
       try {
         const response = await fetch(`${AGENT_URL}/chat`, {
           method: 'POST',
@@ -55,18 +64,21 @@ describe('Agent Service Integration Tests', () => {
           signal: AbortSignal.timeout(2000),
         });
 
-        if (response.ok) {
-          Logger.warn('⚠️ Agent service is running (unexpected in test environment)');
+        if (serviceStatus.isRunning) {
+          Logger.info('✅ Missing conversation_id error handling (service running)');
           expect(response.status).toBe(400);
           const errorData = await response.json();
           expect(errorData.error).toBeDefined();
-          expect(errorData.error).toContain('conversation_id');
+          expect(errorData.message).toContain('conversation_id');
         } else {
           Logger.info('✅ Missing conversation_id error handling (service down expected)');
+          const expectedStatuses = getExpectedStatusCodes(false);
+          expect(expectedStatuses).toContain(response.status);
         }
-      } catch (error) {
+      } catch (error: any) {
         Logger.info('✅ Missing conversation_id error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        const expectedError = getExpectedErrorMessage(serviceStatus.isRunning);
+        expect(error.message).toContain(expectedError);
       }
     });
 
@@ -89,13 +101,13 @@ describe('Agent Service Integration Tests', () => {
           expect(response.status).toBe(400);
           const errorData = await response.json();
           expect(errorData.error).toBeDefined();
-          expect(errorData.error).toContain('messages');
+          expect(errorData.message).toContain('messages');
         } else {
           Logger.info('✅ Missing messages error handling (service down expected)');
         }
       } catch (error) {
         Logger.info('✅ Missing messages error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -123,7 +135,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Empty messages array error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -156,7 +168,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Invalid message format error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -181,7 +193,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Malformed JSON error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
   });
@@ -207,7 +219,7 @@ describe('Agent Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Agent health check endpoint structure (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -231,7 +243,7 @@ describe('Agent Service Integration Tests', () => {
           }
         } catch (error) {
           Logger.info(`✅ Health endpoint HTTP method validation for ${method} (service down expected)`);
-          expect(error.message).toContain('Network request failed');
+          expect(error.message).toContain('fetch failed');
         }
       }
     });
@@ -282,7 +294,7 @@ describe('Agent Service Integration Tests', () => {
           }
         } catch (error) {
           Logger.info(`✅ Chat endpoint HTTP method validation for ${method} (service down expected)`);
-          expect(error.message).toMatch(/Network request failed|Request with GET\/HEAD method cannot have body/);
+          expect(error.message).toMatch(/fetch failed|Request with GET\/HEAD method cannot have body|Body not allowed for GET or HEAD requests/);
         }
       }
     });

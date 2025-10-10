@@ -146,7 +146,7 @@ This project implements deployment and environment management for Chef Chopsky, 
 
 Add these env vars during Phase 2 to make the retriever and embeddings environment-configurable:
 
-- `RETRIEVER_PROVIDER` (local: `memory`; staging: `elastic-local` or shared dev; prod: `elastic`/`pinecone`/`mongodb`)
+- `RETRIEVER_PROVIDER` (local: `memory`; staging: `pinecone`; prod: `pinecone`/`elastic`/`mongodb`)
 - `EMBEDDING_MODEL` (e.g., `openai/text-embedding-3-small`, `openai/text-embedding-3-large`, or `cohere/<model>`)
 - `LANGCHAIN_INDEX_NAME` (Elastic/Pinecone) per environment, e.g., `chef-chopsky-${NODE_ENV}`
 - `MONGO_NAMESPACE_PREFIX` (MongoDB) to namespace collections per environment

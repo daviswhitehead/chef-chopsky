@@ -1,0 +1,399 @@
+name: Staging Deployment
+
+# DISABLED: Only running ci.yml for now
+# on:
+#   push:
+#     branches: [ staging, feat/*, feature/* ]
+#   pull_request:
+#     branches: [ staging, main ]
+#   workflow_dispatch:
+#     inputs:
+#       branch:
+#         description: 'Branch to deploy to staging'
+#         required: true
+#         default: 'staging'
+#         type: string
+#       force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  # Staging environment configuration
+  NODE_ENV: staging
+  FRONTEND_URL: https://chef-chopsky-git-staging.vercel.app
+  AGENT_SERVICE_URL: https://chef-chopsky-staging.up.railway.app
+  
+  # Staging Supabase configuration
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}
+  SUPABASE_SECRET_KEY: ${{ secrets.STAGING_SUPABASE_SECRET_KEY }}
+  
+  # OpenAI API key for staging (shared with production)
+  OPENAI_API_KEY: ${{ secrets.STAGING_OPENAI_API_KEY }}
+  
+  # LangSmith configuration for staging
+  LANGCHAIN_TRACING: true
+  LANGCHAIN_PROJECT: chef-chopsky-staging
+  LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+  
+  # Staging retriever configuration
+  RETRIEVER_PROVIDER: pinecone
+  EMBEDDING_MODEL: openai/text-embedding-3-small
+  LANGCHAIN_INDEX_NAME: chef-chopsky-staging
+  APP_ENV: staging
+
+jobs:
+  # Determine deployment target and branch info
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      branch-name: ${{ steps.branch-info.outputs.branch-name }}
+      is-feature-branch: ${{ steps.branch-info.outputs.is-feature-branch }}
+      deployment-url: ${{ steps.branch-info.outputs.deployment-url }}
+      should-deploy: ${{ steps.decision.outputs.should-deploy }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Get branch information
+      id: branch-info
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          BRANCH_NAME="${{ github.event.inputs.branch }}"
+        else
+          BRANCH_NAME="${{ github.ref_name }}"
+        fi
+        
+        echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+        
+        # Check if it's a feature branch
+        if [[ "$BRANCH_NAME" =~ ^(feat|feature)/ ]]; then
+          echo "is-feature-branch=true" >> $GITHUB_OUTPUT
+          echo "deployment-url=https://chef-chopsky-git-${BRANCH_NAME//\//-}.vercel.app" >> $GITHUB_OUTPUT
+        else
+          echo "is-feature-branch=false" >> $GITHUB_OUTPUT
+          echo "deployment-url=https://chef-chopsky-git-staging.vercel.app" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "Branch: $BRANCH_NAME"
+        echo "Is feature branch: $([[ "$BRANCH_NAME" =~ ^(feat|feature)/ ]] && echo "true" || echo "false")"
+        echo "Deployment URL: $([[ "$BRANCH_NAME" =~ ^(feat|feature)/ ]] && echo "https://chef-chopsky-git-${BRANCH_NAME//\//-}.vercel.app" || echo "https://chef-chopsky-git-staging.vercel.app")"
+        
+    - name: Deployment decision
+      id: decision
+      run: |
+        if [ "${{ github.event.inputs.force_deploy }}" = "true" ]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+          echo "🚀 Force deployment requested - proceeding despite test results"
+        else
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+          echo "✅ Proceeding with staging deployment"
+        fi
+
+  # Pre-deployment validation and testing
+  validate:
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm run install:all
+      
+    - name: Lint code
+      run: npm run lint
+      
+    - name: Run unit tests
+      run: |
+        echo "🧪 Running frontend unit tests..."
+        cd frontend && npm run test:unit
+        echo "🤖 Running agent unit tests..."
+        cd .. && cd agent && npm run test:unit
+      
+    - name: Build applications
+      run: npm run build
+      
+    - name: Run integration tests
+      run: |
+        echo "🧪 Running integration tests..."
+        cd frontend && npm run test:integration
+        cd ../agent && npm run test:integration
+      
+    - name: Security audit
+      run: |
+        npm audit --audit-level=moderate
+        cd frontend && npm audit --audit-level=moderate
+        cd ../agent && npm audit --audit-level=moderate
+
+  # Deploy agent to Railway (staging environment)
+  deploy-agent:
+    runs-on: ubuntu-latest
+    needs: [setup, validate]
+    if: needs.setup.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install Railway CLI
+      run: |
+        curl -fsSL https://railway.app/install.sh | sh
+        echo "$HOME/.railway/bin" >> $GITHUB_PATH
+        
+    - name: Login to Railway
+      run: railway login --token ${{ secrets.RAILWAY_STAGING_TOKEN }}
+      
+    - name: Link Railway staging project
+      run: |
+        cd agent
+        railway link ${{ secrets.RAILWAY_STAGING_PROJECT_ID }}
+        
+    - name: Set Railway staging environment variables
+      run: |
+        cd agent
+        railway variables set NODE_ENV=staging
+        railway variables set PORT=3001
+        railway variables set OPENAI_API_KEY=${{ secrets.STAGING_OPENAI_API_KEY }}
+        railway variables set LANGCHAIN_TRACING=true
+        railway variables set LANGCHAIN_PROJECT=chef-chopsky-staging
+        railway variables set LANGCHAIN_API_KEY=${{ secrets.LANGCHAIN_API_KEY }}
+        railway variables set FRONTEND_URL=${{ needs.setup.outputs.deployment-url }}
+        railway variables set RETRIEVER_PROVIDER=pinecone
+        railway variables set EMBEDDING_MODEL=openai/text-embedding-3-small
+        railway variables set LANGCHAIN_INDEX_NAME=chef-chopsky-staging
+        railway variables set APP_ENV=staging
+        
+    - name: Deploy to Railway staging
+      run: |
+        cd agent
+        railway up --detach
+        
+    - name: Wait for Railway deployment
+      run: |
+        echo "⏳ Waiting for Railway staging deployment to complete..."
+        sleep 30
+        
+    - name: Verify Railway staging deployment
+      run: |
+        echo "🔍 Verifying Railway staging deployment..."
+        curl -f https://chef-chopsky-staging.up.railway.app/health || {
+          echo "❌ Railway staging deployment health check failed"
+          exit 1
+        }
+        echo "✅ Railway staging deployment successful"
+
+  # Deploy frontend to Vercel (preview deployment)
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: [setup, validate]
+    if: needs.setup.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install Vercel CLI
+      run: npm install -g vercel
+      
+    - name: Login to Vercel
+      run: vercel login --token ${{ secrets.VERCEL_TOKEN }}
+      
+    - name: Link Vercel project
+      run: |
+        cd frontend
+        vercel link --yes --project ${{ secrets.VERCEL_PROJECT_ID }}
+        
+    - name: Set Vercel staging environment variables
+      run: |
+        cd frontend
+        echo "${{ secrets.STAGING_SUPABASE_URL }}" | vercel env add NEXT_PUBLIC_SUPABASE_URL preview
+        echo "${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}" | vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY preview
+        echo "${{ secrets.STAGING_SUPABASE_SECRET_KEY }}" | vercel env add SUPABASE_SECRET_KEY preview
+        echo "https://chef-chopsky-staging.up.railway.app" | vercel env add AGENT_SERVICE_URL preview
+        echo "staging" | vercel env add NODE_ENV preview
+        echo "staging" | vercel env add NEXT_PUBLIC_APP_ENV preview
+        
+    - name: Deploy to Vercel preview
+      run: |
+        cd frontend
+        vercel --yes
+        
+    - name: Wait for Vercel deployment
+      run: |
+        echo "⏳ Waiting for Vercel preview deployment to complete..."
+        sleep 30
+        
+    - name: Get deployment URL
+      id: deployment-url
+      run: |
+        cd frontend
+        DEPLOYMENT_URL=$(vercel ls --json | jq -r '.[0].url')
+        echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+        echo "Deployment URL: $DEPLOYMENT_URL"
+        
+    - name: Verify Vercel deployment
+      run: |
+        echo "🔍 Verifying Vercel preview deployment..."
+        curl -f ${{ steps.deployment-url.outputs.deployment-url }} || {
+          echo "❌ Vercel preview deployment health check failed"
+          exit 1
+        }
+        echo "✅ Vercel preview deployment successful"
+
+  # Post-deployment validation
+  post-deployment-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, deploy-agent, deploy-frontend]
+    if: always() && (needs.deploy-agent.result == 'success' && needs.deploy-frontend.result == 'success')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install Playwright browsers
+      run: cd frontend && npx playwright install --with-deps chromium
+      
+    - name: Run staging health checks
+      run: |
+        echo "🔍 Running staging health checks..."
+        
+        # Check agent health
+        curl -f https://chef-chopsky-staging.up.railway.app/health || {
+          echo "❌ Agent staging health check failed"
+          exit 1
+        }
+        echo "✅ Agent staging health check passed"
+        
+        # Check frontend health (using deployment URL from previous step)
+        FRONTEND_URL="${{ needs.deploy-frontend.outputs.deployment-url }}"
+        if [ -n "$FRONTEND_URL" ]; then
+          curl -f "$FRONTEND_URL" || {
+            echo "❌ Frontend staging health check failed"
+            exit 1
+          }
+          echo "✅ Frontend staging health check passed"
+        else
+          echo "⚠️ Frontend URL not available, skipping health check"
+        fi
+        
+    - name: Run staging E2E tests
+      run: |
+        echo "🎭 Running staging E2E tests..."
+        cd frontend
+        npm run test:e2e:staging -- --grep "staging services health check"
+        npm run test:e2e:staging -- --grep "staging home page loads correctly"
+        
+    - name: Verify environment isolation
+      run: |
+        echo "🔒 Verifying staging environment isolation..."
+        
+        # Check that staging URLs are different from production
+        STAGING_AGENT=$(curl -s https://chef-chopsky-staging.up.railway.app/health | jq -r '.service')
+        
+        if [[ "$STAGING_AGENT" == *"staging"* ]]; then
+          echo "✅ Staging environment isolation verified"
+        else
+          echo "❌ Staging environment isolation check failed"
+          exit 1
+        fi
+
+  # Staging deployment notifications
+  notify:
+    runs-on: ubuntu-latest
+    needs: [setup, validate, deploy-agent, deploy-frontend, post-deployment-tests]
+    if: always()
+    
+    steps:
+    - name: Determine deployment status
+      id: status
+      run: |
+        if [ "${{ needs.validate.result }}" == "success" ] && 
+           [ "${{ needs.deploy-agent.result }}" == "success" ] && 
+           [ "${{ needs.deploy-frontend.result }}" == "success" ] && 
+           [ "${{ needs.post-deployment-tests.result }}" == "success" ]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+          echo "message=✅ Staging deployment completed successfully!" >> $GITHUB_OUTPUT
+        else
+          echo "status=failure" >> $GITHUB_OUTPUT
+          echo "message=❌ Staging deployment failed. Check the logs for details." >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Send success notification
+      if: steps.status.outputs.status == 'success'
+      run: |
+        echo "🚀 Staging Deployment Success!"
+        echo "Branch: ${{ needs.setup.outputs.branch-name }}"
+        echo "Frontend: ${{ needs.deploy-frontend.outputs.deployment-url }}"
+        echo "Agent: https://chef-chopsky-staging.up.railway.app"
+        echo "Health Check: https://chef-chopsky-staging.up.railway.app/health"
+        
+    - name: Send failure notification
+      if: steps.status.outputs.status == 'failure'
+      run: |
+        echo "❌ Staging Deployment Failed!"
+        echo "Branch: ${{ needs.setup.outputs.branch-name }}"
+        echo "Check the workflow logs for details."
+        echo "Validate: ${{ needs.validate.result }}"
+        echo "Deploy Agent: ${{ needs.deploy-agent.result }}"
+        echo "Deploy Frontend: ${{ needs.deploy-frontend.result }}"
+        echo "Post-deployment Tests: ${{ needs.post-deployment-tests.result }}"
+        
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ needs.setup.outputs.branch-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ${{ steps.status.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Message:** ${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Deployment Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Validation:** ${{ needs.validate.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Agent Deployment:** ${{ needs.deploy-agent.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend Deployment:** ${{ needs.deploy-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Post-deployment Tests:** ${{ needs.post-deployment-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Staging URLs" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend:** ${{ needs.deploy-frontend.outputs.deployment-url }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Agent:** https://chef-chopsky-staging.up.railway.app" >> $GITHUB_STEP_SUMMARY
+        echo "- **Health Check:** https://chef-chopsky-staging.up.railway.app/health" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🎯 Next Steps" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.status.outputs.status }}" == "success" ]; then
+          echo "- Test the staging environment functionality" >> $GITHUB_STEP_SUMMARY
+          echo "- Share staging URL with team for review" >> $GITHUB_STEP_SUMMARY
+          echo "- Proceed with production deployment if ready" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- Review the workflow logs for error details" >> $GITHUB_STEP_SUMMARY
+          echo "- Fix any issues and retry deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- Check service-specific dashboards (Vercel, Railway, Supabase)" >> $GITHUB_STEP_SUMMARY
+        fi

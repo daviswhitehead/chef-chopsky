@@ -400,4 +400,18 @@ export class ProductionTestUtils {
   ): Promise<void> {
     await ProductionTestUtils.validateLLMResponse(page, '[class*="bg-gray-100"]', [], context);
   }
+
+  /**
+   * Complete chat flow test - send message and validate response
+   */
+  static async testCompleteChatFlow(page: Page, message: string): Promise<void> {
+    // Send the message
+    await ProductionTestUtils.sendMessage(page, message);
+    
+    // Wait for loading to complete
+    await ProductionTestUtils.waitForLoadingToComplete(page);
+    
+    // Validate the response
+    await ProductionTestUtils.validateAnyResponse(page, 'Chat response');
+  }
 }

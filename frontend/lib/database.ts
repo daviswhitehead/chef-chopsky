@@ -306,17 +306,29 @@ export class DatabaseService {
 
 // Use mock database for testing when Supabase is not properly configured
 // NEVER use mock database in production - fail loudly instead
-const isTestMode = false; // Use real Supabase database
+const isTestMode = () => {
+  // In CI builds, use mock database for build process but allow real database for runtime
+  if (process.env.CI === 'true') {
+    return true; // Always use mock in CI for build safety
+  }
+  
+  return process.env.NODE_ENV === 'test' || 
+         !process.env.NEXT_PUBLIC_SUPABASE_URL || 
+         process.env.NEXT_PUBLIC_SUPABASE_URL.includes('test.supabase.co') ||
+         process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project-ref') ||
+         process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder.supabase.co');
+};
 
 // Production safety check - fail loudly if trying to use mock in production
-if (process.env.NODE_ENV === 'production' && isTestMode) {
+// BUT allow CI builds to proceed (Next.js sets NODE_ENV=production during build)
+if (process.env.NODE_ENV === 'production' && isTestMode() && !process.env.CI) {
   console.error('🚨 CRITICAL ERROR: Cannot use mock database in production!');
   console.error('🚨 Production environment requires real Supabase configuration');
   console.error('🚨 This is a CRITICAL configuration error that must be fixed immediately.');
   throw new Error('CRITICAL CONFIGURATION ERROR: Mock database cannot be used in production environment');
 }
 
-console.log('Database: Using mock database for testing (isTestMode =', isTestMode, ')');
+console.log('Database: Using mock database for testing (isTestMode =', isTestMode(), ')');
 
 // Use global variable to persist mock database across requests
 declare global {
@@ -324,7 +336,7 @@ declare global {
 }
 
 export const db = (() => {
-  if (isTestMode) {
+  if (isTestMode()) {
     if (!global.__mockDb) {
       global.__mockDb = new MockDatabaseService();
     }

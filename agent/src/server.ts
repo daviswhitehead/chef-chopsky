@@ -1,10 +1,18 @@
+// CRITICAL: Load environment variables FIRST, before any LangChain imports
+import './env-loader.js';
+
 import express from 'express';
 import cors from 'cors';
-import { config } from './config/index.js';
+import { config, validateConfig } from './config/index.js';
 import { graph } from './retrieval_graph/graph.js';
 import { ensureConfiguration } from './retrieval_graph/configuration.js';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { v4 as uuidv4 } from 'uuid';
+
+// Validate configuration on server startup (but not during test imports)
+if (process.env.NODE_ENV !== 'test') {
+  validateConfig();
+}
 
 // Fix SSL certificate issues in development
 if (config.nodeEnv === 'development') {
@@ -61,31 +69,9 @@ function generateMockResponse(userMessage: string): string {
 
 const app = express();
 
-// Environment validation on startup
+// Environment validation is now handled in config/index.ts
 console.log('🔧 Agent Service Startup Validation...');
-const isMockMode = config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here';
-
-if (isMockMode) {
-  if (config.nodeEnv === 'production') {
-    console.error('🚨 CRITICAL ERROR: Cannot run in production with invalid OpenAI API key!');
-    console.error('🚨 Production environment requires a valid OPENAI_API_KEY');
-    console.error('🚨 Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
-    console.error('🚨 This is a CRITICAL configuration error that must be fixed immediately.');
-    console.error('🚨 Agent service will NOT start in production with invalid API key.');
-    process.exit(1);
-  } else {
-    console.warn('⚠️  WARNING: Agent service is starting in MOCK MODE!');
-    console.warn('⚠️  You will get fake responses instead of real AI responses.');
-    console.warn('⚠️  To fix this:');
-    console.warn('⚠️  1. Copy agent/.env.example to agent/.env');
-    console.warn('⚠️  2. Edit agent/.env and set OPENAI_API_KEY=your_real_api_key');
-    console.warn('⚠️  3. Restart the agent service');
-    console.warn('⚠️  Current API key status:', config.openaiApiKey ? 'Set but invalid' : 'Not set');
-  }
-} else {
-  console.log('✅ Agent service configured with real OpenAI API key');
-}
-console.log('🔧 Environment validation complete');
+console.log('✅ Environment validation complete');
 
 // Middleware
 app.use(cors({
@@ -114,6 +100,26 @@ app.get('/health', (_req, res) => {
   });
 });
 
+// Debug endpoint to show configuration (development only)
+app.get('/debug/config', (_req, res) => {
+  if (config.nodeEnv === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  
+  return res.json({
+    environment: config.nodeEnv,
+    openaiApiKey: config.openaiApiKey ? `${config.openaiApiKey.substring(0, 10)}...` : 'Not set',
+    langsmithApiKey: config.langsmithApiKey ? `${config.langsmithApiKey.substring(0, 10)}...` : 'Not set',
+    langsmithTracing: config.langsmithTracing,
+    langsmithProject: config.langsmithProject,
+    retrieverProvider: config.retrieverProvider,
+    embeddingModel: config.embeddingModel,
+    appEnv: config.appEnv,
+    serverPort: config.serverPort,
+    serverHost: config.serverHost
+  });
+});
+
 // Chat endpoint
 app.post('/chat', (req, res) => {
   const startTime = Date.now();
@@ -122,6 +128,7 @@ app.post('/chat', (req, res) => {
   
   console.log(`[${requestId}] 🚀 POST /chat - Request started at ${new Date().toISOString()}`);
   
+  // Handle the async operation properly to avoid floating promise
   (async () => {
     try {
     // Validate request
@@ -156,19 +163,23 @@ app.post('/chat', (req, res) => {
     });
     console.log(`[${requestId}] ✅ Messages converted to LangChain format`);
 
-    // Create configuration
+    // Create configuration using environment-driven settings
     console.log(`[${requestId}] ⚙️ Creating agent configuration`);
     const agentConfig = ensureConfiguration({
       configurable: {
         userId: conversation_id, // Use conversation_id as userId for now
-        embeddingModel: 'openai/text-embedding-3-small',
-        retrieverProvider: 'memory', // Start with memory for simplicity
+        embeddingModel: config.embeddingModel, // Use environment-driven embedding model
+        retrieverProvider: config.retrieverProvider, // Use environment-driven retriever provider
         searchKwargs: {},
         responseModel: 'openai/gpt-5-nano',
         queryModel: 'openai/gpt-5-nano'
       }
     });
-    console.log(`[${requestId}] ✅ Agent configuration created`);
+    console.log(`[${requestId}] ✅ Agent configuration created with:`, {
+      retrieverProvider: config.retrieverProvider,
+      embeddingModel: config.embeddingModel,
+      appEnv: config.appEnv
+    });
 
     // Check if we're in mock mode (for local testing with test-key or missing key)
     const isMockMode = config.openaiApiKey === 'test-key' || !config.openaiApiKey || config.openaiApiKey === 'your_openai_api_key_here';
@@ -297,25 +308,28 @@ app.post('/chat', (req, res) => {
       assistant_message: assistantMessage,
       timing_ms
     });
-
   } catch (error) {
     const timing_ms = Date.now() - startTime;
     console.error(`[${requestId}] 💥 Chat endpoint error after ${timing_ms}ms:`, error);
     
-      return res.status(500).json({
+    return res.status(500).json({
+      error: 'Agent processing failed',
+      message: config.nodeEnv === 'development' ? (error as Error).message : 'Something went wrong',
+      timing_ms
+    });
+  }
+  })().catch((error) => {
+    const timing_ms = Date.now() - startTime;
+    console.error(`[${requestId}] 💥 Unhandled promise rejection after ${timing_ms}ms:`, error);
+    
+    // Only send response if it hasn't been sent yet
+    if (!res.headersSent) {
+      res.status(500).json({
         error: 'Agent processing failed',
         message: config.nodeEnv === 'development' ? (error as Error).message : 'Something went wrong',
         timing_ms
       });
     }
-  })().catch((error) => {
-    const timing_ms = Date.now() - startTime;
-    console.error(`[${requestId}] 💥 Unhandled error after ${timing_ms}ms:`, error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Something went wrong',
-      timing_ms
-    });
   });
 });
 

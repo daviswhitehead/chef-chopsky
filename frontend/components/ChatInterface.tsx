@@ -23,6 +23,17 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { showError, showSuccess, showWarning } = useToast();
 
+  // Debug logging for ChatInterface rendering
+  useEffect(() => {
+    console.log('🎯 ChatInterface rendered:', {
+      conversationId,
+      userId,
+      initialMessagesCount: initialMessages.length,
+      isLoading,
+      inputValue: inputValue.length > 0 ? `${inputValue.substring(0, 20)}...` : 'empty'
+    });
+  }, [conversationId, userId, initialMessages.length, isLoading, inputValue]);
+
   // Update messages when initialMessages prop changes
   useEffect(() => {
     setMessages(initialMessages);
@@ -69,6 +80,33 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
       if (retryAttempt === 0) {
         setMessages(prev => [...prev, userMessage]);
         onMessageSent?.(userMessage);
+      }
+
+      // Persist user message immediately to ensure it survives page reloads
+      let persistedUserMessage: Message | null = null;
+      if (retryAttempt === 0) {
+        try {
+          console.log('💾 Persisting user message immediately...');
+          const persistResponse = await fetch('/api/conversations/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              conversation_id: conversationId,
+              role: 'user',
+              content: content,
+              metadata: { user_id: userId, source: 'frontend_immediate' }
+            })
+          });
+          
+          if (persistResponse.ok) {
+            persistedUserMessage = await persistResponse.json();
+            console.log('✅ User message persisted immediately:', persistedUserMessage.id);
+          } else {
+            console.warn('⚠️ Failed to persist user message immediately:', persistResponse.status);
+          }
+        } catch (error) {
+          console.warn('⚠️ Error persisting user message immediately:', error);
+        }
       }
 
       // Call the API route which handles both user and assistant message persistence
@@ -314,6 +352,13 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
+              data-testid={
+                message.role === 'user'
+                  ? 'message-user'
+                  : message.metadata?.error
+                  ? 'message-error'
+                  : 'message-assistant'
+              }
               className={`max-w-[70%] rounded-lg px-4 py-2 ${
                 message.role === 'user'
                   ? 'bg-chef-500 text-white'

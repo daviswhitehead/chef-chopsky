@@ -14,7 +14,14 @@ dist
 **/.turbo
 **/.eslintcache
 
+# Environment files (security)
 .env
+.env.local
+.env.staging
+.env.production
+.env.development
+.env.test
+
 .ipynb_checkpoints
 
 

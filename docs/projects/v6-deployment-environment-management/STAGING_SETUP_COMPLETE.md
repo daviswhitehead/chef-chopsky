@@ -44,7 +44,7 @@ The staging environment configuration for Chef Chopsky has been successfully upd
 - **NODE_ENV**: `staging`
 - **LANGCHAIN_PROJECT**: `chef-chopsky-staging`
 - **FRONTEND_URL**: `https://chef-chopsky-staging.vercel.app`
-- **RETRIEVER_PROVIDER**: `memory` (cost-optimized)
+- **RETRIEVER_PROVIDER**: `pinecone` (production parity)
 - **EMBEDDING_MODEL**: `openai/text-embedding-3-small`
 - **LANGCHAIN_INDEX_NAME**: `chef-chopsky-staging`
 - **APP_ENV**: `staging`
@@ -107,7 +107,7 @@ git push origin staging
 - **OpenAI**: Shared with production (pay-per-use)
 
 ### Estimated Monthly Cost
-- **Staging**: $0-5/month (mostly OpenAI API usage)
+- **Staging**: $5-10/month (Pinecone + OpenAI API usage)
 - **Production**: $20-30/month (Pinecone + higher usage)
 
 ## Environment Isolation

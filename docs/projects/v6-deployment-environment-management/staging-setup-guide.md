@@ -14,7 +14,7 @@ This guide walks through creating a complete staging environment for Chef Chopsk
 
 ### Cost Optimization
 - Use free tiers where possible
-- Memory retriever for staging (no Pinecone costs)
+- Pinecone retriever for staging (production parity)
 - Shared OpenAI API key with production
 - Minimal resource allocation
 
@@ -123,8 +123,8 @@ LANGCHAIN_API_KEY=your_langsmith_api_key_here
 # Frontend Integration
 FRONTEND_URL=https://chef-chopsky-staging.vercel.app
 
-# Retriever & Embeddings (Cost-optimized for staging)
-RETRIEVER_PROVIDER=memory
+# Retriever & Embeddings (Production-ready for staging)
+RETRIEVER_PROVIDER=pinecone
 EMBEDDING_MODEL=openai/text-embedding-3-small
 LANGCHAIN_INDEX_NAME=chef-chopsky-staging
 APP_ENV=staging
@@ -232,8 +232,8 @@ export function validateEnvironment() {
 
   // Validate staging-specific configuration
   if (process.env.NODE_ENV === 'staging') {
-    if (process.env.RETRIEVER_PROVIDER === 'pinecone') {
-      console.warn('⚠️ Using Pinecone in staging - consider memory for cost savings')
+    if (process.env.RETRIEVER_PROVIDER === 'memory') {
+      console.warn('⚠️ Using memory retriever in staging - consider pinecone for production parity')
     }
   }
 }

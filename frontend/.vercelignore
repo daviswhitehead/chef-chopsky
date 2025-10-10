@@ -1,0 +1,12 @@
+# Ignore deployments for development branches
+cursor/*
+feat/*
+feature/*
+debug/*
+test/*
+
+# Production project: Only deploy from main branch
+if [ "$VERCEL_PROJECT_NAME" = "chef-chopsky-production" ] && [ "$VERCEL_GIT_COMMIT_REF" != "main" ]; then exit 1; fi
+
+# Staging project: Deploy from staging and main branches only
+if [ "$VERCEL_PROJECT_NAME" = "chef-chopsky-staging" ] && [ "$VERCEL_GIT_COMMIT_REF" != "staging" ] && [ "$VERCEL_GIT_COMMIT_REF" != "main" ]; then exit 1; fi

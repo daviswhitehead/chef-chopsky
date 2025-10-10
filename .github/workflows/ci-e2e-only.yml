@@ -1,0 +1,124 @@
+name: CI E2E Only
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  e2e:
+    name: E2E (shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [ '1/3', '2/3', '3/3' ]
+    # Removed dependencies to run E2E directly
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js Environment
+      uses: ./.github/actions/setup-node
+      with:
+        node-version: '20.x'
+
+    - name: Cache npm
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Install dependencies
+      run: |
+        echo "📦 Installing dependencies with npm ci..."
+        npm ci
+        cd frontend && npm ci
+        cd ../agent && npm ci
+        cd ..
+        echo "✅ Dependencies installed"
+
+        echo "🔍 Verifying ts-jest installation..."
+        cd frontend && npm list ts-jest
+        echo "✅ ts-jest verification complete"
+
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: latest
+        
+    - name: Start Local Supabase
+      run: |
+        echo "🚀 Starting local Supabase (Docker-based)..."
+        cd frontend 
+        # Add retry logic for Docker pulls
+        for i in {1..3}; do
+          echo "Attempt $i to start Supabase..."
+          if supabase start; then
+            echo "✅ Local Supabase started successfully"
+            break
+          else
+            echo "❌ Attempt $i failed, waiting 10s before retry..."
+            sleep 10
+            if [ $i -eq 3 ]; then
+              echo "💥 All attempts failed, exiting"
+              exit 1
+            fi
+          fi
+        done
+        
+    - name: Extract Supabase Credentials
+      run: |
+        echo "🔑 Extracting Supabase credentials..."
+        cd frontend
+        supabase status -o env > /tmp/supabase.env
+        echo "📋 Supabase credentials extracted to /tmp/supabase.env"
+        
+    - name: Set Environment Variables
+      run: |
+        echo "🔧 Setting environment variables from Supabase..."
+        cd frontend
+        export $(cat /tmp/supabase.env | xargs)
+        echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" >> $GITHUB_ENV
+        echo "SUPABASE_SECRET_KEY=$SUPABASE_SECRET_KEY" >> $GITHUB_ENV
+        echo "✅ Environment variables set"
+        
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-1.55.0
+        restore-keys: |
+          playwright-${{ runner.os }}-
+
+    - name: Install Playwright browsers
+      run: |
+        echo "🎭 Installing Playwright browsers..."
+        cd frontend
+        npx playwright install --with-deps
+        echo "✅ Playwright browsers installed"
+
+    - name: Start Services
+      run: |
+        echo "🚀 Starting services for E2E testing..."
+        ./scripts/start-services.sh
+
+    - name: Run E2E Tests
+      run: |
+        echo "🧪 Running E2E tests (shard ${{ matrix.shard }})..."
+        cd frontend
+        npm run test:e2e -- --shard=${{ matrix.shard }}
+
+    - name: Cleanup Services
+      if: always()
+      run: |
+        echo "🧹 Cleaning up services..."
+        pkill -f 'next dev' || true
+        pkill -f 'tsx.*server' || true
+        pkill -f 'npm run dev' || true
+        pkill -f 'npm run server' || true
+        echo "✅ Services cleaned up"

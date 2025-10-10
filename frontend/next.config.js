@@ -6,9 +6,14 @@ const nextConfig = {
   outputFileTracingRoot: __dirname,
   // Fix SSL certificate issues in development
   ...(process.env.NODE_ENV === 'development' && {
-    experimental: {
-      serverComponentsExternalPackages: [],
-    },
+    serverExternalPackages: [],
+  }),
+  // Disable static generation in CI to avoid Html import issues
+  ...(process.env.CI === 'true' && {
+    output: 'standalone',
+    trailingSlash: false,
+    // Use separate build directory for CI
+    distDir: '.next-ci',
   }),
 }
 

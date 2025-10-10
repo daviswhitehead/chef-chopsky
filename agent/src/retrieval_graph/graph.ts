@@ -35,8 +35,11 @@ async function generateQuery(
       { role: "system", content: systemMessage },
       ...state.messages,
     ];
+    
+    // Get API key from configuration
+    const apiKey = process.env.OPENAI_API_KEY;
     const model = (
-      await loadChatModel(configuration.responseModel)
+      await loadChatModel(configuration.responseModel, apiKey)
     ).withStructuredOutput(SearchQuery);
 
     const generated = await model.invoke(messageValue);
@@ -65,7 +68,9 @@ async function respond(
    */
   const configuration = ensureConfiguration(config);
 
-  const model = await loadChatModel(configuration.responseModel);
+  // Get API key from configuration
+  const apiKey = process.env.OPENAI_API_KEY;
+  const model = await loadChatModel(configuration.responseModel, apiKey);
 
   const retrievedDocs = formatDocs(state.retrievedDocs);
   // Feel free to customize the prompt, model, and other logic!

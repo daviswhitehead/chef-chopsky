@@ -1,4 +1,5 @@
 import { Logger } from '../e2e/fixtures/logger';
+import { checkAgentServiceStatus, logServiceStatus } from './test-utils';
 
 describe('Full Flow Integration Tests', () => {
   const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -49,7 +50,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Conversation creation API validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
 
       // Step 2: Test message sending via frontend API
@@ -79,7 +80,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Message sending API validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
 
       // Step 3: Test message persistence retrieval
@@ -108,7 +109,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Message persistence API validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
 
       Logger.info('✅ Complete user journey integration test completed');
@@ -156,7 +157,7 @@ describe('Full Flow Integration Tests', () => {
           }
         } catch (error) {
           Logger.info(`✅ ${testCase.type} message API validation (service down expected)`);
-          expect(error.message).toContain('Network request failed');
+          expect(error.message).toContain('fetch failed');
         }
       }
 
@@ -192,7 +193,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Agent service down API validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -230,7 +231,7 @@ describe('Full Flow Integration Tests', () => {
           }
         } catch (error) {
           Logger.info('✅ Invalid data API validation (service down expected)');
-          expect(error.message).toContain('Network request failed');
+          expect(error.message).toContain('fetch failed');
         }
       }
     });
@@ -260,7 +261,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Network issues API validation (service down expected)');
-        expect(error.message).toMatch(/Network request failed|The operation was aborted due to timeout/);
+        expect(error.message).toMatch(/fetch failed|The operation was aborted due to timeout/);
       }
     });
   });
@@ -273,15 +274,20 @@ describe('Full Flow Integration Tests', () => {
       // In a real scenario, we would check the LangSmith dashboard for traces
       // For now, we validate the configuration is correct
       
-      const agentHealthResponse = await fetch(`${AGENT_URL}/health`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(2000),
-      });
-
-      if (agentHealthResponse.ok) {
-        Logger.warn('⚠️ Agent service is running (unexpected in test environment)');
-        const healthData = await agentHealthResponse.json();
-        expect(healthData.status).toBe('ok');
+      const serviceStatus = await checkAgentServiceStatus();
+      logServiceStatus('Agent', serviceStatus);
+      
+      if (serviceStatus.isRunning) {
+        Logger.info('✅ Agent service is running - validating LangSmith configuration');
+        const agentHealthResponse = await fetch(`${AGENT_URL}/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(2000),
+        });
+        
+        if (agentHealthResponse.ok) {
+          const healthData = await agentHealthResponse.json();
+          expect(healthData.status).toBe('ok');
+        }
         
         // Validate that LangSmith environment variables are set
         // This would be checked in the agent service configuration
@@ -359,7 +365,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Message persistence API validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -416,7 +422,7 @@ describe('Full Flow Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Message ordering API validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
   });

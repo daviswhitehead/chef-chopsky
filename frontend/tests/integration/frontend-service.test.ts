@@ -68,7 +68,7 @@ describe('Frontend Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Missing conversationId error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -98,7 +98,7 @@ describe('Frontend Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Missing userId error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -128,7 +128,7 @@ describe('Frontend Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Missing messages error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -161,7 +161,7 @@ describe('Frontend Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Invalid message format error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -186,7 +186,7 @@ describe('Frontend Service Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Malformed JSON error handling (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
   });
@@ -236,7 +236,7 @@ describe('Frontend Service Integration Tests', () => {
           }
         } catch (error) {
           Logger.info(`✅ HTTP method validation for ${method} (service down expected)`);
-          expect(error.message).toMatch(/Network request failed|Request with GET\/HEAD method cannot have body/);
+          expect(error.message).toMatch(/fetch failed|Request with GET\/HEAD method cannot have body|Body not allowed for GET or HEAD requests/);
         }
       }
     });

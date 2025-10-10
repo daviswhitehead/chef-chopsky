@@ -51,7 +51,7 @@ describe('High-Value Integration Tests', () => {
       } catch (error) {
         // Service is down (expected) - test passes
         Logger.info('✅ Frontend API route structure validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -80,7 +80,7 @@ describe('High-Value Integration Tests', () => {
       } catch (error) {
         // Service is down (expected) - test passes
         Logger.info('✅ Agent API route structure validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
   });
@@ -103,7 +103,7 @@ describe('High-Value Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Frontend health check endpoint validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
 
@@ -126,7 +126,7 @@ describe('High-Value Integration Tests', () => {
         }
       } catch (error) {
         Logger.info('✅ Agent health check endpoint validation (service down expected)');
-        expect(error.message).toContain('Network request failed');
+        expect(error.message).toContain('fetch failed');
       }
     });
   });
@@ -165,7 +165,7 @@ describe('High-Value Integration Tests', () => {
           }
         } catch (error) {
           Logger.info('✅ Frontend API request validation (service down expected)');
-          expect(error.message).toContain('Network request failed');
+          expect(error.message).toContain('fetch failed');
         }
       }
     });
@@ -201,7 +201,7 @@ describe('High-Value Integration Tests', () => {
           }
         } catch (error) {
           Logger.info('✅ Agent API request validation (service down expected)');
-          expect(error.message).toContain('Network request failed');
+          expect(error.message).toContain('fetch failed');
         }
       }
     });

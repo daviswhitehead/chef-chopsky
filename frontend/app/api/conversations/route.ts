@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/database';
+import { supabase } from '../../../lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create conversation
+    // If an explicit id is provided, create the conversation with that id directly
+    if (id) {
+      console.log('API: Creating conversation with explicit id via Supabase insert...');
+      try {
+        const { data, error } = await supabase
+          .from('conversations')
+          .insert({ id, user_id, title, metadata })
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        console.log('API: Created conversation with explicit id:', data?.id);
+        return NextResponse.json(data);
+      } catch (e: any) {
+        console.error('API: Supabase insert error:', e);
+        // Fallback: create via db service without explicit id
+        console.log('API: Falling back to db.createConversation...');
+        const fallback = await db.createConversation(user_id, title, metadata);
+        console.log('API: Fallback conversation created:', fallback?.id);
+        return NextResponse.json(fallback, { status: 201 });
+      }
+    }
+
+    // Otherwise, create conversation using database service
     console.log('API: Calling db.createConversation...');
     const conversation = await db.createConversation(user_id, title, metadata);
     console.log('API: Created conversation:', conversation);

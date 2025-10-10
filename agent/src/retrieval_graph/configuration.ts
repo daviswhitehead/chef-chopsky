@@ -7,6 +7,7 @@ import {
   QUERY_SYSTEM_PROMPT_TEMPLATE,
 } from "./prompts.js";
 import { Annotation } from "@langchain/langgraph";
+import { config as appConfig } from "../config/index.js";
 
 /**
  * typeof ConfigurationAnnotation.State class for indexing and retrieval operations.
@@ -53,12 +54,19 @@ export function ensureIndexConfiguration(
   const configurable = (config?.configurable || {}) as Partial<
     typeof IndexConfigurationAnnotation.State
   >;
+  
+  // Use imported config
+  const { retrieverProvider, embeddingModel, appEnv } = appConfig;
+  
   return {
     userId: configurable.userId || "default", // Give a default user for shared docs
-    embeddingModel:
-      configurable.embeddingModel || "openai/text-embedding-3-small",
-    retrieverProvider: configurable.retrieverProvider || "memory",
-    searchKwargs: configurable.searchKwargs || {},
+    embeddingModel: configurable.embeddingModel || embeddingModel,
+    retrieverProvider: configurable.retrieverProvider || (retrieverProvider as "elastic" | "elastic-local" | "pinecone" | "mongodb" | "memory"),
+    searchKwargs: {
+      ...configurable.searchKwargs,
+      // Add environment discriminator to prevent cross-environment data bleed
+      env: appEnv,
+    },
   };
 }
 

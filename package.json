@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --kill-others --prefix-colors \"blue,green\" \"npm run dev:frontend\" \"npm run dev:agent\"",
-    "dev:frontend": "cd frontend && PORT=3000 npm run dev",
+    "dev:supabase": "./scripts/start-dev-with-supabase.sh",
+    "dev:frontend": "./scripts/start-frontend-with-supabase.sh",
+    "dev:frontend:supabase": "./scripts/start-frontend-with-supabase.sh",
     "dev:agent": "cd agent && PORT=3001 npm run server:dev",
     "build": "npm run build:frontend && npm run build:agent",
     "build:frontend": "cd frontend && npm run build",
@@ -31,13 +33,33 @@
     "dev:clean": "./scripts/start-dev.sh",
     "setup": "./scripts/setup-environment.sh",
     "setup:env": "./scripts/setup-environment.sh",
-    "mcp:browser-tools-server": "npx @agentdeskai/browsertools-mcp@latest"
+    "supabase:start": "cd frontend && supabase start",
+    "supabase:stop": "cd frontend && supabase stop",
+    "supabase:reset": "cd frontend && supabase db reset",
+    "supabase:status": "cd frontend && supabase status",
+    "supabase:env:copy": "./scripts/supabase-get-credentials.sh",
+    "mcp:browser-tools-server": "npx @agentdeskai/browsertools-mcp@latest",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.3"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=20.0.0",
     "npm": ">=8.0.0"
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,jsx,ts,tsx}": [
+      "cd frontend && npx eslint --fix",
+      "cd frontend && npx eslint",
+      "cd frontend && npx tsc --noEmit"
+    ],
+    "agent/src/**/*.{js,ts}": [
+      "cd agent && npx eslint --fix",
+      "cd agent && npx eslint",
+      "cd agent && npx tsc --noEmit"
+    ]
   }
 }

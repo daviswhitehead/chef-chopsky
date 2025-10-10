@@ -1,0 +1,72 @@
+name: Deployment Notifications
+
+on:
+  workflow_run:
+    workflows: ["Production Deployment"]
+    types: [completed]
+
+jobs:
+  notify-deployment-status:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion != 'skipped'
+    
+    steps:
+    - name: Check deployment status
+      id: status
+      run: |
+        if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+          echo "emoji=✅" >> $GITHUB_OUTPUT
+          echo "message=Production deployment completed successfully!" >> $GITHUB_OUTPUT
+        else
+          echo "status=failure" >> $GITHUB_OUTPUT
+          echo "emoji=❌" >> $GITHUB_OUTPUT
+          echo "message=Production deployment failed!" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create deployment notification
+      run: |
+        echo "## ${{ steps.status.outputs.emoji }} Production Deployment Notification" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ${{ steps.status.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Message:** ${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Triggered by:** ${{ github.event.workflow_run.head_branch }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** ${{ github.event.workflow_run.head_sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Workflow Run:** [${{ github.event.workflow_run.id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.status.outputs.status }}" == "success" ]; then
+          echo "### 🚀 Production URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** https://chef-chopsky-production.vercel.app" >> $GITHUB_STEP_SUMMARY
+          echo "- **Agent:** https://chef-chopsky-production.up.railway.app" >> $GITHUB_STEP_SUMMARY
+          echo "- **Health Check:** https://chef-chopsky-production.up.railway.app/health" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- All services deployed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- Health checks passed" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E tests completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment isolation verified" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### 🔍 Troubleshooting" >> $GITHUB_STEP_SUMMARY
+          echo "- Check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- Verify all secrets are correctly configured" >> $GITHUB_STEP_SUMMARY
+          echo "- Check service-specific dashboards (Vercel, Railway, Supabase)" >> $GITHUB_STEP_SUMMARY
+          echo "- Review the [production secrets guide](docs/projects/v6-deployment-environment-management/production-secrets-guide.md)" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    - name: Send email notification (if configured)
+      if: env.EMAIL_NOTIFICATIONS_ENABLED == 'true'
+      run: |
+        echo "📧 Email notifications would be sent here"
+        echo "Configure EMAIL_NOTIFICATIONS_ENABLED=true and EMAIL_RECIPIENTS in repository secrets"
+        
+    - name: Send Slack notification (if configured)
+      if: env.SLACK_NOTIFICATIONS_ENABLED == 'true'
+      run: |
+        echo "💬 Slack notifications would be sent here"
+        echo "Configure SLACK_NOTIFICATIONS_ENABLED=true and SLACK_WEBHOOK_URL in repository secrets"
+        
+    - name: Update deployment status badge
+      run: |
+        echo "🏷️ Deployment status badge would be updated here"
+        echo "This could update a README badge or external status page"

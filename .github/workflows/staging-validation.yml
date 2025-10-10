@@ -1,0 +1,78 @@
+name: Staging Validation
+
+# DISABLED: Only running ci.yml for now
+# on:
+#   push:
+#     branches: [ main, develop ]
+#   pull_request:
+#     branches: [ main, develop ]
+
+env:
+  # Global staging environment
+  NODE_ENV: test
+  LOG_LEVEL: info
+  
+  # LangSmith configuration for staging
+  LANGCHAIN_TRACING: true
+  LANGCHAIN_PROJECT: chef-chopsky-staging
+  LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+  
+  # OpenAI API key for staging tests
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  # Staging E2E tests (tests against live staging environment)
+  staging-e2e:
+    name: Staging E2E Tests
+    runs-on: ubuntu-latest
+    
+    env:
+      # Staging environment URLs
+      STAGING_FRONTEND_URL: https://chef-chopsky-git-staging.vercel.app
+      STAGING_AGENT_URL: https://chef-chopsky-staging.up.railway.app
+      
+      # Staging Supabase configuration (separate from CI test database)
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.STAGING_SUPABASE_SECRET_KEY }}
+    
+    steps:
+    - name: Setup Node.js Environment
+      uses: ./.github/actions/setup-node
+      with:
+        node-version: '20.x'
+      
+    - name: Install Playwright browsers
+      run: cd frontend && npx playwright install --with-deps chromium
+      
+    - name: Wait for staging services to be ready
+      run: |
+        echo "⏳ Checking staging services availability..."
+        if curl -f https://chef-chopsky-git-staging.vercel.app >/dev/null 2>&1; then
+          echo "✅ Staging frontend is available"
+        else
+          echo "⚠️ Staging frontend is not available (may not be deployed)"
+        fi
+        
+        if curl -f https://chef-chopsky-staging.up.railway.app/health >/dev/null 2>&1; then
+          echo "✅ Staging agent is available"
+        else
+          echo "⚠️ Staging agent is not available"
+        fi
+        
+        echo "🎭 Proceeding with staging E2E tests (will handle service unavailability gracefully)"
+        
+    - name: Run staging E2E tests
+      run: |
+        echo "🎭 Running staging E2E tests..."
+        cd frontend && npm run test:e2e:staging
+        
+    - name: Upload staging test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: staging-e2e-results
+        path: |
+          frontend/test-results/
+          frontend/playwright-report/
+        retention-days: 7

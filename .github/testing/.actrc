@@ -1,0 +1,9 @@
+# Act configuration for local CI execution
+# Use ubuntu-latest runner
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+# Enable verbose logging for cursor agent access
+-v
+# Use combined CI environment file
+--env-file .github/testing/.env.ci
+# Fix Apple M-series chip compatibility
+--container-architecture linux/amd64

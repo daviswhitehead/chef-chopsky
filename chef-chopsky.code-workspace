@@ -5,6 +5,7 @@
 		}
 	],
 	"settings": {
-		"markdown.validate.enabled": true
+		"markdown.validate.enabled": true,
+		"specstory.cloudSync.enabled": "always"
 	}
 }

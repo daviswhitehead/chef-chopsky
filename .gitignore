@@ -224,3 +224,4 @@ agent/server.log
 # Environment files
 .env.production
 .env.staging
+.github/testing/.env.ci

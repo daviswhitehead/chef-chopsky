@@ -4,6 +4,15 @@
 .env.development.local
 .env.test.local
 .env.production.local
+.env.development
+.env.test
+.env.production
+.env.staging
+.env.ci
 !.env.example
+!.env.local.example
+!.env.ci.example
+!.env.staging.example
+!.env.production.example
 # SpecStory derived-cursor-rules.mdc backup files
 .specstory/ai_rules_backups/*
