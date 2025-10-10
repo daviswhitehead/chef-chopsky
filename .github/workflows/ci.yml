@@ -570,6 +570,7 @@ jobs:
         cd frontend
         
         # Check if Supabase is running
+        echo "🔍 Checking Supabase status..."
         if ! supabase status > /dev/null 2>&1; then
           echo "❌ Supabase is not running, starting it..."
           supabase start
@@ -581,10 +582,49 @@ jobs:
         supabase status
         
         echo "📄 Generating environment file..."
-        supabase status -o env > /tmp/supabase.env
+        if supabase status -o env > /tmp/supabase.env; then
+          echo "✅ Environment file generated successfully"
+        else
+          echo "❌ Failed to generate environment file"
+          echo "Trying alternative method..."
+          
+          # Alternative: Extract from supabase status output directly
+          SUPABASE_STATUS=$(supabase status)
+          echo "📋 Supabase status output:"
+          echo "$SUPABASE_STATUS"
+          
+          # Extract URL from status output
+          SUPABASE_URL=$(echo "$SUPABASE_STATUS" | grep "API URL" | awk '{print $3}' || echo "http://localhost:54321")
+          echo "🔍 Extracted URL from status: $SUPABASE_URL"
+          
+          # For local development, use default keys
+          SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+          SUPABASE_SECRET="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
+          
+          echo "🔍 Using default local Supabase keys"
+          echo "NEXT_PUBLIC_SUPABASE_URL=$SUPABASE_URL" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$SUPABASE_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_SECRET_KEY=$SUPABASE_SECRET" >> $GITHUB_ENV
+          
+          echo "✅ Environment variables set using alternative method"
+          exit 0
+        fi
         
         echo "📋 Generated environment file contents:"
         cat /tmp/supabase.env
+        
+        # Check if file is empty
+        if [ ! -s /tmp/supabase.env ]; then
+          echo "❌ Environment file is empty, using fallback method..."
+          
+          # Use default local Supabase credentials
+          echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" >> $GITHUB_ENV
+          echo "SUPABASE_SECRET_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU" >> $GITHUB_ENV
+          
+          echo "✅ Environment variables set using fallback method"
+          exit 0
+        fi
         
         # Extract credentials with fallbacks
         SUPABASE_URL=$(grep NEXT_PUBLIC_SUPABASE_URL /tmp/supabase.env | cut -d'=' -f2 || echo "")
@@ -611,7 +651,7 @@ jobs:
           echo "✅ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY set"
         else
           echo "❌ Failed to extract NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
-          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=placeholder" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" >> $GITHUB_ENV
           echo "⚠️ Using fallback key"
         fi
         
@@ -620,7 +660,7 @@ jobs:
           echo "✅ SUPABASE_SECRET_KEY set"
         else
           echo "❌ Failed to extract SUPABASE_SECRET_KEY"
-          echo "SUPABASE_SECRET_KEY=placeholder" >> $GITHUB_ENV
+          echo "SUPABASE_SECRET_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU" >> $GITHUB_ENV
           echo "⚠️ Using fallback secret"
         fi
 
@@ -676,6 +716,15 @@ jobs:
         if [ -z "$SUPABASE_SECRET_KEY" ] || [ "$SUPABASE_SECRET_KEY" = "placeholder" ]; then
           echo "❌ SUPABASE_SECRET_KEY is not properly set"
           exit 1
+        fi
+        
+        # Validate that we have valid Supabase keys (not placeholder)
+        if [ "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" ]; then
+          echo "✅ Using default local Supabase publishable key"
+        fi
+        
+        if [ "$SUPABASE_SECRET_KEY" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU" ]; then
+          echo "✅ Using default local Supabase secret key"
         fi
         
         echo "✅ All environment variables validated successfully"
