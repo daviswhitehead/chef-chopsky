@@ -791,7 +791,7 @@ jobs:
         echo "NODE_ENV: $NODE_ENV"
         echo "CI: $CI"
         
-        cd frontend && npx playwright test --shard ${{ matrix.shard }}
+        cd frontend && npx playwright test --shard ${{ matrix.shard }} --reporter=line
 
     - name: Stop services
       if: always()

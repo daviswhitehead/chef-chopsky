@@ -29,11 +29,13 @@ export default function ConversationPage() {
     if (!mounted) return; // Don't run on server side
 
     const loadConversation = async () => {
-      console.log('🔄 Loading conversation via API:', conversationId);
-      console.log('🔄 Current environment:', {
+      console.log('🔍 DEBUGGING: Loading conversation via API:', conversationId);
+      console.log('🔍 DEBUGGING: Current environment:', {
         NODE_ENV: process.env.NODE_ENV,
         NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
-        CI: process.env.CI
+        CI: process.env.CI,
+        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.substring(0, 30) + '...'
       });
 
       // Add a timeout to prevent hanging

@@ -261,6 +261,7 @@ globs: *
     *   Starts Supabase if it's not running (`supabase start`).
     *   Extracts Supabase credentials from the environment file (`/tmp/supabase.env`).
     *   Sets fallback values for the environment variables if extraction fails.
+*   To accurately test error handling for missing `conversation_id` in chat requests, ensure that the error message assertion checks for "Network request failed" OR `"Invalid request"`.
 
 ## DEBUGGING
 
@@ -372,7 +373,7 @@ globs: *
         *   Add Jest retry configuration for CI environments.
             *   Force verbose output in CI to see failed tests.
             *   Show individual test results.
-*   **Agent Service Integration: Handling Missing conversation_id**: To accurately test error handling for missing `conversation_id` in chat requests, ensure that the error message assertion checks for "Network request failed" OR `"Invalid request"`. This accounts for variations in error messages based on the service status.
+*   **Agent Service Integration: Handling Missing conversation_id**: To accurately test error handling for missing `conversation_id` in chat requests, ensure that the error message assertion checks for "Network request failed" OR `"Invalid request"`.
     *   To accurately test error handling for missing `conversation_id` in chat requests, ensure that the error message assertion checks for `"Network request failed"` OR `"Invalid request"`.
 *   **If Supabase environment variables are empty** in E2E tests, ensure that the CI workflow:
     *   Checks if Supabase is running (`supabase status`).
