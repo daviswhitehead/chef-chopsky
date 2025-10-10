@@ -73,7 +73,7 @@ globs: *
         *   **NODE_ENV Consistency**: Use `NODE_ENV=production` specifically for the build step.
         *   **Dynamic Rendering**: Apply `export const dynamic = 'force-dynamic'` to error pages to avoid static generation.
         *   **Separate Build Directory**: Use a dedicated build directory (e.g., `.next-ci`) for CI builds to prevent conflicts.
-        * Custom Error Pages**: Removing custom error pages (`error.tsx` and `not-found.tsx`) may be necessary, allowing Next.js to handle them with its built-in functionality.
+        Custom Error Pages**: Removing custom error pages (`error.tsx` and `not-found.tsx`) may be necessary, allowing Next.js to handle them with its built-in functionality.
 *   **Harden frontend chat API**: guard fetch, safe logging, single retry on transient errors
     *   When performing a fetch to the agent service, ensure the fetch is guarded with a try/catch, and the code performs safe logging.
     *   Implement a single retry on transient errors like AbortError or ECONNREFUSED.
@@ -262,6 +262,137 @@ globs: *
     *   Extracts Supabase credentials from the environment file (`/tmp/supabase.env`).
     *   Sets fallback values for the environment variables if extraction fails.
 *   To accurately test error handling for missing `conversation_id` in chat requests, ensure that the error message assertion checks for "Network request failed" OR `"Invalid request"`.
+*   **Local E2E Test Environment Setup**: Mirror the CI environment locally using Docker Compose for Supabase and other services. Ensure the same environment variables and scripts are used. Create and use `npm run test:e2e:local` script.
+*   **E2E Test Debugging Enhancements**:
+    *   **Screenshots on Failure**: Configure Playwright to automatically capture screenshots when tests fail.
+    *   **Video Recording**: Record test runs for complex failures.
+    *   **Detailed Logging**: Increase the verbosity of console output during test runs.
+    *   **Test Isolation**: Use `--grep` to run individual tests locally for focused debugging.
+    *   **Headful Mode**: Run tests in headful mode (with a visible browser) using `--headed` for visual debugging.
+*   **E2E Test Parallelization and Sharding**: Improve test execution time by implementing local sharding and categorizing tests as fast or slow. Consider selective testing to run only changed test files.
+*   **Mock/Stub Strategy for E2E Tests**: Use deterministic AI responses for UI tests and mock Supabase with local SQLite for faster tests. Implement service stubs for external dependencies.
+*   **Improved CI Feedback Mechanisms**:
+    *   **Fail Fast**: Configure CI to stop on the first test failure.
+    *   **Structured Error Reporting**: Implement structured error output for better analysis.
+    *   **Test Result Artifacts**: Upload detailed test results as artifacts.
+    *   **Notification System**: Integrate Slack/Discord alerts for test failures.
+
+## Local CI/CD with Act
+
+*   **Goal**: Replicate the CI environment locally using Docker and Act to enable faster feedback loops for E2E test debugging.
+    *   **Installation**:
+        ```bash
+        # macOS
+        brew install act
+
+        # Or via curl
+        curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+        ```
+    *   **Configuration**:
+        *   Create `.github/testing/.actrc` in the project root:
+            ```bash
+            # Act configuration for local CI execution
+            # Use ubuntu-latest runner
+            -P ubuntu-latest=catthehacker/ubuntu:act-latest
+            # Enable verbose logging for cursor agent access
+            -v
+            # Use existing environment file
+            --env-file .github/testing/env.ci
+            # Fix Apple M-series chip compatibility
+            --container-architecture linux/amd64
+            ```
+        *   Act uses the existing `.github/testing/env.ci` file for environment variables.
+            *   This file combines both frontend and agent environment variables for CI testing
+            *   Used by Act to run GitHub Actions workflows locally
+        *   The `.github/testing/env.ci` file should contain:
+            *   `OPENAI_API_KEY`: Your OpenAI API key
+            *   `LANGCHAIN_API_KEY`: Your LangChain API key (optional)
+            *   `NEXT_PUBLIC_SUPABASE_URL`: Local Supabase URL
+            *   `SUPABASE_SECRET_KEY`: Local Supabase secret key
+            *   Other required environment variables for both services
+    *   **Direct E2E Runner Script**:
+        *   Create `scripts/run-e2e-local.sh`:
+            ```bash
+            #!/bin/bash
+            # Run E2E tests directly with Act (skip dependencies)
+            # This allows immediate E2E testing without waiting for code-quality and integration tests
+
+            set -e
+
+            echo "🚀 Running E2E tests locally with Act..."
+            echo "📋 This will run the E2E job directly, skipping code-quality and integration tests"
+            echo ""
+
+            # Run E2E tests with Act
+            # -W: Specify workflow file to avoid other workflow issues
+            # -j e2e: Run only the e2e job
+            # --matrix shard:1/1: Run single shard for faster execution
+            # -v: Verbose logging for cursor agent access
+            # --env-file: Use existing .github/testing/env.ci file
+            # --container-architecture: Fix Apple M-series chip compatibility
+            act -W .github/workflows/ci.yml -j e2e --matrix shard:1/1 -v --env-file .github/testing/env.ci --container-architecture linux/amd64
+
+            echo ""
+            echo "✅ E2E tests completed!"
+            ```
+        *   Create `scripts/run-e2e-direct.sh`:
+            ```bash
+            #!/bin/bash
+
+            # Run E2E tests directly, bypassing dependencies
+            echo "🚀 Running E2E tests directly (bypassing dependencies)..."
+            echo "📋 This will run only the E2E job without dependencies"
+            echo ""
+
+            # Clean up any existing processes first
+            echo "🧹 Cleaning up any existing processes..."
+            pkill -f 'next dev' || true
+            pkill -f 'tsx.*server' || true
+            pkill -f 'npm run dev' || true
+            pkill -f 'npm run server' || true
+            sleep 3
+
+            # Run E2E job using E2E-only workflow (no dependencies)
+            echo "🎯 Running E2E job using E2E-only workflow..."
+            act -W .github/workflows/ci-e2e-only.yml -j e2e --matrix shard:1/1 -v --env-file .github/testing/env.ci --container-architecture linux/amd64
+
+            echo ""
+            echo "✅ E2E tests completed!"
+            ```
+        *   Make the script executable: `chmod +x scripts/run-e2e-local.sh` and `chmod +x scripts/run-e2e-direct.sh`
+    *   **Usage**:
+        ```bash
+        # Run all jobs (full CI)
+        act -W .github/workflows/ci.yml
+
+        # Run specific job
+        act -W .github/workflows/ci.yml -j code-quality
+        act -W .github/workflows/ci.yml -j integration-tests-agent
+        act -W .github/workflows/ci.yml -j integration-tests-frontend
+
+        # Run just E2E tests
+        ./scripts/run-e2e-local.sh
+
+        # Run just E2E tests (fastest feedback)
+        ./scripts/run-e2e-direct.sh
+
+        # Run specific E2E shard
+        act -W .github/workflows/ci.yml -j e2e --matrix shard:1/1
+
+        # Run with verbose logging
+        act -W .github/workflows/ci.yml -j e2e -v
+        ```
+    *   **Key Benefits**:
+        *   **No CI changes**: Uses existing `.github/workflows/ci.yml` or `ci-e2e-only.yml`
+        *   **Direct E2E execution**: Skip dependencies with `-j e2e`
+        *   **Terminal logs**: `-v` flag shows all output
+        *   **Local secrets**: Uses `.github/testing/env.ci` file
+        *   **Fast iteration**: No push/pull cycle
+    *   **Expected Timeline**:
+        *   **Setup**: ~15 minutes total
+        *   **First run**: ~5-10 minutes (Docker image pull)
+        *   **Subsequent runs**: ~2-3 minutes
+        *   **Feedback loop**: Seconds instead of minutes
 
 ## DEBUGGING
 
@@ -287,13 +418,6 @@ globs: *
     *   Missing rules
     *   Pre-commit hook scope
     *   That `eslint --fix` only fixes fixable errors, not all ESLint errors
-*   When diagnosing CI integration test failures:
-    *   Review test logs for specific error messages and stack traces
-    *   Check service status and connectivity
-    *   Consider process isolation and timing issues
-    *   Verify environment variable configurations
-    *   Distinguish between test setup issues and application code errors
-*   If pre-commit hooks don't catch all errors, consider that the CI environment might have stricter ESLint rules enabled than your local environment, or that the rule might not be enabled in your local ESLint config, or that the rule might not be enabled in your local ESLint config, or that `eslint --fix` only fixes fixable errors, not all ESLint errors.
 *   If integration tests fail in CI, and the error is `Preset ts-jest not found relative to rootDir`, this is likely due to:
     *   Missing `ts-jest` in CI dependencies.
     *   A different `node_modules` structure in CI compared to the local environment.
@@ -384,3 +508,15 @@ This approach eliminates the race by:
 * Waiting on a stable, semantic hook (`data-testid`) rather than non-deterministic style timing.
 * Synchronizing with network/persistence completion.
 * Falling back to structure-based assertions when styles lag.
+* Fixed E2E tests to create conversations first.
+* E2E tests now auto-create conversation on 404.
+* E2E tests no longer rely on non-deterministic AI responses.
+* Added more robust Supabase credential extraction with fallback to default local keys.
+* E2E test runs now verify that Supabase credentials are set before running tests.
+* E2E tests now handle network errors during long requests.
+* Added additional service verification with retry logic.
+* Added a test retry mechanism for flaky integration
+*   **Debugging Act failures in local tests**: When debugging integration-tests-agent failures locally with Act, consider the following:
+    *   **Verify the .github/testing/.env.ci file**: Ensure this file exists and contains all required environment variables (OPENAI_API_KEY, LANGCHAIN_API_KEY, etc.).
+    *   **Check the specific error**: Identify the exact error message or failure occurring during the Act run. Is it a timeout error, service startup failure, environment variable issue, OpenAI API key validation failure, or Supabase connection problem?
+    *   **Determine the failure step**:

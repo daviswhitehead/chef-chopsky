@@ -203,7 +203,7 @@ export default function ConversationPage() {
     if (conversationId) {
       loadConversation();
     }
-  }, [conversationId, mounted]);
+  }, [conversationId, mounted, router]);
 
   const handleMessageSent = async (newMessage: Message) => {
     // Don't duplicate message handling - ChatInterface manages its own state

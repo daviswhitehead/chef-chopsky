@@ -178,13 +178,15 @@ jobs:
         echo "  - Node Version: $(node --version)"
         echo "  - NPM Version: $(npm --version)"
         echo "  - Working Directory: $(pwd)"
-        echo "  - Available Ports: $(netstat -tuln | grep -E ':(3000|3001)' || echo 'Ports 3000, 3001 not in use')"
+        echo "  - Available Ports: $(ss -tuln 2>/dev/null | grep -E ':(3000|3001)' || echo 'Ports 3000, 3001 not in use')"
         
         ./scripts/start-services.sh &
         SERVICES_PID=$!
         echo "Services started in background (PID: $SERVICES_PID)"
         
         echo "⏳ Waiting for services to be ready..."
+        export FRONTEND_URL="$FRONTEND_URL"
+        export AGENT_URL="$AGENT_SERVICE_URL"
         timeout 120s node scripts/health-check.js
         HEALTH_CHECK_EXIT_CODE=$?
         
@@ -194,7 +196,7 @@ jobs:
           echo "  - Background processes:"
           ps aux | grep -E "(next|tsx|start-services)" | grep -v grep || echo "No services found"
           echo "  - Port usage:"
-          netstat -tuln | grep -E ':(3000|3001)' || echo "Ports 3000, 3001 not in use"
+          ss -tuln 2>/dev/null | grep -E ':(3000|3001|3002|3003)' || echo "Ports 3000, 3001, 3002, 3003 not in use"
           echo "  - Service logs (last 20 lines):"
           tail -20 /tmp/chef-chopsky-services.log 2>/dev/null || echo "No service logs found"
           exit 1
@@ -205,8 +207,8 @@ jobs:
         echo "🔍 Performing additional CI service verification..."
         for i in {1..5}; do
           echo "Verification attempt $i/5..."
-          FRONTEND_STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 'unreachable')
-          AGENT_STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health || echo 'unreachable')
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$FRONTEND_URL/" || echo 'unreachable')
+          AGENT_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$AGENT_SERVICE_URL/health" || echo 'unreachable')
           
           if [ "$FRONTEND_STATUS" = "200" ] && [ "$AGENT_STATUS" = "200" ]; then
             echo "✅ Services verified and ready for integration tests"
@@ -222,8 +224,35 @@ jobs:
         done
         
         echo "📊 Pre-test Service Status:"
-        echo "  - Frontend: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 'unreachable')"
-        echo "  - Agent Health: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health || echo 'unreachable')"
+        echo "  - Frontend: $(curl -s -o /dev/null -w '%{http_code}' "$FRONTEND_URL/" || echo 'unreachable')"
+        echo "  - Agent Health: $(curl -s -o /dev/null -w '%{http_code}' "$AGENT_SERVICE_URL/health" || echo 'unreachable')"
+        
+    - name: Diagnose Act Environment
+      if: env.ACT == 'true'
+      run: |
+        echo "🔍 Act Environment Diagnostics"
+        echo "=============================="
+        echo ""
+        echo "📋 Environment Variables:"
+        echo "  OPENAI_API_KEY: ${OPENAI_API_KEY:0:10}... (${#OPENAI_API_KEY} chars)"
+        echo "  LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY:+Set} ${LANGCHAIN_API_KEY:-Not Set}"
+        echo "  NODE_ENV: $NODE_ENV"
+        echo "  CI: $CI"
+        echo "  NEXT_PUBLIC_SUPABASE_URL: $NEXT_PUBLIC_SUPABASE_URL"
+        echo "  AGENT_SERVICE_URL: $AGENT_SERVICE_URL"
+        echo "  FRONTEND_URL: $FRONTEND_URL"
+        echo ""
+        echo "🔍 Network Configuration:"
+        ip addr show || ifconfig
+        echo ""
+        echo "🔍 Port Status:"
+        ss -tuln 2>/dev/null | grep -E ':(3000|3001|54321)' || echo "Ports not bound"
+        echo ""
+        echo "🔍 Process Status:"
+        ps aux | grep -E "(next|tsx|node)" | grep -v grep || echo "No matching processes"
+        echo ""
+        echo "🔍 Service Logs (last 50 lines):"
+        tail -50 /tmp/chef-chopsky-services.log 2>/dev/null || echo "No logs found"
         
         echo "🔑 Validating OpenAI API key..."
         if [ -z "$OPENAI_API_KEY" ]; then
@@ -247,6 +276,56 @@ jobs:
         echo "✅ OpenAI API key validation passed"
         echo "Key format: ${OPENAI_API_KEY:0:10}... (${#OPENAI_API_KEY} characters)"
         
+    - name: Pre-Test Service Validation
+      run: |
+        echo "🔍 Validating services before running tests..."
+        
+        # Wait a bit more for services to stabilize
+        echo "⏳ Allowing additional stabilization time..."
+        sleep 5
+        
+        # Test frontend connectivity
+        for i in {1..5}; do
+          if curl -s http://localhost:3000/ > /dev/null 2>&1; then
+            echo "✅ Frontend connectivity verified (attempt $i)"
+            FRONTEND_OK=true
+            break
+          else
+            echo "⚠️ Frontend not responding (attempt $i/5)"
+            sleep 2
+          fi
+        done
+        
+        if [ "$FRONTEND_OK" != "true" ]; then
+          echo "❌ Frontend failed connectivity check"
+          echo "📋 Checking frontend logs..."
+          tail -30 /tmp/chef-chopsky-services.log | grep -i frontend || echo "No frontend logs"
+          exit 1
+        fi
+        
+        # Test agent connectivity
+        for i in {1..5}; do
+          if curl -s http://localhost:3001/health > /dev/null 2>&1; then
+            echo "✅ Agent connectivity verified (attempt $i)"
+            AGENT_OK=true
+            break
+          else
+            echo "⚠️ Agent not responding (attempt $i/5)"
+            sleep 2
+          fi
+        done
+        
+        if [ "$AGENT_OK" != "true" ]; then
+          echo "❌ Agent failed connectivity check"
+          echo "📋 Checking agent logs..."
+          tail -30 /tmp/chef-chopsky-services.log | grep -i agent || echo "No agent logs"
+          exit 1
+        fi
+        
+        echo "✅ All services validated and ready for testing"
+        
+    - name: Run Agent Integration Tests
+      run: |
         echo "🤖 Running agent integration tests..."
         cd agent && npm run test:integration
         echo "✅ Agent integration tests completed"
@@ -386,8 +465,8 @@ jobs:
         echo "✅ All services are ready!"
         
         echo "📊 Pre-test Service Status:"
-        echo "  - Frontend: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 'unreachable')"
-        echo "  - Agent Health: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health || echo 'unreachable')"
+        echo "  - Frontend: $(curl -s -o /dev/null -w '%{http_code}' "$FRONTEND_URL/" || echo 'unreachable')"
+        echo "  - Agent Health: $(curl -s -o /dev/null -w '%{http_code}' "$AGENT_SERVICE_URL/health" || echo 'unreachable')"
         
         echo "🔑 Validating OpenAI API key..."
         if [ -z "$OPENAI_API_KEY" ]; then

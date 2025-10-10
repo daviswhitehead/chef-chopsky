@@ -1,9 +1,0 @@
-{
-  "/api/ai/chat/route": "/api/ai/chat",
-  "/api/conversations/[id]/messages/route": "/api/conversations/[id]/messages",
-  "/api/conversations/route": "/api/conversations",
-  "/api/conversations/[id]/route": "/api/conversations/[id]",
-  "/_not-found/page": "/_not-found",
-  "/page": "/",
-  "/conversations/[id]/page": "/conversations/[id]"
-}
