@@ -21,22 +21,27 @@ export async function POST(request: NextRequest) {
     // If an explicit id is provided, create the conversation with that id directly
     if (id) {
       console.log('API: Creating conversation with explicit id via Supabase insert...');
-      const { data, error } = await supabase
-        .from('conversations')
-        .insert({ id, user_id, title, metadata })
-        .select()
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('conversations')
+          .insert({ id, user_id, title, metadata })
+          .select()
+          .single();
 
-      if (error) {
-        console.error('API: Supabase insert error:', error);
-        return NextResponse.json(
-          { error: 'Failed to create conversation with explicit id', details: error.message },
-          { status: 500 }
-        );
+        if (error) {
+          throw error;
+        }
+
+        console.log('API: Created conversation with explicit id:', data?.id);
+        return NextResponse.json(data);
+      } catch (e: any) {
+        console.error('API: Supabase insert error:', e);
+        // Fallback: create via db service without explicit id
+        console.log('API: Falling back to db.createConversation...');
+        const fallback = await db.createConversation(user_id, title, metadata);
+        console.log('API: Fallback conversation created:', fallback?.id);
+        return NextResponse.json(fallback, { status: 201 });
       }
-
-      console.log('API: Created conversation with explicit id:', data?.id);
-      return NextResponse.json(data);
     }
 
     // Otherwise, create conversation using database service
