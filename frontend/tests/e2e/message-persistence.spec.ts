@@ -113,8 +113,7 @@ test.describe('Message Persistence', () => {
     const userMessage = page.locator(`text=${TEST_SCENARIOS.SIMPLE_MESSAGE}`).first();
     await expect(userMessage).toBeVisible();
 
-    // Wait for stable user bubble hook instead of style class
-    await page.waitForSelector('[data-testid="message-user"]', { timeout: 10000 });
+    // Message should be visible via text content check above
 
     // Verify message roles are correct via stable hooks
     const userMessages = page.locator('[data-testid="message-user"]');

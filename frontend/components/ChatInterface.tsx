@@ -82,6 +82,33 @@ export default function ChatInterface({ conversationId, userId, initialMessages 
         onMessageSent?.(userMessage);
       }
 
+      // Persist user message immediately to ensure it survives page reloads
+      let persistedUserMessage: Message | null = null;
+      if (retryAttempt === 0) {
+        try {
+          console.log('💾 Persisting user message immediately...');
+          const persistResponse = await fetch('/api/conversations/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              conversation_id: conversationId,
+              role: 'user',
+              content: content,
+              metadata: { user_id: userId, source: 'frontend_immediate' }
+            })
+          });
+          
+          if (persistResponse.ok) {
+            persistedUserMessage = await persistResponse.json();
+            console.log('✅ User message persisted immediately:', persistedUserMessage.id);
+          } else {
+            console.warn('⚠️ Failed to persist user message immediately:', persistResponse.status);
+          }
+        } catch (error) {
+          console.warn('⚠️ Error persisting user message immediately:', error);
+        }
+      }
+
       // Call the API route which handles both user and assistant message persistence
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), getEnvironmentTimeouts().FRONTEND_COMPONENT);
